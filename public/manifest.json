@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Noauth",
+  "name": "Noauth Nostr key manager",
   "icons": [
     {
       "src": "favicon.ico",

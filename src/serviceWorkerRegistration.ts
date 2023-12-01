@@ -21,6 +21,7 @@ const isLocalhost = Boolean(
 type Config = {
   onSuccess?: (registration: ServiceWorkerRegistration) => void;
   onUpdate?: (registration: ServiceWorkerRegistration) => void;
+  onError?: (e: any) => void;
 };
 
 export function register(config?: Config) {
@@ -31,6 +32,9 @@ export function register(config?: Config) {
       // Our service worker won't work if PUBLIC_URL is on a different origin
       // from what our page is served on. This might happen if a CDN is used to
       // serve assets; see https://github.com/facebook/create-react-app/issues/2374
+      if (config && config.onError) {
+        config.onError(new Error("Wrong origin"));
+      }
       return;
     }
 
@@ -98,6 +102,9 @@ function registerValidSW(swUrl: string, config?: Config) {
     })
     .catch((error) => {
       console.error('Error during service worker registration:', error);
+      if (config && config.onError) {
+        config.onError(new Error(`Install error: ${error}`));
+      }
     });
 }
 

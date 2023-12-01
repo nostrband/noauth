@@ -1,0 +1,23 @@
+Noauth - Nostr key manager
+--------------------------
+
+THIS IS BETA SOFTWARE, DON'T USE WITH REAL KEYS!
+
+This is a web-based nostr signer app, it uses nip46 signer
+running inside a service worker, if SW is not running -
+a noauthd server sends a push message and wakes SW up. Also,
+keys can be saved to server and fetched later in an end-to-end
+encrypted way. Keys are encrypted with user-defined password, 
+a good key derivation function is used to resist brute force.
+
+This app works in Chrome on desktop and Android out of the box,
+try it with snort.social (use bunker:/... string as 'login string').
+
+On iOS web push notifications are still experimental, eventually
+it will work on iOS out of the box too.
+
+It works across devices, but that's unreliable, especially if
+signer is on mobile - if smartphone is locked then service worker might
+not wake up. Thanks to cloud sync/recovery of keys users can import 
+their keys into this app on every device and then it works well.
+
