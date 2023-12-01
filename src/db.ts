@@ -7,7 +7,6 @@ export interface DbKey {
   avatar?: string
   relays?: string[]
   enckey: string
-  localKey: CryptoKey
 }
 
 export interface DbApp {
@@ -57,7 +56,7 @@ export interface DbSchema extends Dexie {
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(5).stores({
+db.version(7).stores({
   keys: 'npub',
   apps: 'appNpub,npub,name,timestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',

@@ -201,7 +201,7 @@ export class NoauthBackend {
     })
     if (r.status !== 200 && r.status != 201) {
       console.log("Fetch error", url, method, r.status)
-      throw new Error("Failed to fetch"+url)
+      throw new Error("Failed to fetch" + url)
     }
 
     return await r.json();
@@ -367,6 +367,7 @@ export class NoauthBackend {
     const npub = nip19.npubEncode(pubkey)
     const localKey = await this.keysModule.generateLocalKey()
     const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
+    // @ts-ignore 
     const dbKey: DbKey = { npub, enckey, localKey }
     await dbi.addKey(dbKey)
     this.enckeys.push(dbKey)
@@ -560,7 +561,11 @@ export class NoauthBackend {
     if (!info) throw new Error(`Key ${npub} not found`)
     const { type } = nip19.decode(npub)
     if (type !== "npub") throw new Error(`Invalid npub ${npub}`)
-    const sk = await this.keysModule.decryptKeyLocal({ enckey: info.enckey, localKey: info.localKey })
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey
+    })
     await this.startKey({ npub, sk })
   }
 
@@ -573,7 +578,11 @@ export class NoauthBackend {
   private async saveKey(npub: string, passphrase: string) {
     const info = this.enckeys.find(k => k.npub === npub)
     if (!info) throw new Error(`Key ${npub} not found`)
-    const sk = await this.keysModule.decryptKeyLocal({ enckey: info.enckey, localKey: info.localKey })
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey
+    })
     const { enckey, pwh } = await this.keysModule.encryptKeyPass({ key: sk, passphrase })
     await this.sendKeyToServer(npub, enckey, pwh)
   }
@@ -582,7 +591,7 @@ export class NoauthBackend {
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== "npub") throw new Error(`Invalid npub ${npub}`)
     const { pwh } = await this.keysModule.generatePassKey(pubkey, passphrase)
-    const { data: enckey }  = await this.fetchKeyFromServer(npub, pwh);
+    const { data: enckey } = await this.fetchKeyFromServer(npub, pwh);
 
     // key already exists?
     const key = this.enckeys.find(k => k.npub === npub)

@@ -64,7 +64,19 @@ export class Keys {
     })
   }
 
-  public async generateLocalKey(): Promise<CryptoKey> {
+  private isSafari() {
+    const chrome = navigator.userAgent.indexOf("Chrome") > -1; 
+    const safari = navigator.userAgent.indexOf("Safari") > -1; 
+    return safari && !chrome
+  }
+
+  public async generateLocalKey(): Promise<CryptoKey | {}> {
+    // https://github.com/dexie/Dexie.js/issues/585
+    // Those lazy-asses from Safari still don't allow one
+    // to store keys in IndexedDB, so for them we have to
+    // store nsecs in plaintext
+    if (this.isSafari()) return {}
+
     return await this.subtle.generateKey(
       { name: ALGO_LOCAL, length: KEY_SIZE_LOCAL },
       // NOTE: important to make sure it's not visible in
@@ -74,14 +86,16 @@ export class Keys {
     )
   }
 
-  public async encryptKeyLocal(key: string, localKey: CryptoKey): Promise<string> {
+  public async encryptKeyLocal(key: string, localKey: CryptoKey | {}): Promise<string> {
+    if (this.isSafari()) return key
     const nsec = nip19.nsecEncode(key)
     const iv = crypto.randomBytes(IV_SIZE)
     const encrypted = await this.subtle.encrypt({ name: ALGO_LOCAL, iv }, localKey, Buffer.from(nsec))
     return `${PREFIX_LOCAL}:${VERSION_LOCAL}:${iv.toString('hex')}:${Buffer.from(encrypted).toString('hex')}}`
   }
 
-  public async decryptKeyLocal({ enckey, localKey }: { enckey: string, localKey: CryptoKey }): Promise<string> {
+  public async decryptKeyLocal({ enckey, localKey }: { enckey: string, localKey: CryptoKey | {} }): Promise<string> {
+    if (this.isSafari()) return enckey
     const parts = enckey.split(':')
     if (parts.length !== 4) throw new Error("Bad encrypted key")
     if (parts[0] !== PREFIX_LOCAL) throw new Error("Bad encrypted key prefix")

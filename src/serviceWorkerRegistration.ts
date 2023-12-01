@@ -58,6 +58,10 @@ export function register(config?: Config) {
         registerValidSW(swUrl, config);
       }
     });
+  } else {
+    if (config && config.onError) {
+      config.onError(new Error("No service worker"));
+    }
   }
 }
 
