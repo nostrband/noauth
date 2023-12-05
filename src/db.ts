@@ -186,4 +186,12 @@ export const dbi = {
       console.log(`db addPending error: ${error}`)
     }
   },
+  addConfirmed: async (r: DbHistory) => {
+    try {
+      await db.history.add(r)
+    } catch (error) {
+      console.log(`db addConfirmed error: ${error}`)
+      return false
+    }
+  },
 }

@@ -1,8 +1,11 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
 import { dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
-import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend, NDKPrivateKeySigner } from '@nostr-dev-kit/ndk'
+import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend, NDKPrivateKeySigner, NDKSigner } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from './consts'
+//import { PrivateKeySigner } from './signer'
+
+//const PERF_TEST = false
 
 export interface KeyInfo {
   npub: string
@@ -14,7 +17,7 @@ interface Key {
   npub: string
   ndk: NDK
   backoff: number
-  signer: NDKPrivateKeySigner
+  signer: NDKSigner
   backend: NDKNip46Backend
 }
 
@@ -56,7 +59,7 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
     remotePubkey: string,
     params: string[]
   ): Promise<string | undefined> {
-    console.log("handle", { method: this.method, id, remotePubkey, params })
+    console.log(Date.now(), "handle", { method: this.method, id, remotePubkey, params })
     const allow = await this.allowCb({
       npub: this.npub,
       id,
@@ -66,10 +69,10 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
     })
     if (!allow) return undefined
     return this.body.handle(backend, id, remotePubkey, params)
-      .then(r => {
-        console.log("req", id, "method", this.method, "result", r)
-        return r
-      })
+    .then(r => {
+      console.log(Date.now(), "req", id, "method", this.method, "result", r)
+      return r
+    })
   }
 }
 
@@ -79,6 +82,7 @@ export class NoauthBackend {
   private enckeys: DbKey[] = []
   private keys: Key[] = []
   private perms: DbPerm[] = []
+  private doneReqIds: string[] = []
   private confirmBuffer: Pending[] = []
   private accessBuffer: DbPending[] = []
   private notifCallback: (() => void) | null = null
@@ -199,7 +203,7 @@ export class NoauthBackend {
       },
       body,
     })
-    if (r.status !== 200 && r.status != 201) {
+    if (r.status !== 200 && r.status !== 201) {
       console.log("Fetch error", url, method, r.status)
       throw new Error("Failed to fetch" + url)
     }
@@ -394,6 +398,13 @@ export class NoauthBackend {
     params
   }: IAllowCallbackParams): Promise<boolean> {
 
+    // same reqs usually come on reconnects
+    if (this.doneReqIds.includes(id)) {
+      console.log("request already done", id)
+      // FIXME maybe repeat the reply, but without the Notification?
+      return false
+    }
+
     const appNpub = nip19.npubEncode(remotePubkey)
     const req: DbPending = {
       id,
@@ -403,30 +414,34 @@ export class NoauthBackend {
       params: JSON.stringify(params),
       timestamp: Date.now()
     }
-    if (!await dbi.addPending(req)) {
-      console.log("request already done", id)
-      // FIXME maybe repeat the reply, but without the Notification?
-      return false
-    }
 
     const self = this
-    return new Promise((ok) => {
+    return new Promise(async (ok) => {
 
       // called when it's decided whether to allow this or not
-      const cb = async (allow: boolean, remember: boolean) => {
+      const onAllow = async (manual: boolean, allow: boolean, remember: boolean) => {
 
         // confirm
-        console.log(allow ? "allowed" : "disallowed", npub, method, params)
-        await dbi.confirmPending(id, allow)
+        console.log(Date.now(), allow ? "allowed" : "disallowed", npub, method, params)
+        if (manual) {
+          await dbi.confirmPending(id, allow)
 
-        if (!await dbi.getApp(req.appNpub)) {
-          await dbi.addApp({
-            appNpub: req.appNpub,
-            npub: req.npub,
-            timestamp: Date.now(),
-            name: '',
-            icon: '',
-            url: ''
+          if (!await dbi.getApp(req.appNpub)) {
+            await dbi.addApp({
+              appNpub: req.appNpub,
+              npub: req.npub,
+              timestamp: Date.now(),
+              name: '',
+              icon: '',
+              url: ''
+            })
+          }
+        } else {
+          // just send to db w/o waiting for it
+          // if (!PERF_TEST)
+          dbi.addConfirmed({
+            ...req,
+            allowed: allow
           })
         }
 
@@ -459,6 +474,7 @@ export class NoauthBackend {
         }
 
         // notify UI that it was confirmed
+        // if (!PERF_TEST)
         this.updateUI()
 
         // return to let nip46 flow proceed
@@ -467,13 +483,16 @@ export class NoauthBackend {
 
       // check perms
       const perm = this.getPerm(req)
-      console.log("perm", req.id, perm)
+      console.log(Date.now(), "perm", req.id, perm)
 
       // have perm?
       if (perm) {
         // reply immediately
-        cb(perm === '1', false)
+        onAllow(false, perm === '1', false)
       } else {
+
+        // put pending req to db
+        await dbi.addPending(req)
 
         // need manual confirmation
         console.log("need confirm", req)
@@ -481,7 +500,7 @@ export class NoauthBackend {
         // put to a list of pending requests
         this.confirmBuffer.push({
           req,
-          cb
+          cb: (allow, remember) => onAllow(true, allow, remember)
         })
 
         // show notifs
@@ -502,7 +521,7 @@ export class NoauthBackend {
     // init relay objects but dont wait until we connect
     ndk.connect()
 
-    const signer = new NDKPrivateKeySigner(sk)
+    const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
     const backend = new NDKNip46Backend(ndk, sk, () => Promise.resolve(true))
     this.keys.push({ npub, backend, signer, ndk, backoff })
 
@@ -571,6 +590,12 @@ export class NoauthBackend {
 
   private async generateKey() {
     const k = await this.addKey()
+    this.updateUI()
+    return k
+  }
+
+  private async importKey(nsec: string) {
+    const k = await this.addKey(nsec)
     this.updateUI()
     return k
   }
@@ -661,6 +686,8 @@ export class NoauthBackend {
       let result = undefined
       if (method === 'generateKey') {
         result = await this.generateKey()
+      } else if (method === 'importKey') {
+        result = await this.importKey(args[0])
       } else if (method === 'saveKey') {
         result = await this.saveKey(args[0], args[1])
       } else if (method === 'fetchKey') {

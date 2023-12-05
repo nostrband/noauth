@@ -122,6 +122,15 @@ function App() {
     })
   }
 
+  async function importKey() {
+    call(async () => {
+      // @ts-ignore
+      const nsec = document.getElementById(`nsec`)?.value
+      await swicCall('importKey', nsec)
+      log('Key imported')
+    })
+  }
+
   async function fetchNewKey() {
     call(async () => {
       // @ts-ignore
@@ -136,6 +145,7 @@ function App() {
 
   // subscribe to updates from the service worker
   swicOnRender(() => {
+    console.log("render")
     setRender(r => r + 1)
   })
 
@@ -161,8 +171,12 @@ function App() {
           )
         })}
 
-        <div>
+<div>
           <button onClick={generateKey}>generate key</button>
+        </div>
+        <div>
+          <input id='nsec' placeholder='nsec' />
+          <button onClick={importKey}>import key (DANGER!)</button>
         </div>
         <div>
           <input id='npub' placeholder='npub' />
