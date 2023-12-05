@@ -35,14 +35,19 @@ function getNormalizedX(key: Uint8Array): Uint8Array {
 export class Nip04 {
   private cache = new Map<string, CryptoKey>()
 
-  private async getKey(privkey: string, pubkey: string) {
+  public createKey(privkey: string, pubkey: string) {
+    const key = secp256k1.getSharedSecret(privkey, '02' + pubkey)
+    const normalizedKey = getNormalizedX(key)
+    return normalizedKey
+  }
+
+  private async getKey(privkey: string, pubkey: string, extractable?: boolean) {
     const id = getPublicKey(privkey) + pubkey
     let cryptoKey = this.cache.get(id)
     if (cryptoKey) return cryptoKey
 
-    const key = secp256k1.getSharedSecret(privkey, '02' + pubkey)
-    const normalizedKey = getNormalizedX(key)
-    cryptoKey = await crypto.subtle.importKey('raw', normalizedKey, { name: 'AES-CBC' }, false, ['encrypt', 'decrypt'])
+    const key = this.createKey(privkey, pubkey)
+    cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'AES-CBC' }, !!extractable, ['encrypt', 'decrypt'])
     this.cache.set(id, cryptoKey)
     return cryptoKey
   }

@@ -3,6 +3,7 @@ import { dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend, NDKPrivateKeySigner, NDKSigner } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from './consts'
+import { Nip04 } from './nip04'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -33,6 +34,50 @@ interface IAllowCallbackParams {
   remotePubkey: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params?: any
+}
+
+class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
+
+  private privkey: string
+  private nip04 = new Nip04()
+
+  constructor(privkey: string) {
+    this.privkey = privkey
+  }
+
+  private async getKey(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    recipientPubkey: string
+  ) {
+    if (
+      !(await backend.pubkeyAllowed({
+        id,
+        pubkey: remotePubkey,
+        // @ts-ignore
+        method: "get_nip04_key",
+        params: recipientPubkey,
+      }))
+    ) {
+      backend.debug(`get_nip04_key request from ${remotePubkey} rejected`);
+      return undefined;
+    }
+
+    return Buffer.from(
+      this.nip04.createKey(this.privkey, recipientPubkey)
+    ).toString('hex')
+  }
+
+  async handle(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[]
+  ) {
+    const [recipientPubkey] = params
+    return await this.getKey(backend, id, remotePubkey, recipientPubkey)
+  }
 }
 
 class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
@@ -69,10 +114,10 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
     })
     if (!allow) return undefined
     return this.body.handle(backend, id, remotePubkey, params)
-    .then(r => {
-      console.log(Date.now(), "req", id, "method", this.method, "result", r)
-      return r
-    })
+      .then(r => {
+        console.log(Date.now(), "req", id, "method", this.method, "result", r)
+        return r
+      })
   }
 }
 
@@ -524,6 +569,9 @@ export class NoauthBackend {
     const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
     const backend = new NDKNip46Backend(ndk, sk, () => Promise.resolve(true))
     this.keys.push({ npub, backend, signer, ndk, backoff })
+
+    // new method
+    backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
 
     // assign our own permission callback
     for (const method in backend.handlers) {
