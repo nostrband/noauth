@@ -80,6 +80,25 @@ class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
   }
 }
 
+class DescribeHandlingStrategy implements IEventHandlingStrategy {
+
+  private methods: string[]
+
+  constructor(methods: string[]) {
+    this.methods = [...methods]
+    this.methods.push('describe')
+  }
+
+  async handle(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[]
+  ) {
+    return JSON.stringify(this.methods)
+  }
+}
+
 class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
   readonly npub: string
   readonly method: string
@@ -430,9 +449,16 @@ export class NoauthBackend {
   }
 
   private getPerm(req: DbPending): string {
-    return this.perms.find(p => p.npub === req.npub
-      && p.appNpub === req.appNpub
-      && p.perm === req.method)?.value || ''
+    const methods = [req.method]
+    if (req.method === 'describe')
+      methods.push(...['connect', 'get_public_key'])
+    for (const method of methods) {
+      const value = this.perms.find(p => p.npub === req.npub
+        && p.appNpub === req.appNpub
+        && p.perm === method)?.value || ''
+      if (value) return value
+    }
+    return ''
   }
 
   private async allowPermitCallback({
@@ -572,6 +598,7 @@ export class NoauthBackend {
 
     // new method
     backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
+    backend.handlers['describe'] = new DescribeHandlingStrategy(Object.keys(backend.handlers))
 
     // assign our own permission callback
     for (const method in backend.handlers) {
