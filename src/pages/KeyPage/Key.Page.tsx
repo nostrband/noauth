@@ -104,14 +104,17 @@ const KeyPage = () => {
 	const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
 
 	useEffect(() => {
-		if (swr) {
-			const isBackgroundEnable = swr.pushManager.getSubscription()
-			if (!isBackgroundEnable) {
-				setShowWarning(true)
-			} else {
-				setShowWarning(false)
+		const checkBackgroundSigning = async () => {
+			if (swr) {
+				const isBackgroundEnable = await swr.pushManager.getSubscription()
+				if (!isBackgroundEnable) {
+					setShowWarning(true)
+				} else {
+					setShowWarning(false)
+				}
 			}
 		}
+		checkBackgroundSigning()
 	}, [])
 
 	const handleEnableBackground = async () => {
