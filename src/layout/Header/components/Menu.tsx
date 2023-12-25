@@ -9,13 +9,14 @@ import {
 	styled,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-import { useNavigate } from 'react-router-dom'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import LoginIcon from '@mui/icons-material/Login'
 import { setThemeMode } from '@/store/reducers/ui.slice'
 import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
 import { ReactNode, useState } from 'react'
+import { useModalSearchParams } from '@/hooks/useModalSearchParams'
+import { MODAL_PARAMS_KEYS } from '@/types/modal'
 
 const renderMenuItem = (
 	Icon: ReactNode,
@@ -35,7 +36,8 @@ const renderMenuItem = (
 export const Menu = () => {
 	const themeMode = useAppSelector((state) => state.ui.themeMode)
 	const dispatch = useAppDispatch()
-	const navigate = useNavigate()
+	const { handleOpen } = useModalSearchParams()
+
 	const isDarkMode = themeMode === 'dark'
 
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -53,7 +55,7 @@ export const Menu = () => {
 		dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
 	}
 	const handleNavigateToAuth = () => {
-		navigate('/sign-up')
+		handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 		handleClose()
 	}
 

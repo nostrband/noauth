@@ -4,10 +4,8 @@ import { Stack, styled, StackProps, Box } from '@mui/material'
 export const StyledContent = styled((props: StackProps) => (
 	<Stack {...props} gap={'1rem'} alignItems={'center'} />
 ))(({ theme }) => {
-	const isDark = theme.palette.mode === 'dark'
-
 	return {
-		background: isDark ? '#333333A8' : '#dddddda8',
+		background: theme.palette.secondary.main,
 		position: 'absolute',
 		bottom: '-1rem',
 		left: '-1rem',

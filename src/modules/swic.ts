@@ -1,7 +1,7 @@
 // service-worker client interface
 import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
 
-let swr: ServiceWorkerRegistration | null = null
+export let swr: ServiceWorkerRegistration | null = null
 const reqs = new Map<number, { ok: (r: any) => void; rej: (r: any) => void }>()
 let nextReqId = 1
 let onRender: (() => void) | null = null

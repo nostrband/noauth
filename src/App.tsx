@@ -10,9 +10,16 @@ import {
 } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
 import { ndk } from './modules/nostr'
+import { useModalSearchParams } from './hooks/useModalSearchParams'
+import { MODAL_PARAMS_KEYS } from './types/modal'
+import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
+import { ModalImportKeys } from './components/Modal/ModalImportKeys/ModalImportKeys'
+import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
+import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 
 function App() {
 	const [render, setRender] = useState(0)
+	const { handleOpen } = useModalSearchParams()
 	// const [keys, setKeys] = useState<DbKey[]>([])
 	// const [apps, setApps] = useState<DbApp[]>([])
 	// const [perms, setPerms] = useState<DbPerm[]>([])
@@ -51,7 +58,11 @@ function App() {
 	}, [render])
 
 	useEffect(() => {
-		ndk.connect().then(() => console.log('NDK connected'))
+		ndk.connect().then(() => {
+			console.log('NDK connected')
+			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
+		})
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	// async function askNotificationPermission() {
@@ -91,7 +102,15 @@ function App() {
 		setRender((r) => r + 1)
 	})
 
-	return <AppRoutes />
+	return (
+		<>
+			<AppRoutes />
+			<ModalInitial />
+			<ModalImportKeys />
+			<ModalSignUp />
+			<ModalLogin />
+		</>
+	)
 
 	// return (
 	// 	<div>

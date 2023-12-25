@@ -1,22 +1,14 @@
 import { createTheme, Theme } from '@mui/material'
 
-// declare module '@mui/material/styles' {
-// 	interface Palette {
-// 		light: Palette['primary']
-// 		decorate: Palette['primary']
-// 		actionPrimary: Palette['primary']
-// 		textPrimaryDecorate: Palette['primary']
-// 		textSecondaryDecorate: Palette['primary']
-// 	}
+declare module '@mui/material/styles' {
+	interface Palette {
+		textSecondaryDecorate: Palette['primary']
+	}
 
-// 	interface PaletteOptions {
-// 		light?: Palette['primary']
-// 		decorate?: Palette['primary']
-// 		actionPrimary?: Palette['primary']
-// 		textPrimaryDecorate?: Palette['primary']
-// 		textSecondaryDecorate?: Palette['primary']
-// 	}
-// }
+	interface PaletteOptions {
+		textSecondaryDecorate?: Palette['primary']
+	}
+}
 
 const commonTheme: Theme = createTheme({
 	typography: {
@@ -41,9 +33,8 @@ const lightTheme: Theme = createTheme({
 			main: '#000000',
 		},
 		secondary: {
-			main: '#9c27b0',
-			light: '#00000029',
-			dark: '#333333',
+			main: '#E8E9EB',
+			dark: '#ACACAC',
 		},
 		error: {
 			main: '#f44336',
@@ -53,8 +44,14 @@ const lightTheme: Theme = createTheme({
 			paper: '#f7f7f7',
 		},
 		text: {
-			primary: '#333333',
-			secondary: '#757575',
+			primary: '#000000',
+			secondary: '#ffffff',
+		},
+		textSecondaryDecorate: {
+			main: '#6b6b6b',
+			light: '#000',
+			dark: '#000',
+			contrastText: '#000',
 		},
 	},
 })
@@ -67,9 +64,7 @@ const darkTheme: Theme = createTheme({
 			main: '#FFFFFF',
 		},
 		secondary: {
-			main: '#f48fb1',
-			light: '#FFFFFF29',
-			dark: '#333333A8',
+			main: '#222222',
 		},
 		error: {
 			main: '#ef9a9a',
@@ -80,11 +75,15 @@ const darkTheme: Theme = createTheme({
 		},
 		text: {
 			primary: '#ffffff',
-			secondary: '#b3b3b3',
+			secondary: '#000000',
+		},
+		textSecondaryDecorate: {
+			main: '#6b6b6b',
+			light: '#000',
+			dark: '#000',
+			contrastText: '#000',
 		},
 	},
 })
-
-console.log({ lightTheme, darkTheme })
 
 export { lightTheme, darkTheme }

@@ -6,11 +6,14 @@ export const SectionTitle: FC<PropsWithChildren> = ({ children }) => {
 }
 
 const StyledTypography = styled((props: TypographyProps) => (
-	<Typography {...props} variant='body1' />
-))(({ theme }) => ({
-	textTransform: 'uppercase',
-	letterSpacing: '3px',
-	display: 'block',
-	marginBottom: '0.5rem',
-	color: theme.palette.text.secondary,
-}))
+	<Typography {...props} variant='caption' />
+))(({ theme }) => {
+	const isDark = theme.palette.mode === 'dark'
+	return {
+		textTransform: 'uppercase',
+		letterSpacing: '3px',
+		display: 'block',
+		color: isDark ? '#FFFFFF' : theme.palette.textSecondaryDecorate.main,
+		fontWeight: 600,
+	}
+})

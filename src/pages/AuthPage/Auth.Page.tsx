@@ -1,34 +1,60 @@
 import { Input } from '@/shared/Input/Input'
-import {
-	Button,
-	Stack,
-	InputAdornment,
-	useMediaQuery,
-	Typography,
-} from '@mui/material'
+import { Stack, useMediaQuery, Typography, useTheme } from '@mui/material'
 import { StyledAppLogo, StyledContent } from './styled'
+import { Button } from '@/shared/Button/Button'
+import { ChangeEvent, useState } from 'react'
+import { CheckmarkIcon } from '@/assets'
 
 const AuthPage = () => {
 	const isMobile = useMediaQuery('(max-width:600px)')
 
-	const commonContent = (
+	const [enteredValue, setEnteredValue] = useState('')
+
+	const theme = useTheme()
+
+	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+		setEnteredValue(e.target.value)
+	}
+
+	const isAvailable = enteredValue.trim().length > 2
+
+	const inputHelperText = isAvailable ? (
+		<>
+			<CheckmarkIcon /> Available
+		</>
+	) : (
+		"Don't worry, username can be changed later."
+	)
+
+	const mainContent = (
 		<>
 			<Input
 				label='Enter a Username'
 				fullWidth
 				placeholder='Username'
-				helperText="Don't worry, username can be changed later."
+				helperText={inputHelperText}
 				endAdornment={
-					<InputAdornment position='end'>@nsec.app</InputAdornment>
+					<Typography color={'#FFFFFFA8'}>@nsec.app</Typography>
 				}
+				onChange={handleInputChange}
+				value={enteredValue}
+				helperTextProps={{
+					sx: {
+						'&.helper_text': {
+							color: isAvailable
+								? theme.palette.success.main
+								: theme.palette.textSecondaryDecorate.main,
+						},
+					},
+				}}
 			/>
-			<Button variant='contained'>Sign up</Button>
+			<Button fullWidth>Sign up</Button>
 		</>
 	)
 
-	const renderContent = () => {
-		if (isMobile) {
-			return (
+	return (
+		<Stack height={'100%'} position={'relative'}>
+			{isMobile ? (
 				<StyledContent>
 					<Stack
 						direction={'row'}
@@ -41,20 +67,13 @@ const AuthPage = () => {
 							Sign up
 						</Typography>
 					</Stack>
-					{commonContent}
+					{mainContent}
 				</StyledContent>
-			)
-		}
-		return (
-			<Stack gap={'1rem'} alignItems={'center'}>
-				{commonContent}
-			</Stack>
-		)
-	}
-
-	return (
-		<Stack height={'100%'} position={'relative'}>
-			{renderContent()}
+			) : (
+				<Stack gap={'1rem'} alignItems={'center'}>
+					{mainContent}
+				</Stack>
+			)}
 		</Stack>
 	)
 }
