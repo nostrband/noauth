@@ -5,14 +5,16 @@ import { uiSlice } from './reducers/ui.slice'
 import {
 	persistStore,
 	persistReducer,
-	FLUSH,
-	REGISTER,
-	REHYDRATE,
-	PAUSE,
-	PERSIST,
-	PURGE,
+	// FLUSH,
+	// REGISTER,
+	// REHYDRATE,
+	// PAUSE,
+	// PERSIST,
+	// PURGE,
 } from 'redux-persist'
 import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
+import memoizeOne from 'memoize-one'
+import isDeepEqual from 'lodash.isequal'
 
 const persistConfig = {
 	key: 'root',
@@ -31,16 +33,7 @@ export const store = configureStore({
 	reducer: persistedReducer,
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({
-			serializableCheck: {
-				ignoredActions: [
-					FLUSH,
-					REHYDRATE,
-					PAUSE,
-					PERSIST,
-					PURGE,
-					REGISTER,
-				],
-			},
+			serializableCheck: false,
 		}),
 })
 
@@ -50,3 +43,14 @@ export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 export const selectKeys = (state: RootState) => state.content.keys
+
+export const selectAppsByNpub = memoizeOne((state: RootState, npub: string) => {
+	return state.content.apps.filter((app) => app.npub === npub)
+}, isDeepEqual)
+
+export const selectPermsByNpub = memoizeOne(
+	(state: RootState, npub: string) => {
+		return state.content.perms.filter((perm) => perm.npub === npub)
+	},
+	isDeepEqual,
+)

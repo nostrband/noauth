@@ -9,7 +9,7 @@ const HomePage = () => {
 
 	return (
 		<Stack>
-			<SectionTitle>Keys:</SectionTitle>
+			<SectionTitle marginBottom={'0.5rem'}>Keys:</SectionTitle>
 			<Stack gap={'0.5rem'}>
 				{keys.map((key) => (
 					<ItemKey {...key} key={key.npub} />

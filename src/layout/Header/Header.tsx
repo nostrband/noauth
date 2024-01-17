@@ -8,7 +8,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { MetaEvent } from '@/types/meta-event'
 import { nip19 } from 'nostr-tools'
 import { fetchProfile } from '@/modules/nostr'
-import { getDefaultUserName } from '@/utils/helpers'
+import { ProfileMenu } from './components/ProfileMenu'
+import { getShortenNpub } from '@/utils/helpers'
 
 export const Header = () => {
 	const { npub = '' } = useParams<{ npub: string }>()
@@ -16,18 +17,19 @@ export const Header = () => {
 	const [profile, setProfile] = useState<MetaEvent | null>(null)
 
 	const load = useCallback(async () => {
+		if (!npub) return setProfile(null)
+
 		try {
 			const npubToken = npub.includes('#') ? npub.split('#')[0] : npub
 			const { type, data: pubkey } = nip19.decode(npubToken)
 			if (type !== 'npub') return undefined
 
 			const response = await fetchProfile(pubkey)
-			console.log({ response, pubkey, npub, npubToken, profile })
+
 			setProfile(response as any)
 		} catch (e) {
-			return undefined
+			return setProfile(null)
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [npub])
 
 	useEffect(() => {
@@ -35,11 +37,12 @@ export const Header = () => {
 	}, [load])
 
 	const showProfile = Boolean(npub || profile)
-	const userName = profile?.info?.name || getDefaultUserName(npub)
+	const userName = profile?.info?.name || getShortenNpub(npub)
+	const userAvatar = profile?.info?.picture || ''
 
 	return (
-		<StyledAppBar position='static'>
-			<Toolbar>
+		<StyledAppBar position='fixed'>
+			<Toolbar sx={{ padding: '12px' }}>
 				<Stack
 					direction={'row'}
 					justifyContent={'space-between'}
@@ -53,7 +56,7 @@ export const Header = () => {
 							alignItems={'center'}
 							flex={1}
 						>
-							<Avatar />
+							<Avatar src={userAvatar} alt={userName} />
 							<Typography fontWeight={600}>{userName}</Typography>
 						</Stack>
 					) : (
@@ -63,7 +66,7 @@ export const Header = () => {
 						</StyledAppName>
 					)}
 
-					<Menu />
+					{showProfile ? <ProfileMenu /> : <Menu />}
 				</Stack>
 			</Toolbar>
 		</StyledAppBar>

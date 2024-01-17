@@ -1,5 +1,5 @@
 import { Input, InputProps } from '@/shared/Input/Input'
-import { styled } from '@mui/material'
+import { Stack, StackProps, styled } from '@mui/material'
 
 export const StyledInput = styled(({ className, ...props }: InputProps) => {
 	return (
@@ -21,4 +21,14 @@ export const StyledInput = styled(({ className, ...props }: InputProps) => {
 			color: theme.palette.primary.main,
 		},
 	},
+}))
+
+export const StyledItemAppContainer = styled(
+	<C extends React.ElementType>(props: StackProps<C, { component?: C }>) => (
+		<Stack {...props} />
+	),
+)(({ theme }) => ({
+	textDecoration: 'none',
+	boxShadow: 'none',
+	color: theme.palette.text.primary,
 }))

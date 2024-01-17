@@ -5,6 +5,7 @@ import { ReactComponent as CopyIcon } from './icons/copy.svg'
 import { ReactComponent as CheckmarkIcon } from './icons/checkmark.svg'
 import { ReactComponent as CheckedIcon } from './icons/checked.svg'
 import { ReactComponent as UnchekedIcon } from './icons/unchecked.svg'
+import { default as AddImageIcon } from './icons/add-image.svg'
 
 export {
 	AppLogo,
@@ -14,4 +15,5 @@ export {
 	CheckmarkIcon,
 	CheckedIcon,
 	UnchekedIcon,
+	AddImageIcon,
 }

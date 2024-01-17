@@ -1,8 +1,10 @@
+import { FC } from 'react'
 import { Typography, TypographyProps, styled } from '@mui/material'
-import { FC, PropsWithChildren } from 'react'
 
-export const SectionTitle: FC<PropsWithChildren> = ({ children }) => {
-	return <StyledTypography>{children}</StyledTypography>
+type SectionTitleProps = TypographyProps
+
+export const SectionTitle: FC<SectionTitleProps> = ({ children, ...rest }) => {
+	return <StyledTypography {...rest}>{children}</StyledTypography>
 }
 
 const StyledTypography = styled((props: TypographyProps) => (

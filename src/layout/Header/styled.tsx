@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom'
 
 export const StyledAppBar = styled(AppBar)(({ theme }) => {
 	return {
-		background: 'transparent',
 		color: theme.palette.primary.main,
 		boxShadow: 'none',
-		borderBottom: '1.4px solid ' + theme.palette.primary.main,
 		marginBottom: '1rem',
+		background: theme.palette.background.default,
+		zIndex: 1301,
+		maxWidth: 'inherit',
+		left: '50%',
+		transform: 'translateX(-50%)',
 	}
 })
 
@@ -24,4 +27,5 @@ export const StyledAppName = styled((props: TypographyProps) => (
 	fontWeight: 600,
 	fontSize: '1rem',
 	lineHeight: '22.4px',
+	marginLeft: '0.5rem',
 }))

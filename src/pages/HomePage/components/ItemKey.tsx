@@ -1,27 +1,21 @@
 import { FC, useRef } from 'react'
 import { DbKey } from '../../../modules/db'
-import { nip19 } from 'nostr-tools'
-import { NIP46_RELAYS } from '../../../utils/consts'
 import {
-	Box,
-	IconButton,
+	Avatar,
 	Stack,
 	StackProps,
 	Typography,
 	TypographyProps,
 	styled,
 } from '@mui/material'
-import { call, log } from '../../../utils/helpers'
+import { call, getShortenNpub, log } from '../../../utils/helpers'
 import { swicCall } from '../../../modules/swic'
 import { useNavigate } from 'react-router-dom'
-import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt'
 
 type ItemKeyProps = DbKey
 
-export const ItemKey: FC<ItemKeyProps> = ({ npub }) => {
+export const ItemKey: FC<ItemKeyProps> = ({ npub, name = '', avatar = '' }) => {
 	const navigate = useNavigate()
-	const { data: pubkey } = nip19.decode(npub)
-	const str = `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}`
 
 	const passPhraseInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -38,28 +32,15 @@ export const ItemKey: FC<ItemKeyProps> = ({ npub }) => {
 		navigate('/key/' + npub)
 	}
 
+	const userName = name || getShortenNpub(npub)
+	const userAvatar = avatar || ''
+
 	return (
-		<StyledKeyContainer>
-			<StyledText variant='body1'>{npub}</StyledText>
-			<StyledText variant='body2' color={'#757575'}>
-				{str}
-			</StyledText>
-			{/* <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-				<TextField
-					ref={passPhraseInputRef}
-					placeholder='save password'
-					fullWidth
-					size='small'
-				/>
-				<Button variant='contained' onClick={() => saveKey(npub)}>
-					save
-				</Button>
-			</Stack> */}
-			<Box alignSelf={'flex-end'}>
-				<IconButton onClick={handleNavigate}>
-					<ArrowRightAltIcon />
-				</IconButton>
-			</Box>
+		<StyledKeyContainer onClick={handleNavigate}>
+			<Stack direction={'row'} alignItems={'center'} gap='1rem'>
+				<Avatar src={userAvatar} alt={userName} />
+				<StyledText variant='body1'>{userName}</StyledText>
+			</Stack>
 		</StyledKeyContainer>
 	)
 }
@@ -70,11 +51,15 @@ const StyledKeyContainer = styled((props: StackProps) => (
 	return {
 		boxShadow:
 			theme.palette.mode === 'dark'
-				? '4px 3px 10px 2px rgba(92, 92, 92, 0.2)'
-				: '4px 3px 10px 3px rgba(0, 0, 0, 0.2)',
-		borderRadius: theme.shape.borderRadius,
+				? '2px 2px 8px 0px rgba(92, 92, 92, 0.2)'
+				: '2px 2px 8px 0px rgba(0, 0, 0, 0.2)',
+		borderRadius: '12px',
 		padding: '0.5rem 1rem',
 		background: theme.palette.background.paper,
+		':hover': {
+			background: `${theme.palette.background.paper}95`,
+		},
+		cursor: 'pointer',
 	}
 })
 

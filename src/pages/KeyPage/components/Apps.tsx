@@ -5,10 +5,10 @@ import { Box, Stack, Typography } from '@mui/material'
 import { FC } from 'react'
 import { StyledEmptyAppsBox } from '../styled'
 import { Button } from '@/shared/Button/Button'
-import { Link } from 'react-router-dom'
 import { call } from '@/utils/helpers'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { ItemApp } from './ItemApp'
 
 type AppsProps = {
 	apps: DbApp[]
@@ -19,14 +19,22 @@ type AppsProps = {
 export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
 	const notify = useEnqueueSnackbar()
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	async function deletePerm(id: string) {
 		call(async () => {
 			await swicCall('deletePerm', id)
 			notify('Perm deleted!', 'success')
 		})
 	}
+
 	return (
-		<Box>
+		<Box
+			flex={1}
+			marginBottom={'1rem'}
+			display={'flex'}
+			flexDirection={'column'}
+			overflow={'auto'}
+		>
 			<Stack
 				direction={'row'}
 				alignItems={'center'}
@@ -36,7 +44,6 @@ export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
 				<SectionTitle>Connected apps</SectionTitle>
 				<AppLink title='Discover Apps' />
 			</Stack>
-
 			{!apps.length && (
 				<StyledEmptyAppsBox>
 					<Typography
@@ -50,17 +57,14 @@ export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
 					<Button>Discover Nostr Apps</Button>
 				</StyledEmptyAppsBox>
 			)}
-			{apps.map((a) => (
-				<div key={a.npub} style={{ marginTop: '10px' }}>
-					<Typography
-						component={Link}
-						to={`/key/${npub}/app/${a.appNpub}`}
-						noWrap
-					>
-						App: {a.appNpub}
-					</Typography>
-					<SectionTitle>Permissions:</SectionTitle>
-					{!perms.filter((p) => p.appNpub === a.appNpub).length && (
+
+			<Stack gap={'0.5rem'} overflow={'auto'} flex={1}>
+				{apps.map((a) => (
+					<ItemApp {...a} key={a.appNpub} />
+				))}
+			</Stack>
+			{/* <SectionTitle>Permissions:</SectionTitle> */}
+			{/* {!perms.filter((p) => p.appNpub === a.appNpub).length && (
 						<Typography textAlign={'center'}>
 							No permissions
 						</Typography>
@@ -75,9 +79,7 @@ export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
 								</button>
 							</div>
 						))}
-					<hr />
-				</div>
-			))}
+					<hr /> */}
 		</Box>
 	)
 }

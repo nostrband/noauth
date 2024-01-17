@@ -40,7 +40,6 @@ const WelcomePage = () => {
 		try {
 			const npub = npubInputRef.current?.value
 			const passphrase = passwordInputRef.current?.value
-			console.log('fetch', npub, passphrase)
 			const k: any = await swicCall('fetchKey', npub, passphrase)
 			notify(`Fetched ${k.npub}`, 'success')
 		} catch (error: any) {

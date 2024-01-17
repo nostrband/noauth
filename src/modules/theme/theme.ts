@@ -3,10 +3,12 @@ import { createTheme, Theme } from '@mui/material'
 declare module '@mui/material/styles' {
 	interface Palette {
 		textSecondaryDecorate: Palette['primary']
+		backgroundSecondary: Palette['background']
 	}
 
 	interface PaletteOptions {
 		textSecondaryDecorate?: Palette['primary']
+		backgroundSecondary?: Palette['background']
 	}
 }
 
@@ -43,6 +45,10 @@ const lightTheme: Theme = createTheme({
 			default: '#f7f7f7',
 			paper: '#f7f7f7',
 		},
+		backgroundSecondary: {
+			default: '#E8E9EB',
+			paper: '#f7f7f7',
+		},
 		text: {
 			primary: '#000000',
 			secondary: '#ffffff',
@@ -71,6 +77,10 @@ const darkTheme: Theme = createTheme({
 		},
 		background: {
 			default: '#121212',
+			paper: '#28282B',
+		},
+		backgroundSecondary: {
+			default: '#0d0d0d',
 			paper: '#28282B',
 		},
 		text: {

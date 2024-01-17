@@ -33,7 +33,10 @@ export const StyledDialog = styled((props: DialogProps) => (
 		width: '100%',
 		borderTopLeftRadius: '2rem',
 		borderTopRightRadius: '2rem',
-		background: theme.palette.secondary.main,
+		background:
+			theme.palette.mode === 'light'
+				? '#fff'
+				: theme.palette.secondary.main,
 	},
 }))
 

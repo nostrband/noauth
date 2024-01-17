@@ -20,11 +20,6 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 function App() {
 	const [render, setRender] = useState(0)
 	const { handleOpen } = useModalSearchParams()
-	// const [keys, setKeys] = useState<DbKey[]>([])
-	// const [apps, setApps] = useState<DbApp[]>([])
-	// const [perms, setPerms] = useState<DbPerm[]>([])
-	// const [pending, setPending] = useState<DbPending[]>([])
-
 	const dispatch = useAppDispatch()
 
 	const load = async () => {
@@ -32,7 +27,15 @@ function App() {
 		dispatch(setKeys({ keys }))
 
 		const apps = await dbi.listApps()
-		dispatch(setApps({ apps }))
+		dispatch(
+			setApps({
+				apps: apps.map((app) => ({
+					...app,
+					// MOCK IMAGE
+					icon: 'https://nostr.band/android-chrome-192x192.png',
+				})),
+			}),
+		)
 
 		const perms = await dbi.listPerms()
 		dispatch(setPerms({ perms }))
@@ -62,39 +65,8 @@ function App() {
 			console.log('NDK connected')
 			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 		})
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line
 	}, [])
-
-	// async function askNotificationPermission() {
-	// 	return new Promise<void>((ok, rej) => {
-	// 		// Let's check if the browser supports notifications
-	// 		if (!('Notification' in window)) {
-	// 			log('This browser does not support notifications.')
-	// 			rej()
-	// 		} else {
-	// 			Notification.requestPermission().then(() => {
-	// 				log('notifications perm' + Notification.permission)
-	// 				if (Notification.permission === 'granted') ok()
-	// 				else rej()
-	// 			})
-	// 		}
-	// 	})
-	// }
-
-	// async function enableNotifications() {
-	// 	await askNotificationPermission()
-	// 	try {
-	// 		const r = await swicCall('enablePush')
-	// 		if (!r) {
-	// 			log(`Failed to enable push subscription`)
-	// 			return
-	// 		}
-
-	// 		log(`enabled!`)
-	// 	} catch (e) {
-	// 		log(`Error: ${e}`)
-	// 	}
-	// }
 
 	// subscribe to updates from the service worker
 	swicOnRender(() => {
@@ -111,45 +83,6 @@ function App() {
 			<ModalLogin />
 		</>
 	)
-
-	// return (
-	// 	<div>
-	// 		<div>
-	// 			<h4>Connected apps:</h4>
-	// 			{apps.map((a) => (
-	// 				<div key={a.npub} style={{ marginTop: '10px' }}>
-	// 					<div>
-	// 						{a.npub} =&gt; {a.appNpub}
-	// 						<button onClick={() => deleteApp(a.appNpub)}>
-	// 							x
-	// 						</button>
-	// 					</div>
-	// 					<h5>Perms:</h5>
-	// 					{perms
-	// 						.filter((p) => p.appNpub === a.appNpub)
-	// 						.map((p) => (
-	// 							<div key={p.id}>
-	// 								{p.perm}: {p.value}
-	// 								<button onClick={() => deletePerm(p.id)}>
-	// 									x
-	// 								</button>
-	// 							</div>
-	// 						))}
-	// 					<hr />
-	// 				</div>
-	// 			))}
-
-	// 			<div>
-	// 				<button onClick={enableNotifications}>
-	// 					enable background signing
-	// 				</button>
-	// 			</div>
-	// 			<div>
-	// 				<textarea id='log'></textarea>
-	// 			</div>
-	// 		</div>
-	// 	</div>
-	// )
 }
 
 export default App

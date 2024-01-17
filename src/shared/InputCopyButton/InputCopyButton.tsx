@@ -35,7 +35,7 @@ export const InputCopyButton: FC<InputCopyButtonProps> = ({ value }) => {
 						variant='body2'
 						color={'inherit'}
 					>
-						Copied!
+						Copied
 					</Typography>
 				</Fade>
 			)}

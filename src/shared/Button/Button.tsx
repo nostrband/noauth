@@ -5,15 +5,11 @@ import {
 } from '@mui/material'
 import { forwardRef } from 'react'
 
-// const BUTTON_VARIANTS = {
-// 	PRIMARY: 'primary',
-// 	SECONDARY: 'secondary',
-// 	TERTIARY: 'tertiary',
-// }
+export type AppButtonProps = MuiButtonProps & {
+	varianttype?: 'light' | 'default' | 'dark' | 'secondary'
+}
 
-type ButtonProps = MuiButtonProps
-
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, AppButtonProps>(
 	({ children, ...restProps }, ref) => {
 		return (
 			<StyledButton classes={{ root: 'button' }} {...restProps} ref={ref}>
@@ -24,16 +20,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 )
 
 const StyledButton = styled(
-	forwardRef<HTMLButtonElement, MuiButtonProps>((props, ref) => (
+	forwardRef<HTMLButtonElement, AppButtonProps>((props, ref) => (
 		<MuiButton ref={ref} {...props} />
 	)),
-)(({ theme }) => {
+)(({ theme, varianttype = 'default' }) => {
+	const commonStyles = {
+		fontWeight: 500,
+		borderRadius: '1rem',
+	}
+	if (varianttype === 'secondary') {
+		return {
+			...commonStyles,
+			'&.button:is(:hover, :active, &)': {
+				background: theme.palette.backgroundSecondary.default,
+			},
+			color: theme.palette.text.primary,
+		}
+	}
 	return {
+		...commonStyles,
 		'&.button:is(:hover, :active, &)': {
 			background: theme.palette.primary.main,
 		},
 		color: theme.palette.text.secondary,
-		fontWeight: 500,
-		borderRadius: '1rem',
 	}
 })
