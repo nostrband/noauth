@@ -1,14 +1,6 @@
 import { useOpenMenu } from '@/hooks/useOpenMenu'
 import { MenuButton } from './styled'
-import {
-	Divider,
-	Menu,
-	Stack,
-	MenuItem as MuiMenuItem,
-	Typography,
-	ListItemIcon,
-	Avatar,
-} from '@mui/material'
+import { Divider, Menu } from '@mui/material'
 import { MenuItem } from './MenuItem'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
@@ -18,10 +10,11 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { getShortenNpub } from '@/utils/helpers'
 import { setThemeMode } from '@/store/reducers/ui.slice'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
+import { ListProfiles } from './ListProfiles'
+import { DbKey } from '@/modules/db'
 
 export const ProfileMenu = () => {
 	const {
@@ -53,11 +46,9 @@ export const ProfileMenu = () => {
 		dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
 	}
 
-	const handleNavigateToKeyInnerPage = (npub: string) => {
-		return () => {
-			navigate('/key/' + npub)
-			handleClose()
-		}
+	const handleNavigateToKeyInnerPage = (key: DbKey) => {
+		navigate('/key/' + key.npub)
+		handleClose()
 	}
 
 	const themeIcon = isDarkMode ? (
@@ -82,29 +73,10 @@ export const ProfileMenu = () => {
 					zIndex: 1302,
 				}}
 			>
-				<Stack maxHeight={'10rem'} overflow={'auto'}>
-					{keys.map((key) => {
-						const userName = key.name || getShortenNpub(key.npub)
-						return (
-							<MuiMenuItem
-								sx={{ gap: '0.5rem' }}
-								onClick={handleNavigateToKeyInnerPage(key.npub)}
-								key={key.npub}
-							>
-								<ListItemIcon>
-									<Avatar
-										src={key.avatar || ''}
-										alt={userName}
-										sx={{ width: 36, height: 36 }}
-									/>
-								</ListItemIcon>
-								<Typography variant='body2' noWrap>
-									{userName}
-								</Typography>
-							</MuiMenuItem>
-						)
-					})}
-				</Stack>
+				<ListProfiles
+					keys={keys}
+					onClickItem={handleNavigateToKeyInnerPage}
+				/>
 				<Divider />
 				<MenuItem
 					Icon={<HomeRoundedIcon />}

@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes, Navigate } from 'react-router-dom'
 import HomePage from '../pages/HomePage/Home.Page'
-// import WelcomePage from '../pages/Welcome.Page'
+import WelcomePage from '../pages/Welcome.Page'
 import { Layout } from '../layout/Layout'
 import { CircularProgress, Stack } from '@mui/material'
 
@@ -22,7 +22,7 @@ const AppRoutes = () => {
 			<Routes>
 				<Route path='/' element={<Layout />}>
 					<Route path='/' element={<Navigate to={'/home'} />} />
-					{/* <Route path='/welcome' element={<WelcomePage />} /> */}
+					<Route path='/welcome' element={<WelcomePage />} />
 					<Route path='/home' element={<HomePage />} />
 					{/* <Route path='/sign-up' element={<AuthPage />} /> */}
 					<Route path='/key/:npub' element={<KeyPage />} />

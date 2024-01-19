@@ -14,7 +14,8 @@ import { useNavigate } from 'react-router-dom'
 
 type ItemKeyProps = DbKey
 
-export const ItemKey: FC<ItemKeyProps> = ({ npub, name = '', avatar = '' }) => {
+export const ItemKey: FC<ItemKeyProps> = (props) => {
+	const { npub, profile } = props
 	const navigate = useNavigate()
 
 	const passPhraseInputRef = useRef<HTMLInputElement | null>(null)
@@ -31,9 +32,9 @@ export const ItemKey: FC<ItemKeyProps> = ({ npub, name = '', avatar = '' }) => {
 	const handleNavigate = () => {
 		navigate('/key/' + npub)
 	}
-
+	const { name = '', picture = '' } = profile?.info || {}
 	const userName = name || getShortenNpub(npub)
-	const userAvatar = avatar || ''
+	const userAvatar = picture || ''
 
 	return (
 		<StyledKeyContainer onClick={handleNavigate}>

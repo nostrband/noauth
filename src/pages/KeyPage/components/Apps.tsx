@@ -1,4 +1,4 @@
-import { DbApp, DbPerm } from '@/modules/db'
+import { DbApp } from '@/modules/db'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { Box, Stack, Typography } from '@mui/material'
@@ -12,14 +12,13 @@ import { ItemApp } from './ItemApp'
 
 type AppsProps = {
 	apps: DbApp[]
-	perms: DbPerm[]
 	npub: string
 }
 
-export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
+export const Apps: FC<AppsProps> = ({ apps = [], npub = '' }) => {
 	const notify = useEnqueueSnackbar()
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	// eslint-disable-next-line
 	async function deletePerm(id: string) {
 		call(async () => {
 			await swicCall('deletePerm', id)
@@ -63,23 +62,6 @@ export const Apps: FC<AppsProps> = ({ apps = [], perms = [], npub = '' }) => {
 					<ItemApp {...a} key={a.appNpub} />
 				))}
 			</Stack>
-			{/* <SectionTitle>Permissions:</SectionTitle> */}
-			{/* {!perms.filter((p) => p.appNpub === a.appNpub).length && (
-						<Typography textAlign={'center'}>
-							No permissions
-						</Typography>
-					)}
-					{perms
-						.filter((p) => p.appNpub === a.appNpub)
-						.map((p) => (
-							<div key={p.id}>
-								{p.perm}: {p.value}
-								<button onClick={() => deletePerm(p.id)}>
-									x
-								</button>
-							</div>
-						))}
-					<hr /> */}
 		</Box>
 	)
 }

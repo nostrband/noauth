@@ -31,6 +31,7 @@
 		"react-scripts": "5.0.1",
 		"redux-persist": "^6.0.0",
 		"typescript": "^5.3.2",
+		"use-debounce": "^10.0.0",
 		"web-vitals": "^2.1.4",
 		"workbox-background-sync": "^6.6.0",
 		"workbox-broadcast-update": "^6.6.0",

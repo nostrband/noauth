@@ -1,14 +1,15 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getShortenNpub } from '@/utils/helpers'
+import { call, getShortenNpub } from '@/utils/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub } from '@/store'
+import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
+import { swicCall } from '@/modules/swic'
 
 enum ACTION_TYPE {
 	BASIC = 'Basic',
@@ -19,6 +20,7 @@ enum ACTION_TYPE {
 export const ModalConfirmConnect = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
+
 	const handleCloseModal = handleClose(
 		MODAL_PARAMS_KEYS.CONFIRM_CONNECT,
 		(sp) => {
@@ -32,14 +34,16 @@ export const ModalConfirmConnect = () => {
 
 	const { npub = '' } = useParams<{ npub: string }>()
 	const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
+	const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
 	const [searchParams] = useSearchParams()
 
 	const appNpub = searchParams.get('appNpub') || ''
+	const pendingReqId = searchParams.get('reqId') || ''
 
 	const triggerApp = apps.find((app) => app.appNpub === appNpub)
 
-	const open = Boolean(apps.length && triggerApp && isModalOpened)
+	const open = Boolean(isModalOpened)
 
 	const { name, icon = '' } = triggerApp || {}
 
@@ -47,6 +51,18 @@ export const ModalConfirmConnect = () => {
 
 	const handleActionTypeChange = (_: any, value: ACTION_TYPE) => {
 		setSelectedActionType(value)
+	}
+
+	async function confirmPending(
+		id: string,
+		allow: boolean,
+		remember: boolean,
+	) {
+		call(async () => {
+			await swicCall('confirm', id, allow, remember)
+			console.log('confirmed', id, allow, remember)
+		})
+		handleCloseModal()
 	}
 
 	return (
@@ -105,7 +121,10 @@ export const ModalConfirmConnect = () => {
 					>
 						Cancel
 					</StyledButton>
-					<StyledButton fullWidth onClick={handleCloseModal}>
+					<StyledButton
+						fullWidth
+						onClick={() => confirmPending(pendingReqId, true, true)}
+					>
 						Allow {selectedActionType} actions
 					</StyledButton>
 				</Stack>

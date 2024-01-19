@@ -1,5 +1,5 @@
 import { DbPending, dbi } from './modules/db'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { swicOnRender } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import {
@@ -9,7 +9,7 @@ import {
 	setPerms,
 } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
-import { ndk } from './modules/nostr'
+import { fetchProfile, ndk } from './modules/nostr'
 import { useModalSearchParams } from './hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from './types/modal'
 import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
@@ -22,9 +22,24 @@ function App() {
 	const { handleOpen } = useModalSearchParams()
 	const dispatch = useAppDispatch()
 
-	const load = async () => {
+	const [isConnected, setIsConnected] = useState(false)
+
+	const load = useCallback(async () => {
 		const keys = await dbi.listKeys()
-		dispatch(setKeys({ keys }))
+		console.log(keys, 'keys')
+
+		const newKeys = []
+
+		for (const key of keys) {
+			const response = await fetchProfile(key.npub)
+			if (!response) {
+				newKeys.push(key)
+			} else {
+				newKeys.push({ ...key, profile: response })
+			}
+		}
+
+		dispatch(setKeys({ keys: newKeys }))
 
 		const apps = await dbi.listApps()
 		dispatch(
@@ -48,21 +63,22 @@ function App() {
 		}
 
 		// @ts-ignore
-		setPending([...firstPending.values()])
-		dispatch(setPending({ pending }))
+		dispatch(setPending({ pending: [...firstPending.values()] }))
 
 		// rerender
 		setRender((r) => r + 1)
-	}
+	}, [dispatch])
 
 	useEffect(() => {
-		load()
-		// eslint-disable-next-line
-	}, [render])
+		if (isConnected) {
+			load()
+		}
+	}, [render, isConnected, load])
 
 	useEffect(() => {
 		ndk.connect().then(() => {
-			console.log('NDK connected')
+			console.log('NDK connected', { ndk })
+			setIsConnected(true)
 			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 		})
 		// eslint-disable-next-line

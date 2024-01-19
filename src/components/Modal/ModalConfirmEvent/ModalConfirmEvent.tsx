@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getShortenNpub } from '@/utils/helpers'
+import { call, getShortenNpub } from '@/utils/helpers'
 import {
 	Avatar,
 	Box,
@@ -24,7 +24,8 @@ import {
 	StyledToggleButtonsGroup,
 } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { DbPerm } from '@/modules/db'
+import { swicCall } from '@/modules/swic'
+import { IPendingsByAppNpub } from '@/pages/KeyPage/Key.Page'
 
 enum ACTION_TYPE {
 	ALWAYS = 'ALWAYS',
@@ -39,7 +40,7 @@ const ACTION_LABELS = {
 }
 
 type ModalConfirmEventProps = {
-	eventPerms: { [appNpub: string]: DbPerm[] }
+	confirmEventReqs: IPendingsByAppNpub
 }
 
 export const ACTIONS: { [type: string]: string } = {
@@ -48,7 +49,7 @@ export const ACTIONS: { [type: string]: string } = {
 }
 
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
-	eventPerms,
+	confirmEventReqs,
 }) => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
@@ -67,7 +68,9 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	const [searchParams] = useSearchParams()
 
 	const appNpub = searchParams.get('appNpub') || ''
-	const currentAppPerms = eventPerms[appNpub] || []
+	const pendingReqId = searchParams.get('reqId') || ''
+
+	const currentAppPendingReqs = confirmEventReqs[appNpub]?.pending || []
 
 	const triggerApp = apps.find((app) => app.appNpub === appNpub)
 
@@ -79,6 +82,21 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 
 	const handleActionTypeChange = (_: any, value: ACTION_TYPE) => {
 		setSelectedActionType(value)
+	}
+
+	async function confirmPending(
+		id: string,
+		allow: boolean,
+		remember: boolean,
+	) {
+		currentAppPendingReqs.forEach((req) => {
+			call(async () => {
+				await swicCall('confirm', req.id, allow, remember)
+				console.log('confirmed', req.id, id, allow, remember)
+			})
+		})
+
+		handleCloseModal()
 	}
 
 	return (
@@ -112,14 +130,14 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 				<StyledActionsListContainer marginBottom={'1rem'}>
 					<SectionTitle>Actions</SectionTitle>
 					<List>
-						{currentAppPerms.map((perm) => {
+						{currentAppPendingReqs.map((perm) => {
 							return (
 								<ListItem>
 									<ListItemIcon>
 										<Checkbox color='primary' />
 									</ListItemIcon>
 									<ListItemText>
-										{ACTIONS[perm.perm]}
+										{ACTIONS[perm.method]}
 									</ListItemText>
 								</ListItem>
 							)
@@ -153,7 +171,10 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 					>
 						Cancel
 					</StyledButton>
-					<StyledButton fullWidth onClick={handleCloseModal}>
+					<StyledButton
+						fullWidth
+						onClick={() => confirmPending(pendingReqId, true, true)}
+					>
 						Allow {ACTION_LABELS[selectedActionType]}
 					</StyledButton>
 				</Stack>

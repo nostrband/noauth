@@ -54,3 +54,10 @@ export const selectPermsByNpub = memoizeOne(
 	},
 	isDeepEqual,
 )
+
+export const selectPendingsByNpub = memoizeOne(
+	(state: RootState, npub: string) => {
+		return state.content.pending.filter((pending) => pending.npub === npub)
+	},
+	isDeepEqual,
+)

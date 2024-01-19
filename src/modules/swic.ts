@@ -14,8 +14,6 @@ export async function swicRegister() {
 		},
 		onError(e) {
 			console.log(`error ${e}`)
-
-			console.log(e, 'HISH')
 		},
 	})
 

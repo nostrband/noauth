@@ -5,7 +5,12 @@ import NDK, { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
 import { nip19 } from 'nostr-tools'
 
 export const ndk = new NDK({
-	explicitRelayUrls: ['wss://relay.nostr.band/all'],
+	explicitRelayUrls: [
+		'wss://relay.nostr.band/all',
+		'wss://relay.nostr.band',
+		'wss://relay.damus.io',
+		'wss://nos.lol',
+	],
 })
 
 export function nostrEvent(e: Required<NDKEvent>) {
@@ -72,7 +77,11 @@ export function parseProfileJson(e: NostrEvent): Meta {
 	return profile
 }
 
-export async function fetchProfile(pubkey: string): Promise<MetaEvent | null> {
+export async function fetchProfile(npub: string): Promise<MetaEvent | null> {
+	const npubToken = npub.includes('#') ? npub.split('#')[0] : npub
+	const { type, data: pubkey } = nip19.decode(npubToken)
+	if (type !== 'npub') return null
+
 	const event = await ndk.fetchEvent({ kinds: [0], authors: [pubkey] })
 
 	if (event) {

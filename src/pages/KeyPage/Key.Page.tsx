@@ -24,11 +24,23 @@ import { swicCall, swr } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
 import { ModalConfirmEvent } from '@/components/Modal/ModalConfirmEvent/ModalConfirmEvent'
-import { DbPerm } from '@/modules/db'
+import { DbPending } from '@/modules/db'
+
+export type IPendingsByAppNpub = {
+	[appNpub: string]: {
+		pending: DbPending[]
+		isConnected: boolean
+	}
+}
+
+type IShownConfirmModals = {
+	[reqId: string]: boolean
+}
 
 const KeyPage = () => {
-	const { apps, perms } = useAppSelector((state) => state.content)
+	const { apps, pending, perms } = useAppSelector((state) => state.content)
 	const { npub = '' } = useParams<{ npub: string }>()
+
 	const { handleOpen, getModalOpened } = useModalSearchParams()
 	const isConfirmConnectModalOpened = getModalOpened(
 		MODAL_PARAMS_KEYS.CONFIRM_CONNECT,
@@ -40,19 +52,38 @@ const KeyPage = () => {
 	const nofity = useEnqueueSnackbar()
 
 	const filteredApps = apps.filter((a) => a.npub === npub)
+	const filteredPendingReqs = pending.filter((p) => p.npub === npub)
 	const filteredPerms = perms.filter((p) => p.npub === npub)
-	const excludeConnectPerms = filteredPerms.filter(
-		(perm) => perm.perm !== 'connect',
+
+	// eslint-disable-next-line
+	const npubConnectPerms = filteredPerms.filter(
+		(perm) => perm.perm === 'connect',
 	)
-	const prepareEventPerms = excludeConnectPerms.reduce<{
-		[appNpub: string]: DbPerm[]
-	}>((acc: { [appNpub: string]: DbPerm[] }, current: DbPerm) => {
-		if (!acc[current.appNpub]) {
-			acc[current.appNpub] = []
-		}
-		acc[current.appNpub].push(current)
-		return acc
-	}, {})
+
+	console.log(npubConnectPerms, '=> npubConnectPerms')
+
+	const excludeConnectPeqs = filteredPendingReqs.filter(
+		(pr) => pr.method !== 'connect',
+	)
+
+	const prepareEventPendings = excludeConnectPeqs.reduce<IPendingsByAppNpub>(
+		(acc, current) => {
+			if (!acc[current.appNpub]) {
+				acc[current.appNpub] = {
+					pending: [current],
+					isConnected: npubConnectPerms.some(
+						(cp) => cp.appNpub === current.appNpub,
+					),
+				}
+			}
+			acc[current.appNpub].pending.push(current)
+			acc[current.appNpub].isConnected = npubConnectPerms.some(
+				(cp) => cp.appNpub === current.appNpub,
+			)
+			return acc
+		},
+		{},
+	)
 
 	const [profile, setProfile] = useState<MetaEvent | null>(null)
 	const [showWarning, setShowWarning] = useState(false)
@@ -117,13 +148,9 @@ const KeyPage = () => {
 		}
 	}
 
-	const shownConnectModals = useRef<{
-		[permId: string]: boolean
-	}>({})
+	const shownConnectModals = useRef<IShownConfirmModals>({})
 
-	const shownConfirmEventModals = useRef<{
-		[permId: string]: boolean
-	}>({})
+	const shownConfirmEventModals = useRef<IShownConfirmModals>({})
 
 	useEffect(() => {
 		return () => {
@@ -132,39 +159,52 @@ const KeyPage = () => {
 		}
 	}, [npub])
 
-	const connectPerms = filteredPerms.filter((perm) => perm.perm === 'connect')
+	const connectPendings = filteredPendingReqs.filter(
+		(pr) => pr.method === 'connect',
+	)
 
 	const handleOpenConfirmConnectModal = useCallback(() => {
-		if (!filteredPerms.length || isConfirmEventModalOpened) return undefined
+		if (
+			!filteredPendingReqs.length ||
+			isConfirmEventModalOpened ||
+			isConfirmConnectModalOpened
+		)
+			return undefined
 
-		for (let i = 0; i < connectPerms.length; i++) {
-			const perm = connectPerms[i]
-			if (shownConnectModals.current[perm.id]) {
+		for (let i = 0; i < connectPendings.length; i++) {
+			const req = connectPendings[i]
+			if (shownConnectModals.current[req.id]) {
 				continue
 			}
 
-			shownConnectModals.current[perm.id] = true
+			shownConnectModals.current[req.id] = true
 			handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
 				search: {
-					appNpub: perm.appNpub,
+					appNpub: req.appNpub,
+					reqId: req.id,
 				},
 			})
 			break
 		}
 	}, [
-		connectPerms,
-		filteredPerms.length,
+		connectPendings,
+		filteredPendingReqs.length,
 		handleOpen,
 		isConfirmEventModalOpened,
+		isConfirmConnectModalOpened,
 	])
 
-	useEffect(() => {
-		if (!filteredPerms.length || connectPerms.length) return undefined
+	const handleOpenConfirmEventModal = useCallback(() => {
+		if (!filteredPendingReqs.length || connectPendings.length)
+			return undefined
 
-		for (let i = 0; i < Object.keys(prepareEventPerms).length; i++) {
-			const appNpub = Object.keys(prepareEventPerms)[i]
+		for (let i = 0; i < Object.keys(prepareEventPendings).length; i++) {
+			const appNpub = Object.keys(prepareEventPendings)[i]
 
-			if (shownConfirmEventModals.current[appNpub]) {
+			if (
+				shownConfirmEventModals.current[appNpub] ||
+				!prepareEventPendings[appNpub].isConnected
+			) {
 				continue
 			}
 
@@ -177,12 +217,15 @@ const KeyPage = () => {
 			break
 		}
 	}, [
-		connectPerms.length,
-		filteredPerms.length,
+		connectPendings.length,
+		filteredPendingReqs.length,
 		handleOpen,
-		isConfirmConnectModalOpened,
-		prepareEventPerms,
+		prepareEventPendings,
 	])
+
+	useEffect(() => {
+		handleOpenConfirmEventModal()
+	}, [handleOpenConfirmEventModal])
 
 	useEffect(() => {
 		handleOpenConfirmConnectModal()
@@ -192,6 +235,7 @@ const KeyPage = () => {
 		title: string,
 		value: string,
 		explanationType: EXPLANATION_MODAL_KEYS,
+		copyValue: string,
 	) => {
 		return (
 			<Box>
@@ -212,7 +256,7 @@ const KeyPage = () => {
 				<StyledInput
 					value={value}
 					readOnly
-					endAdornment={<InputCopyButton value={value} />}
+					endAdornment={<InputCopyButton value={copyValue} />}
 				/>
 			</Box>
 		)
@@ -232,11 +276,13 @@ const KeyPage = () => {
 					'Your login',
 					userNameWithPrefix,
 					EXPLANATION_MODAL_KEYS.NPUB,
+					npub + '@nsec.app',
 				)}
 				{renderUserValueSection(
 					'Your NPUB',
 					npub,
 					EXPLANATION_MODAL_KEYS.NPUB,
+					npub,
 				)}
 
 				<Stack direction={'row'} gap={'0.75rem'}>
@@ -255,13 +301,13 @@ const KeyPage = () => {
 					</Badge>
 				</Stack>
 
-				<Apps apps={filteredApps} perms={filteredPerms} npub={npub} />
+				<Apps apps={filteredApps} npub={npub} />
 			</Stack>
 			<ModalConnectApp />
 			<ModalSettings />
 			<ModalExplanation />
 			<ModalConfirmConnect />
-			<ModalConfirmEvent eventPerms={prepareEventPerms} />
+			<ModalConfirmEvent confirmEventReqs={prepareEventPendings} />
 		</>
 	)
 }
