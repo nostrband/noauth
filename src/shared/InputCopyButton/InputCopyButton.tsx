@@ -6,12 +6,19 @@ import { StyledContainer } from './styled'
 
 type InputCopyButtonProps = {
 	value: string
+	onCopy?: () => void
 }
 
-export const InputCopyButton: FC<InputCopyButtonProps> = ({ value }) => {
+export const InputCopyButton: FC<InputCopyButtonProps> = ({
+	value,
+	onCopy = () => undefined,
+}) => {
 	const [isCopied, setIsCopied] = useState(false)
 
-	const handleCopy = () => setIsCopied(true)
+	const handleCopy = () => {
+		setIsCopied(true)
+		onCopy && onCopy()
+	}
 
 	useEffect(() => {
 		let timerId: any

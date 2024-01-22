@@ -5,7 +5,6 @@ import { call, getShortenNpub } from '@/utils/helpers'
 import {
 	Avatar,
 	Box,
-	Checkbox,
 	List,
 	ListItem,
 	ListItemIcon,
@@ -17,7 +16,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub } from '@/store'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
-import { FC, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import {
 	StyledActionsListContainer,
 	StyledButton,
@@ -26,6 +25,8 @@ import {
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { swicCall } from '@/modules/swic'
 import { IPendingsByAppNpub } from '@/pages/KeyPage/Key.Page'
+import { Checkbox } from '@/shared/Checkbox/Checkbox'
+import { DbPending } from '@/modules/db'
 
 enum ACTION_TYPE {
 	ALWAYS = 'ALWAYS',
@@ -48,59 +49,86 @@ export const ACTIONS: { [type: string]: string } = {
 	sign_event: 'Sign event',
 }
 
+type PendingRequest = DbPending & { checked: boolean }
+
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	confirmEventReqs,
 }) => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
-	const handleCloseModal = handleClose(
-		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
-		(sp) => sp.delete('appNpub'),
-	)
-
-	const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
-		ACTION_TYPE.ALWAYS,
-	)
-
-	const { npub = '' } = useParams<{ npub: string }>()
-	const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
-
 	const [searchParams] = useSearchParams()
 
 	const appNpub = searchParams.get('appNpub') || ''
 	const pendingReqId = searchParams.get('reqId') || ''
 
-	const currentAppPendingReqs = confirmEventReqs[appNpub]?.pending || []
+	const { npub = '' } = useParams<{ npub: string }>()
+	const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
+
+	const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
+		ACTION_TYPE.ALWAYS,
+	)
+	const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
+
+	const currentAppPendingReqs = useMemo(
+		() => confirmEventReqs[appNpub]?.pending || [],
+		[confirmEventReqs, appNpub],
+	)
+
+	useEffect(() => {
+		setPendingRequests(
+			currentAppPendingReqs.map((pr) => ({ ...pr, checked: true })),
+		)
+	}, [currentAppPendingReqs])
 
 	const triggerApp = apps.find((app) => app.appNpub === appNpub)
-
-	const open = Boolean(isModalOpened)
-
 	const { name, icon = '' } = triggerApp || {}
-
 	const appName = name || getShortenNpub(appNpub)
 
 	const handleActionTypeChange = (_: any, value: ACTION_TYPE) => {
 		setSelectedActionType(value)
 	}
 
-	async function confirmPending(
-		id: string,
-		allow: boolean,
-		remember: boolean,
-	) {
-		currentAppPendingReqs.forEach((req) => {
+	const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
+
+	const handleCloseModal = handleClose(
+		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
+		(sp) => {
+			sp.delete('appNpub')
+			sp.delete('reqId')
+			selectedPendingRequests.forEach(
+				async (req) => await swicCall('confirm', req.id, false, false),
+			)
+		},
+	)
+
+	async function confirmPending(id: string) {
+		selectedPendingRequests.forEach((req) => {
 			call(async () => {
-				await swicCall('confirm', req.id, allow, remember)
-				console.log('confirmed', req.id, id, allow, remember)
+				if (selectedActionType === ACTION_TYPE.ONCE) {
+					await swicCall('confirm', req.id, true, false)
+				} else {
+					await swicCall('confirm', req.id, true, true)
+				}
+				console.log('confirmed', req.id, id, selectedActionType)
 			})
 		})
 
-		handleCloseModal()
+		handleClose(MODAL_PARAMS_KEYS.CONFIRM_EVENT, (sp) => {
+			sp.delete('appNpub')
+			sp.delete('reqId')
+		})
+	}
+
+	const handleChangeCheckbox = (reqId: string) => () => {
+		const newPendingRequests = pendingRequests.map((req) => {
+			if (req.id === reqId) return { ...req, checked: !req.checked }
+			return req
+		})
+		setPendingRequests(newPendingRequests)
 	}
 
 	return (
-		<Modal open={open} onClose={handleCloseModal}>
+		<Modal open={isModalOpened} onClose={handleCloseModal}>
 			<Stack gap={'1rem'} paddingTop={'1rem'}>
 				<Stack
 					direction={'row'}
@@ -130,14 +158,19 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 				<StyledActionsListContainer marginBottom={'1rem'}>
 					<SectionTitle>Actions</SectionTitle>
 					<List>
-						{currentAppPendingReqs.map((perm) => {
+						{pendingRequests.map((req) => {
 							return (
 								<ListItem>
 									<ListItemIcon>
-										<Checkbox color='primary' />
+										<Checkbox
+											checked={req.checked}
+											onChange={handleChangeCheckbox(
+												req.id,
+											)}
+										/>
 									</ListItemIcon>
 									<ListItemText>
-										{ACTIONS[perm.method]}
+										{ACTIONS[req.method]}
 									</ListItemText>
 								</ListItem>
 							)
@@ -173,7 +206,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 					</StyledButton>
 					<StyledButton
 						fullWidth
-						onClick={() => confirmPending(pendingReqId, true, true)}
+						onClick={() => confirmPending(pendingReqId)}
 					>
 						Allow {ACTION_LABELS[selectedActionType]}
 					</StyledButton>

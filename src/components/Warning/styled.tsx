@@ -9,6 +9,7 @@ export const StyledContainer = styled((props: BoxProps) => <Box {...props} />)(
 			display: 'flex',
 			alignItems: 'center',
 			gap: '1rem',
+			cursor: 'pointer',
 		}
 	},
 )

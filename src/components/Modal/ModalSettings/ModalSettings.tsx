@@ -2,18 +2,19 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Button } from '@/shared/Button/Button'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Box, Checkbox, IconButton, Stack, Typography } from '@mui/material'
+import { Box, IconButton, Stack, Typography } from '@mui/material'
 import {
 	StyledButton,
 	StyledSettingContainer,
 	StyledSynchedText,
 } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { CheckedIcon, CheckmarkIcon, UnchekedIcon } from '@/assets'
+import { CheckmarkIcon } from '@/assets'
 import { Input } from '@/shared/Input/Input'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { ChangeEvent, useState } from 'react'
+import { Checkbox } from '@/shared/Checkbox/Checkbox'
 
 export const ModalSettings = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
@@ -62,10 +63,7 @@ export const ModalSettings = () => {
 						)}
 					</Stack>
 					<Box>
-						<Checkbox
-							icon={<UnchekedIcon />}
-							checkedIcon={<CheckedIcon />}
-						/>
+						<Checkbox />
 						<Typography variant='caption'>
 							Use this login on multiple devices
 						</Typography>

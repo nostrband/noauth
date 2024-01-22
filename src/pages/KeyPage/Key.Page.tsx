@@ -51,45 +51,41 @@ const KeyPage = () => {
 
 	const nofity = useEnqueueSnackbar()
 
+	const [profile, setProfile] = useState<MetaEvent | null>(null)
+	const userName = profile?.info?.name || getShortenNpub(npub)
+	const userNameWithPrefix = userName + '@nsec.app'
+
+	const [showWarning, setShowWarning] = useState(false)
+
 	const filteredApps = apps.filter((a) => a.npub === npub)
 	const filteredPendingReqs = pending.filter((p) => p.npub === npub)
 	const filteredPerms = perms.filter((p) => p.npub === npub)
 
-	// eslint-disable-next-line
 	const npubConnectPerms = filteredPerms.filter(
 		(perm) => perm.perm === 'connect',
 	)
-
-	console.log(npubConnectPerms, '=> npubConnectPerms')
-
 	const excludeConnectPeqs = filteredPendingReqs.filter(
 		(pr) => pr.method !== 'connect',
 	)
 
 	const prepareEventPendings = excludeConnectPeqs.reduce<IPendingsByAppNpub>(
 		(acc, current) => {
+			const isConnected = npubConnectPerms.some(
+				(cp) => cp.appNpub === current.appNpub,
+			)
 			if (!acc[current.appNpub]) {
 				acc[current.appNpub] = {
 					pending: [current],
-					isConnected: npubConnectPerms.some(
-						(cp) => cp.appNpub === current.appNpub,
-					),
+					isConnected,
 				}
+				return acc
 			}
 			acc[current.appNpub].pending.push(current)
-			acc[current.appNpub].isConnected = npubConnectPerms.some(
-				(cp) => cp.appNpub === current.appNpub,
-			)
+			acc[current.appNpub].isConnected = isConnected
 			return acc
 		},
 		{},
 	)
-
-	const [profile, setProfile] = useState<MetaEvent | null>(null)
-	const [showWarning, setShowWarning] = useState(false)
-
-	const userName = profile?.info?.name || getShortenNpub(npub)
-	const userNameWithPrefix = userName + '@nsec.app'
 
 	const load = useCallback(async () => {
 		try {
@@ -122,20 +118,17 @@ const KeyPage = () => {
 
 	const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
 
-	useEffect(() => {
-		const checkBackgroundSigning = async () => {
-			if (swr) {
-				const isBackgroundEnable =
-					await swr.pushManager.getSubscription()
-				if (!isBackgroundEnable) {
-					setShowWarning(true)
-				} else {
-					setShowWarning(false)
-				}
-			}
+	const checkBackgroundSigning = useCallback(async () => {
+		if (swr) {
+			const isBackgroundEnable = await swr.pushManager.getSubscription()
+			if (!isBackgroundEnable) setShowWarning(true)
+			else setShowWarning(false)
 		}
-		checkBackgroundSigning()
 	}, [])
+
+	useEffect(() => {
+		checkBackgroundSigning()
+	}, [checkBackgroundSigning])
 
 	const handleEnableBackground = async () => {
 		await askNotificationPermission()
@@ -143,6 +136,7 @@ const KeyPage = () => {
 			const r = await swicCall('enablePush')
 			if (!r) return nofity(`Failed to enable push subscription`, 'error')
 			nofity('Enabled!', 'success')
+			checkBackgroundSigning()
 		} catch (e) {
 			nofity(`Failed to enable push subscription`, 'error')
 		}
@@ -157,7 +151,7 @@ const KeyPage = () => {
 			shownConnectModals.current = {}
 			shownConfirmEventModals.current = {}
 		}
-	}, [npub])
+	}, [npub, pending.length])
 
 	const connectPendings = filteredPendingReqs.filter(
 		(pr) => pr.method === 'connect',

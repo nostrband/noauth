@@ -8,7 +8,6 @@ import { CircularProgress, Stack } from '@mui/material'
 const KeyPage = lazy(() => import('../pages/KeyPage/Key.Page'))
 const ConfirmPage = lazy(() => import('../pages/Confirm.Page'))
 const AppPage = lazy(() => import('../pages/App.Page'))
-// const AuthPage = lazy(() => import('../pages/AuthPage/Auth.Page'))
 
 const LoadingSpinner = () => (
 	<Stack height={'100%'} justifyContent={'center'} alignItems={'center'}>
@@ -24,7 +23,6 @@ const AppRoutes = () => {
 					<Route path='/' element={<Navigate to={'/home'} />} />
 					<Route path='/welcome' element={<WelcomePage />} />
 					<Route path='/home' element={<HomePage />} />
-					{/* <Route path='/sign-up' element={<AuthPage />} /> */}
 					<Route path='/key/:npub' element={<KeyPage />} />
 					<Route
 						path='/key/:npub/app/:appNpub'

@@ -8,12 +8,17 @@ import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers'
 import { Stack, Typography } from '@mui/material'
+import { useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
 export const ModalConnectApp = () => {
 	const { getModalOpened, handleClose, handleOpen } = useModalSearchParams()
+	const timerRef = useRef<NodeJS.Timeout>()
+
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.CONNECT_APP)
+	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.CONNECT_APP, () => {
+		clearTimeout(timerRef.current)
+	})
 
 	const notify = useEnqueueSnackbar()
 
@@ -37,6 +42,12 @@ export const ModalConnectApp = () => {
 		}
 	}
 
+	const handleCopy = () => {
+		timerRef.current = setTimeout(() => {
+			handleCloseModal()
+		}, 3000)
+	}
+
 	return (
 		<Modal
 			open={isModalOpened}
@@ -53,7 +64,12 @@ export const ModalConnectApp = () => {
 					}}
 					fullWidth
 					value={bunkerStr}
-					endAdornment={<InputCopyButton value={bunkerStr} />}
+					endAdornment={
+						<InputCopyButton
+							value={bunkerStr}
+							onCopy={handleCopy}
+						/>
+					}
 				/>
 				<AppLink
 					title='What is this?'
