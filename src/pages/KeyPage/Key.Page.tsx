@@ -49,10 +49,10 @@ const KeyPage = () => {
 		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
 	)
 
-	const nofity = useEnqueueSnackbar()
+	const notify = useEnqueueSnackbar()
 
 	const [profile, setProfile] = useState<MetaEvent | null>(null)
-	const userName = profile?.info?.name || getShortenNpub(npub)
+	const userName = profile?.info?.name || profile?.info?.display_name || getShortenNpub(npub)
 	const userNameWithPrefix = userName + '@nsec.app'
 
 	const [showWarning, setShowWarning] = useState(false)
@@ -91,17 +91,13 @@ const KeyPage = () => {
 
 	const load = useCallback(async () => {
 		try {
-			const npubToken = npub.includes('#') ? npub.split('#')[0] : npub
-			const { type, data: pubkey } = nip19.decode(npubToken)
-			if (type !== 'npub') return undefined
-
-			const response = await fetchProfile(pubkey)
+			const response = await fetchProfile(npub)
 			setProfile(response as any)
 		} catch (e) {
 			return undefined
 		}
 		// eslint-disable-next-line
-	}, [])
+	}, [npub])
 
 	useEffect(() => {
 		load()
@@ -137,12 +133,12 @@ const KeyPage = () => {
 			setIsLoading(true)
 			await askNotificationPermission()
 			const r = await swicCall('enablePush')
-			if (!r) return nofity(`Failed to enable push subscription`, 'error')
-			nofity('Enabled!', 'success')
+			if (!r) return notify(`Failed to enable push subscription`, 'error')
+			notify('Enabled!', 'success')
 			checkBackgroundSigning()
 			setIsLoading(false)
 		} catch (e) {
-			nofity(`Failed to enable push subscription`, 'error')
+			notify(`Failed to enable push subscription`, 'error')
 			setIsLoading(false)
 		}
 	}

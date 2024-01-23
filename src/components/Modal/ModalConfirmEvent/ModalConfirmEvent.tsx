@@ -112,11 +112,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	async function confirmPending() {
 		selectedPendingRequests.forEach((req) => {
 			call(async () => {
-				if (selectedActionType === ACTION_TYPE.ONCE) {
-					await swicCall('confirm', req.id, true, false)
-				} else {
-					await swicCall('confirm', req.id, true, true)
-				}
+				const remember = selectedActionType !== ACTION_TYPE.ONCE
+				await swicCall('confirm', req.id, true, remember)
 				console.log('confirmed', req.id, selectedActionType)
 			})
 		})
