@@ -36,8 +36,9 @@ export const ModalConfirmConnect = () => {
 	const { name, icon = '' } = triggerApp || {}
 	const appName = name || getShortenNpub(appNpub)
 
-	const handleActionTypeChange = (_: any, value: ACTION_TYPE) => {
-		setSelectedActionType(value)
+	const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
+		if (!value) return undefined
+		return setSelectedActionType(value)
 	}
 
 	const handleCloseModal = handleClose(
@@ -46,6 +47,13 @@ export const ModalConfirmConnect = () => {
 			sp.delete('appNpub')
 			sp.delete('reqId')
 			await swicCall('confirm', pendingReqId, false, false)
+		},
+	)
+	const closeModalAfterRequest = handleClose(
+		MODAL_PARAMS_KEYS.CONFIRM_CONNECT,
+		(sp) => {
+			sp.delete('appNpub')
+			sp.delete('reqId')
 		},
 	)
 
@@ -57,10 +65,7 @@ export const ModalConfirmConnect = () => {
 		call(async () => {
 			await swicCall('confirm', id, allow, remember)
 			console.log('confirmed', id, allow, remember)
-		})
-		handleClose(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, async (sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
+			closeModalAfterRequest()
 		})
 	}
 
@@ -122,9 +127,7 @@ export const ModalConfirmConnect = () => {
 					</StyledButton>
 					<StyledButton
 						fullWidth
-						onClick={() =>
-							confirmPending(pendingReqId, true, false)
-						}
+						onClick={() => confirmPending(pendingReqId, true, true)}
 					>
 						Allow {selectedActionType} actions
 					</StyledButton>

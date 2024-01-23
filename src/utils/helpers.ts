@@ -10,22 +10,9 @@ export async function call(cb: () => any) {
 	try {
 		return await cb()
 	} catch (e) {
-		log(`Error: ${e}`)
+		console.log(`Error: ${e}`)
 	}
 }
-
-// export const getDefaultUserName = (npub: string) => {
-// 	try {
-// 		const npubToken = npub.includes('#') ? npub.split('#')[0] : npub
-// 		const { type, data: pubkey } = nip19.decode(npubToken)
-// 		if (type !== 'npub') return ''
-
-// 		return getShortenNpub(nip19.npubEncode(pubkey))
-// 	} catch (error) {
-// 		console.error(error)
-// 		return ''
-// 	}
-// }
 
 export const getShortenNpub = (npub = '') => {
 	return npub.substring(0, 10) + '...' + npub.slice(-6)

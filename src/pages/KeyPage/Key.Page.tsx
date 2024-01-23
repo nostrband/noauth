@@ -5,7 +5,7 @@ import { askNotificationPermission, getShortenNpub } from '../../utils/helpers'
 import { useParams } from 'react-router-dom'
 import { fetchProfile } from '../../modules/nostr'
 import { nip19 } from 'nostr-tools'
-import { Badge, Box, Stack } from '@mui/material'
+import { Badge, Box, CircularProgress, Stack } from '@mui/material'
 import { StyledIconButton } from './styled'
 import { SettingsIcon, ShareIcon } from '@/assets'
 import { AppLink } from '@/shared/AppLink/AppLink'
@@ -56,6 +56,7 @@ const KeyPage = () => {
 	const userNameWithPrefix = userName + '@nsec.app'
 
 	const [showWarning, setShowWarning] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
 
 	const filteredApps = apps.filter((a) => a.npub === npub)
 	const filteredPendingReqs = pending.filter((p) => p.npub === npub)
@@ -64,12 +65,15 @@ const KeyPage = () => {
 	const npubConnectPerms = filteredPerms.filter(
 		(perm) => perm.perm === 'connect',
 	)
-	const excludeConnectPeqs = filteredPendingReqs.filter(
+	const excludeConnectPendings = filteredPendingReqs.filter(
 		(pr) => pr.method !== 'connect',
 	)
+	const connectPendings = filteredPendingReqs.filter(
+		(pr) => pr.method === 'connect',
+	)
 
-	const prepareEventPendings = excludeConnectPeqs.reduce<IPendingsByAppNpub>(
-		(acc, current) => {
+	const prepareEventPendings =
+		excludeConnectPendings.reduce<IPendingsByAppNpub>((acc, current) => {
 			const isConnected = npubConnectPerms.some(
 				(cp) => cp.appNpub === current.appNpub,
 			)
@@ -83,9 +87,7 @@ const KeyPage = () => {
 			acc[current.appNpub].pending.push(current)
 			acc[current.appNpub].isConnected = isConnected
 			return acc
-		},
-		{},
-	)
+		}, {})
 
 	const load = useCallback(async () => {
 		try {
@@ -131,14 +133,17 @@ const KeyPage = () => {
 	}, [checkBackgroundSigning])
 
 	const handleEnableBackground = async () => {
-		await askNotificationPermission()
 		try {
+			setIsLoading(true)
+			await askNotificationPermission()
 			const r = await swicCall('enablePush')
 			if (!r) return nofity(`Failed to enable push subscription`, 'error')
 			nofity('Enabled!', 'success')
 			checkBackgroundSigning()
+			setIsLoading(false)
 		} catch (e) {
 			nofity(`Failed to enable push subscription`, 'error')
+			setIsLoading(false)
 		}
 	}
 
@@ -152,10 +157,6 @@ const KeyPage = () => {
 			shownConfirmEventModals.current = {}
 		}
 	}, [npub, pending.length])
-
-	const connectPendings = filteredPendingReqs.filter(
-		(pr) => pr.method === 'connect',
-	)
 
 	const handleOpenConfirmConnectModal = useCallback(() => {
 		if (
@@ -261,9 +262,20 @@ const KeyPage = () => {
 			<Stack gap={'1rem'} height={'100%'}>
 				{showWarning && (
 					<Warning
-						message='Please enable push notifications'
+						message={
+							<Stack
+								direction={'row'}
+								alignItems={'center'}
+								gap={'1rem'}
+							>
+								Please enable push notifications{' '}
+								{isLoading ? (
+									<CircularProgress size={'1.5rem'} />
+								) : null}
+							</Stack>
+						}
 						Icon={<GppMaybeIcon htmlColor='white' />}
-						onClick={handleEnableBackground}
+						onClick={isLoading ? undefined : handleEnableBackground}
 					/>
 				)}
 				{renderUserValueSection(

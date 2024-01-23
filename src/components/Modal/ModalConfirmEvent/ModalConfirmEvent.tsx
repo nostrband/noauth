@@ -59,7 +59,6 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	const [searchParams] = useSearchParams()
 
 	const appNpub = searchParams.get('appNpub') || ''
-	const pendingReqId = searchParams.get('reqId') || ''
 
 	const { npub = '' } = useParams<{ npub: string }>()
 	const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
@@ -84,8 +83,9 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	const { name, icon = '' } = triggerApp || {}
 	const appName = name || getShortenNpub(appNpub)
 
-	const handleActionTypeChange = (_: any, value: ACTION_TYPE) => {
-		setSelectedActionType(value)
+	const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
+		if (!value) return undefined
+		return setSelectedActionType(value)
 	}
 
 	const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
@@ -101,7 +101,15 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 		},
 	)
 
-	async function confirmPending(id: string) {
+	const closeModalAfterRequest = handleClose(
+		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
+		(sp) => {
+			sp.delete('appNpub')
+			sp.delete('reqId')
+		},
+	)
+
+	async function confirmPending() {
 		selectedPendingRequests.forEach((req) => {
 			call(async () => {
 				if (selectedActionType === ACTION_TYPE.ONCE) {
@@ -109,14 +117,10 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 				} else {
 					await swicCall('confirm', req.id, true, true)
 				}
-				console.log('confirmed', req.id, id, selectedActionType)
+				console.log('confirmed', req.id, selectedActionType)
 			})
 		})
-
-		handleClose(MODAL_PARAMS_KEYS.CONFIRM_EVENT, (sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-		})
+		closeModalAfterRequest()
 	}
 
 	const handleChangeCheckbox = (reqId: string) => () => {
@@ -204,10 +208,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 					>
 						Cancel
 					</StyledButton>
-					<StyledButton
-						fullWidth
-						onClick={() => confirmPending(pendingReqId)}
-					>
+					<StyledButton fullWidth onClick={confirmPending}>
 						Allow {ACTION_LABELS[selectedActionType]}
 					</StyledButton>
 				</Stack>

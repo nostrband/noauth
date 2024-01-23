@@ -70,6 +70,7 @@ function App() {
 	}, [dispatch])
 
 	useEffect(() => {
+		console.log('NDK is ' + isConnected)
 		if (isConnected) {
 			load()
 		}

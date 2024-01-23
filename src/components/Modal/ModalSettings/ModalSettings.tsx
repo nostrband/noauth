@@ -86,6 +86,7 @@ export const ModalSettings = () => {
 						onChange={handlePasswordChange}
 						value={enteredPassword}
 						helperText={isPasswordInvalid ? 'Invalid password' : ''}
+						placeholder='Enter a password'
 						helperTextProps={{
 							sx: {
 								'&.helper_text': {

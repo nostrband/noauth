@@ -60,7 +60,7 @@ export async function swicCall(method: string, ...args: any[]) {
 			method,
 			args: [...args],
 		}
-		//console.log("sending to SW", msg)
+		console.log('sending to SW', msg)
 		swr.active.postMessage(msg)
 	})
 }
