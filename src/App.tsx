@@ -1,4 +1,4 @@
-import { DbPending, dbi } from './modules/db'
+import { DbKey, DbPending, dbi } from './modules/db'
 import { useCallback, useEffect, useState } from 'react'
 import { swicOnRender } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
@@ -25,7 +25,7 @@ function App() {
 	const [isConnected, setIsConnected] = useState(false)
 
 	const load = useCallback(async () => {
-		const keys = await dbi.listKeys()
+		const keys: DbKey[] = await dbi.listKeys()
 		console.log(keys, 'keys')
 
 		const newKeys = []
@@ -66,11 +66,15 @@ function App() {
 		dispatch(setPending({ pending: [...firstPending.values()] }))
 
 		// rerender
-		setRender((r) => r + 1)
+//		setRender((r) => r + 1)
+
+		if (!newKeys.length)
+			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
+
 	}, [dispatch])
 
 	useEffect(() => {
-		console.log('NDK is ' + isConnected)
+		console.log('NDK is connected', isConnected)
 		if (isConnected) {
 			load()
 		}
@@ -80,7 +84,6 @@ function App() {
 		ndk.connect().then(() => {
 			console.log('NDK connected', { ndk })
 			setIsConnected(true)
-			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 		})
 		// eslint-disable-next-line
 	}, [])
