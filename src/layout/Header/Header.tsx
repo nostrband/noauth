@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { MetaEvent } from '@/types/meta-event'
 import { fetchProfile } from '@/modules/nostr'
 import { ProfileMenu } from './components/ProfileMenu'
-import { getShortenNpub } from '@/utils/helpers'
+import { getShortenNpub } from '@/utils/helpers/helpers'
 
 export const Header = () => {
 	const { npub = '' } = useParams<{ npub: string }>()

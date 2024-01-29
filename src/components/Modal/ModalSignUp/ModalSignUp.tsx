@@ -8,15 +8,17 @@ import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import { CheckmarkIcon } from '@/assets'
+import { swicCall } from '@/modules/swic'
+import { useNavigate } from 'react-router-dom'
 
 export const ModalSignUp = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SIGN_UP)
 	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.SIGN_UP)
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const notify = useEnqueueSnackbar()
 	const theme = useTheme()
+
+	const navigate = useNavigate()
 
 	const [enteredValue, setEnteredValue] = useState('')
 
@@ -36,6 +38,13 @@ export const ModalSignUp = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		try {
+			const k: any = await swicCall('generateKey')
+			notify(`New key ${k.npub}`, 'success')
+			navigate(`/key/${k.npub}`)
+		} catch (error: any) {
+			notify(error.message, 'error')
+		}
 	}
 
 	return (
@@ -77,7 +86,9 @@ export const ModalSignUp = () => {
 						},
 					}}
 				/>
-				<Button fullWidth>Sign up</Button>
+				<Button fullWidth type='submit'>
+					Sign up
+				</Button>
 			</Stack>
 		</Modal>
 	)

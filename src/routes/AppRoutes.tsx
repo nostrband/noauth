@@ -7,7 +7,7 @@ import { CircularProgress, Stack } from '@mui/material'
 
 const KeyPage = lazy(() => import('../pages/KeyPage/Key.Page'))
 const ConfirmPage = lazy(() => import('../pages/Confirm.Page'))
-const AppPage = lazy(() => import('../pages/App.Page'))
+const AppPage = lazy(() => import('../pages/AppPage/App.Page'))
 
 const LoadingSpinner = () => (
 	<Stack height={'100%'} justifyContent={'center'} alignItems={'center'}>

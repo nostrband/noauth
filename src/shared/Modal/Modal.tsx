@@ -1,9 +1,17 @@
-import { DialogProps, Slide } from '@mui/material'
+import { DialogProps, IconButton, Slide } from '@mui/material'
 import { TransitionProps } from '@mui/material/transitions'
 import { FC, forwardRef } from 'react'
-import { StyledDialog, StyledDialogContent, StyledDialogTitle } from './styled'
+import {
+	StyledCloseButtonWrapper,
+	StyledDialog,
+	StyledDialogContent,
+	StyledDialogTitle,
+} from './styled'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 
-type ModalProps = DialogProps
+type ModalProps = DialogProps & {
+	withCloseButton?: boolean
+}
 
 const Transition = forwardRef(function Transition(
 	props: TransitionProps & {
@@ -14,9 +22,29 @@ const Transition = forwardRef(function Transition(
 	return <Slide direction='up' ref={ref} {...props} />
 })
 
-export const Modal: FC<ModalProps> = ({ children, title, ...props }) => {
+export const Modal: FC<ModalProps> = ({
+	children,
+	title,
+	onClose,
+	withCloseButton = true,
+	...props
+}) => {
 	return (
-		<StyledDialog {...props} TransitionComponent={Transition}>
+		<StyledDialog
+			{...props}
+			onClose={onClose}
+			TransitionComponent={Transition}
+		>
+			{withCloseButton && (
+				<StyledCloseButtonWrapper>
+					<IconButton
+						onClick={() => onClose && onClose({}, 'backdropClick')}
+						className='close_btn'
+					>
+						<CloseRoundedIcon />
+					</IconButton>
+				</StyledCloseButtonWrapper>
+			)}
 			{title && <StyledDialogTitle>{title}</StyledDialogTitle>}
 			<StyledDialogContent>{children}</StyledDialogContent>
 		</StyledDialog>

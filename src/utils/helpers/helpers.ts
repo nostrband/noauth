@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools'
-import { NIP46_RELAYS } from './consts'
+import { NIP46_RELAYS } from '../consts'
 
 export async function log(s: string) {
 	const log = document.getElementById('log')

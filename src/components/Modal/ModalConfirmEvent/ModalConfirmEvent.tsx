@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getShortenNpub } from '@/utils/helpers'
+import { call, getShortenNpub } from '@/utils/helpers/helpers'
 import {
 	Avatar,
 	Box,
@@ -47,6 +47,7 @@ type ModalConfirmEventProps = {
 export const ACTIONS: { [type: string]: string } = {
 	get_public_key: 'Get public key',
 	sign_event: 'Sign event',
+	connect: 'Connect',
 }
 
 type PendingRequest = DbPending & { checked: boolean }
