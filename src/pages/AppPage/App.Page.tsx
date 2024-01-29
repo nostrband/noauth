@@ -5,14 +5,13 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppByAppNpub, selectPermsByNpubAndAppNpub } from '@/store'
 import { Navigate } from 'react-router-dom'
 import { formatTimestampDate } from '@/utils/helpers/date'
-import { Avatar, Box, IconButton, Stack, Typography } from '@mui/material'
+import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { getShortenNpub } from '@/utils/helpers/helpers'
-import { StyledButton } from './styled'
+import { PermissionMenuButton } from './styled'
 import { PermissionsMenu } from './components/PermissionsMenu'
 import { useOpenMenu } from '@/hooks/useOpenMenu'
-import { ACTIONS } from '@/components/Modal/ModalConfirmEvent/ModalConfirmEvent'
-import MoreIcon from '@mui/icons-material/MoreVert'
+import { ActivityList } from './components/ActivityList'
 
 const getAppHistoryQuery = (appNpub: string) =>
 	db.history.where('appNpub').equals(appNpub).toArray()
@@ -77,9 +76,9 @@ const AppPage = () => {
 
 			<Box marginBottom={'1rem'}>
 				<SectionTitle marginBottom={'0.5rem'}>Permissions</SectionTitle>
-				<StyledButton onClick={handleOpen}>
+				<PermissionMenuButton onClick={handleOpen}>
 					Basic/Advanced/Custom {perms.length}
-				</StyledButton>
+				</PermissionMenuButton>
 				<PermissionsMenu
 					open={open}
 					anchorEl={anchorEl}
@@ -88,43 +87,7 @@ const AppPage = () => {
 				/>
 			</Box>
 
-			<SectionTitle marginBottom={'0.5rem'}>Activity</SectionTitle>
-			<Box
-				flex={1}
-				overflow={'auto'}
-				display={'flex'}
-				flexDirection={'column'}
-				gap={'0.5rem'}
-			>
-				{history.map((h) => {
-					return (
-						<Stack>
-							<Box
-								width={'100%'}
-								display={'flex'}
-								gap={'0.5rem'}
-								alignItems={'center'}
-							>
-								<Typography flex={1} fontWeight={700}>
-									{ACTIONS[h.method] || h.method}
-								</Typography>
-								<Typography
-									textTransform={'capitalize'}
-									variant='body2'
-								>
-									{h.allowed ? 'allow' : 'disallow'}
-								</Typography>
-								<IconButton>
-									<MoreIcon />
-								</IconButton>
-							</Box>
-							<Typography variant='caption'>
-								{formatTimestampDate(h.timestamp)}
-							</Typography>
-						</Stack>
-					)
-				})}
-			</Box>
+			<ActivityList history={history} />
 		</Stack>
 	)
 }

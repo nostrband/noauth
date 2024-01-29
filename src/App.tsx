@@ -28,18 +28,24 @@ function App() {
 		const keys: DbKey[] = await dbi.listKeys()
 		console.log(keys, 'keys')
 
-		const newKeys = []
+		dispatch(setKeys({ keys }))
+		const loadProfiles = async () => {
+			const newKeys = []
 
-		for (const key of keys) {
-			const response = await fetchProfile(key.npub)
-			if (!response) {
-				newKeys.push(key)
-			} else {
-				newKeys.push({ ...key, profile: response })
+			for (const key of keys) {
+				// make it async
+				const response = await fetchProfile(key.npub)
+				if (!response) {
+					newKeys.push(key)
+				} else {
+					newKeys.push({ ...key, profile: response })
+				}
 			}
-		}
 
-		dispatch(setKeys({ keys: newKeys }))
+			dispatch(setKeys({ keys: newKeys }))
+		}
+		// async load to avoid blocking main code below
+		loadProfiles()
 
 		const apps = await dbi.listApps()
 		dispatch(
@@ -56,19 +62,12 @@ function App() {
 		dispatch(setPerms({ perms }))
 
 		const pending = await dbi.listPending()
-		const firstPending = new Map<string, DbPending>()
-		for (const p of pending) {
-			if (firstPending.get(p.appNpub)) continue
-			firstPending.set(p.appNpub, p)
-		}
-
-		// @ts-ignore
-		dispatch(setPending({ pending: [...firstPending.values()] }))
+		dispatch(setPending({ pending }))
 
 		// rerender
 //		setRender((r) => r + 1)
 
-		if (!newKeys.length)
+		if (!keys.length)
 			handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 
 	}, [dispatch])

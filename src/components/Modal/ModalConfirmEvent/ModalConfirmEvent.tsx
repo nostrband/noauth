@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getShortenNpub } from '@/utils/helpers/helpers'
+import { call, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
 import {
 	Avatar,
 	Box,
@@ -48,6 +48,8 @@ export const ACTIONS: { [type: string]: string } = {
 	get_public_key: 'Get public key',
 	sign_event: 'Sign event',
 	connect: 'Connect',
+	nip04_encrypt: 'Encrypt message',
+	nip04_decrypt: 'Decrypt message',
 }
 
 type PendingRequest = DbPending & { checked: boolean }
@@ -110,12 +112,12 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 		},
 	)
 
-	async function confirmPending() {
+	async function confirmPending(allow: boolean) {
 		selectedPendingRequests.forEach((req) => {
 			call(async () => {
 				const remember = selectedActionType !== ACTION_TYPE.ONCE
-				await swicCall('confirm', req.id, true, remember)
-				console.log('confirmed', req.id, selectedActionType)
+				await swicCall('confirm', req.id, allow, remember)
+				console.log('confirmed', req.id, selectedActionType, allow)
 			})
 		})
 		closeModalAfterRequest()
@@ -127,6 +129,15 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 			return req
 		})
 		setPendingRequests(newPendingRequests)
+	}
+
+	const getAction = (req: PendingRequest) => {
+		const action = ACTIONS[req.method]
+		if (req.method === 'sign_event') {
+			const kind = getSignReqKind(req)
+			if (kind !== undefined) return `${action} of kind ${kind}`
+		}
+		return action
 	}
 
 	return (
@@ -172,7 +183,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 										/>
 									</ListItemIcon>
 									<ListItemText>
-										{ACTIONS[req.method]}
+										{getAction(req)}
 									</ListItemText>
 								</ListItem>
 							)
@@ -192,21 +203,21 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 						value={ACTION_TYPE.ONCE}
 						title='Just once'
 					/>
-					<ActionToggleButton
+					{/* <ActionToggleButton
 						value={ACTION_TYPE.ALLOW_ALL}
 						title='Allow All Advanced Actions'
 						hasinfo
-					/>
+					/> */}
 				</StyledToggleButtonsGroup>
 
 				<Stack direction={'row'} gap={'1rem'}>
 					<StyledButton
-						onClick={handleCloseModal}
+						onClick={() => confirmPending(false)}
 						varianttype='secondary'
 					>
-						Cancel
+						Disallow {ACTION_LABELS[selectedActionType]}
 					</StyledButton>
-					<StyledButton fullWidth onClick={confirmPending}>
+					<StyledButton onClick={() => confirmPending(true)}>
 						Allow {ACTION_LABELS[selectedActionType]}
 					</StyledButton>
 				</Stack>

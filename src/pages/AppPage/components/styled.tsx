@@ -1,3 +1,4 @@
+import { Button } from '@/shared/Button/Button'
 import { MenuItem, MenuItemProps, styled } from '@mui/material'
 
 export const StyledMenuItem = styled((props: MenuItemProps) => (
@@ -11,3 +12,7 @@ export const StyledMenuItem = styled((props: MenuItemProps) => (
 		borderTop: '1px solid ' + theme.palette.secondary.main,
 	},
 }))
+
+export const StyledButton = styled(Button)({
+	textTransform: 'capitalize',
+})
