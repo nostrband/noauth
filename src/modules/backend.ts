@@ -440,7 +440,7 @@ export class NoauthBackend {
 	}
 
 	private getPerm(req: DbPending): string {
-		const perm = getReqPerm(req)
+		const reqPerm = getReqPerm(req)
 		const appPerms = this.perms.filter(
 			(p) =>
 				p.npub === req.npub &&
@@ -448,13 +448,13 @@ export class NoauthBackend {
 		)
 
 		// exact match first
-		let p = appPerms.find((p) => p.perm === perm)
+		let perm = appPerms.find((p) => p.perm === reqPerm)
 		// non-exact next
-		if (!p)
-			p = appPerms.find((p) => isPackagePerm(p.perm, perm))
+		if (!perm)
+			perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
 
-		console.log("req", req, "perm", perm, "value", p);
-		return p?.value || ''
+		console.log("req", req, "perm", reqPerm, "value", perm, appPerms);
+		return perm?.value || ''
 	}
 
 	private async allowPermitCallback({

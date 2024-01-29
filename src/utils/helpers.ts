@@ -59,8 +59,9 @@ export function getReqPerm(req: DbPending): string {
 }
 
 export function isPackagePerm(perm: string, reqPerm: string) {
-	if (perm === ACTION_TYPE.BASIC.toLowerCase()) {
+	if (perm === ACTION_TYPE.BASIC) {
 		switch (reqPerm) {
+			case 'connect':
 			case 'get_public_key':
 			case 'nip04_decrypt':
 			case 'nip04_encrypt':

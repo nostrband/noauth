@@ -65,7 +65,7 @@ const KeyPage = () => {
 
 	const npubConnectPerms = filteredPerms.filter(
 		(perm) => perm.perm === 'connect'
-			 || perm.perm === ACTION_TYPE.BASIC.toLowerCase(),
+			 || perm.perm === ACTION_TYPE.BASIC,
 	)
 	const excludeConnectPendings = filteredPendingReqs.filter(
 		(pr) => pr.method !== 'connect',

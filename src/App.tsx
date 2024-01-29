@@ -62,15 +62,7 @@ function App() {
 		dispatch(setPerms({ perms }))
 
 		const pending = await dbi.listPending()
-		const firstPending = new Map<string, DbPending>()
-		for (const p of pending) {
-			if (firstPending.get(p.appNpub)) continue
-			firstPending.set(p.appNpub, p)
-		}
-//		console.log({ pending, firstPending })
-
-		// @ts-ignore
-		dispatch(setPending({ pending: [...firstPending.values()] }))
+		dispatch(setPending({ pending }))
 
 		// rerender
 //		setRender((r) => r + 1)
