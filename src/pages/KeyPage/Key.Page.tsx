@@ -25,6 +25,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
 import { ModalConfirmEvent } from '@/components/Modal/ModalConfirmEvent/ModalConfirmEvent'
 import { DbPending } from '@/modules/db'
+import { ACTION_TYPE } from '@/utils/consts'
 
 export type IPendingsByAppNpub = {
 	[appNpub: string]: {
@@ -63,7 +64,8 @@ const KeyPage = () => {
 	const filteredPerms = perms.filter((p) => p.npub === npub)
 
 	const npubConnectPerms = filteredPerms.filter(
-		(perm) => perm.perm === 'connect',
+		(perm) => perm.perm === 'connect'
+			 || perm.perm === ACTION_TYPE.BASIC.toLowerCase(),
 	)
 	const excludeConnectPendings = filteredPendingReqs.filter(
 		(pr) => pr.method !== 'connect',
@@ -88,6 +90,14 @@ const KeyPage = () => {
 			acc[current.appNpub].isConnected = isConnected
 			return acc
 		}, {})
+	// console.log({ 
+	// 	pending,
+	// 	filteredPerms,
+	// 	npubConnectPerms, 
+	// 	excludeConnectPendings, 
+	// 	connectPendings, 
+	// 	prepareEventPendings
+	// });
 
 	const load = useCallback(async () => {
 		try {

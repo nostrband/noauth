@@ -10,12 +10,8 @@ import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
 import { swicCall } from '@/modules/swic'
+import { ACTION_TYPE } from '@/utils/consts'
 
-enum ACTION_TYPE {
-	BASIC = 'Basic',
-	ADVANCED = 'Advanced',
-	CUSTOM = 'Custom',
-}
 
 export const ModalConfirmConnect = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
@@ -61,12 +57,20 @@ export const ModalConfirmConnect = () => {
 		id: string,
 		allow: boolean,
 		remember: boolean,
+		options?: any
 	) {
 		call(async () => {
-			await swicCall('confirm', id, allow, remember)
-			console.log('confirmed', id, allow, remember)
+			await swicCall('confirm', id, allow, remember, options)
+			console.log('confirmed', id, allow, remember, options)
 			closeModalAfterRequest()
 		})
+	}
+
+	const allow = () => {
+		const options: any = {};
+		if (selectedActionType === ACTION_TYPE.BASIC)
+			options.perm = ACTION_TYPE.BASIC;
+		confirmPending(pendingReqId, true, true, options)
 	}
 
 	return (
@@ -102,34 +106,35 @@ export const ModalConfirmConnect = () => {
 				>
 					<ActionToggleButton
 						value={ACTION_TYPE.BASIC}
-						title='Basic'
-						description='Use this for most apps'
-						hasinfo
+						title='Basic permissions'
+						description='Read your public key, sign notes and reactions'
+						// hasinfo
 					/>
-					<ActionToggleButton
+					{/* <ActionToggleButton
 						value={ACTION_TYPE.ADVANCED}
 						title='Advanced'
 						description='Use for trusted apps only'
 						hasinfo
-					/>
+					/> */}
 					<ActionToggleButton
 						value={ACTION_TYPE.CUSTOM}
-						title='Custom'
-						description='Gives you full control'
+						title='On demand'
+						description='Assign permissions when the app asks for them'
 					/>
 				</StyledToggleButtonsGroup>
 				<Stack direction={'row'} gap={'1rem'}>
 					<StyledButton
-						onClick={handleCloseModal}
+						onClick={() => confirmPending(pendingReqId, false, true)}
 						varianttype='secondary'
 					>
-						Cancel
+						Disallow
 					</StyledButton>
 					<StyledButton
 						fullWidth
-						onClick={() => confirmPending(pendingReqId, true, true)}
+						onClick={allow}
 					>
-						Allow {selectedActionType} actions
+						{/* Allow {selectedActionType} actions */}
+						Connect
 					</StyledButton>
 				</Stack>
 			</Stack>

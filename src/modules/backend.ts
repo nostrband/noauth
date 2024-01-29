@@ -10,6 +10,7 @@ import NDK, {
 } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from '../utils/consts'
 import { Nip04 } from './nip04'
+import { getReqPerm, isPackagePerm } from '@/utils/helpers'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -30,7 +31,7 @@ interface Key {
 
 interface Pending {
 	req: DbPending
-	cb: (allow: boolean, remember: boolean) => void
+	cb: (allow: boolean, remember: boolean, options?: any) => void
 }
 
 interface IAllowCallbackParams {
@@ -137,6 +138,7 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
 		})
 	}
 }
+
 
 export class NoauthBackend {
 	readonly swg: ServiceWorkerGlobalScope
@@ -438,14 +440,21 @@ export class NoauthBackend {
 	}
 
 	private getPerm(req: DbPending): string {
-		return (
-			this.perms.find(
-				(p) =>
-					p.npub === req.npub &&
-					p.appNpub === req.appNpub &&
-					p.perm === req.method,
-			)?.value || ''
+		const perm = getReqPerm(req)
+		const appPerms = this.perms.filter(
+			(p) =>
+				p.npub === req.npub &&
+				p.appNpub === req.appNpub
 		)
+
+		// exact match first
+		let p = appPerms.find((p) => p.perm === perm)
+		// non-exact next
+		if (!p)
+			p = appPerms.find((p) => isPackagePerm(p.perm, perm))
+
+		console.log("req", req, "perm", perm, "value", p);
+		return p?.value || ''
 	}
 
 	private async allowPermitCallback({
@@ -479,6 +488,7 @@ export class NoauthBackend {
 				manual: boolean,
 				allow: boolean,
 				remember: boolean,
+				options?: any
 			) => {
 				// confirm
 				console.log(
@@ -486,20 +496,24 @@ export class NoauthBackend {
 					allow ? 'allowed' : 'disallowed',
 					npub,
 					method,
+					options,
 					params,
 				)
 				if (manual) {
 					await dbi.confirmPending(id, allow)
 
-					if (!(await dbi.getApp(req.appNpub))) {
-						await dbi.addApp({
-							appNpub: req.appNpub,
-							npub: req.npub,
-							timestamp: Date.now(),
-							name: '',
-							icon: '',
-							url: '',
-						})
+					if (!(method === 'connect' && !allow)) {
+						// only add app if it's not 'disallow connect'
+						if (!(await dbi.getApp(req.appNpub))) {
+							await dbi.addApp({
+								appNpub: req.appNpub,
+								npub: req.npub,
+								timestamp: Date.now(),
+								name: '',
+								icon: '',
+								url: '',
+							})
+						}
 					}
 				} else {
 					// just send to db w/o waiting for it
@@ -520,11 +534,16 @@ export class NoauthBackend {
 				if (index >= 0) self.confirmBuffer.splice(index, 1)
 
 				if (remember) {
+
+					let perm = getReqPerm(req)
+					if (allow && options && options.perm)
+						perm = options.perm
+
 					await dbi.addPerm({
 						id: req.id,
 						npub: req.npub,
 						appNpub: req.appNpub,
-						perm: method,
+						perm,
 						value: allow ? '1' : '0',
 						timestamp: Date.now(),
 					})
@@ -534,9 +553,12 @@ export class NoauthBackend {
 					const otherReqs = self.confirmBuffer.filter(
 						(r) => r.req.appNpub === req.appNpub,
 					)
+					console.log("updated perms", this.perms, "otherReqs", otherReqs)
 					for (const r of otherReqs) {
-						if (r.req.method === req.method) {
-							r.cb(allow, false)
+						const perm = this.getPerm(r.req);
+//						if (r.req.method === req.method) {
+						if (perm) {
+							r.cb(perm === '1', false)
 						}
 					}
 				}
@@ -567,7 +589,7 @@ export class NoauthBackend {
 				// put to a list of pending requests
 				this.confirmBuffer.push({
 					req,
-					cb: (allow, remember) => onAllow(true, allow, remember),
+					cb: (allow, remember, options) => onAllow(true, allow, remember, options),
 				})
 
 				// show notifs
@@ -730,7 +752,7 @@ export class NoauthBackend {
 		return k
 	}
 
-	private async confirm(id: string, allow: boolean, remember: boolean) {
+	private async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
 		const req = this.confirmBuffer.find((r) => r.req.id === id)
 		if (!req) {
 			console.log('req ', id, 'not found')
@@ -738,8 +760,8 @@ export class NoauthBackend {
 			await dbi.removePending(id)
 			this.updateUI()
 		} else {
-			console.log('confirming', id, allow, remember)
-			req.cb(allow, remember)
+			console.log('confirming req', id, allow, remember, options)
+			req.cb(allow, remember, options)
 		}
 	}
 
@@ -794,7 +816,7 @@ export class NoauthBackend {
 			} else if (method === 'fetchKey') {
 				result = await this.fetchKey(args[0], args[1])
 			} else if (method === 'confirm') {
-				result = await this.confirm(args[0], args[1], args[2])
+				result = await this.confirm(args[0], args[1], args[2], args[3])
 			} else if (method === 'deleteApp') {
 				result = await this.deleteApp(args[0])
 			} else if (method === 'deletePerm') {
