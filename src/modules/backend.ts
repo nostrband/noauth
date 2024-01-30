@@ -400,6 +400,7 @@ export class NoauthBackend {
 		}
 
 		if (this.notifCallback) this.notifCallback()
+		this.notifCallback = null
 	}
 
 	private keyInfo(k: DbKey): KeyInfo {
