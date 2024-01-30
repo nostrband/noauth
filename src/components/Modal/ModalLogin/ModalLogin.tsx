@@ -11,6 +11,7 @@ import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import { useNavigate } from 'react-router-dom'
 
 export const ModalLogin = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
@@ -18,6 +19,8 @@ export const ModalLogin = () => {
 	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.LOGIN)
 
 	const notify = useEnqueueSnackbar()
+
+	const navigate = useNavigate()
 
 	const [enteredUsername, setEnteredUsername] = useState('')
 	const [enteredPassword, setEnteredPassword] = useState('')
@@ -37,9 +40,9 @@ export const ModalLogin = () => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		try {
-			const user = enteredUsername.split('@')[0]
+			const [username, domain] = enteredUsername.split('@')
 			const response = await fetch(
-				'https://domain.com/.well-known/nostr.json?name=' + user,
+				`https://${domain}/.well-known/nostr.json?name=${username}`,
 			)
 			const getNpub: {
 				names: {
@@ -47,13 +50,13 @@ export const ModalLogin = () => {
 				}
 			} = await response.json()
 
-			const pubkey = getNpub.names[user]
+			const pubkey = getNpub.names[username]
 			const npub = nip19.npubEncode(pubkey)
 			const passphrase = enteredPassword
 			console.log('fetch', npub, passphrase)
-
 			const k: any = await swicCall('fetchKey', npub, passphrase)
 			notify(`Fetched ${k.npub}`, 'success')
+			navigate(`/key/${k.npub}`)
 		} catch (error: any) {
 			notify(error.message, 'error')
 		}

@@ -10,7 +10,7 @@ import NDK, {
 } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from '../utils/consts'
 import { Nip04 } from './nip04'
-import { getReqPerm, isPackagePerm } from '@/utils/helpers'
+import { getReqPerm, isPackagePerm } from '@/utils/helpers/helpers'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -138,7 +138,6 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
 		})
 	}
 }
-
 
 export class NoauthBackend {
 	readonly swg: ServiceWorkerGlobalScope
@@ -443,18 +442,15 @@ export class NoauthBackend {
 	private getPerm(req: DbPending): string {
 		const reqPerm = getReqPerm(req)
 		const appPerms = this.perms.filter(
-			(p) =>
-				p.npub === req.npub &&
-				p.appNpub === req.appNpub
+			(p) => p.npub === req.npub && p.appNpub === req.appNpub,
 		)
 
 		// exact match first
 		let perm = appPerms.find((p) => p.perm === reqPerm)
 		// non-exact next
-		if (!perm)
-			perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
+		if (!perm) perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
 
-		console.log("req", req, "perm", reqPerm, "value", perm, appPerms);
+		console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
 		return perm?.value || ''
 	}
 
@@ -489,7 +485,7 @@ export class NoauthBackend {
 				manual: boolean,
 				allow: boolean,
 				remember: boolean,
-				options?: any
+				options?: any,
 			) => {
 				// confirm
 				console.log(
@@ -535,10 +531,8 @@ export class NoauthBackend {
 				if (index >= 0) self.confirmBuffer.splice(index, 1)
 
 				if (remember) {
-
 					let perm = getReqPerm(req)
-					if (allow && options && options.perm)
-						perm = options.perm
+					if (allow && options && options.perm) perm = options.perm
 
 					await dbi.addPerm({
 						id: req.id,
@@ -554,10 +548,15 @@ export class NoauthBackend {
 					const otherReqs = self.confirmBuffer.filter(
 						(r) => r.req.appNpub === req.appNpub,
 					)
-					console.log("updated perms", this.perms, "otherReqs", otherReqs)
+					console.log(
+						'updated perms',
+						this.perms,
+						'otherReqs',
+						otherReqs,
+					)
 					for (const r of otherReqs) {
-						const perm = this.getPerm(r.req);
-//						if (r.req.method === req.method) {
+						const perm = this.getPerm(r.req)
+						//						if (r.req.method === req.method) {
 						if (perm) {
 							r.cb(perm === '1', false)
 						}
@@ -590,7 +589,8 @@ export class NoauthBackend {
 				// put to a list of pending requests
 				this.confirmBuffer.push({
 					req,
-					cb: (allow, remember, options) => onAllow(true, allow, remember, options),
+					cb: (allow, remember, options) =>
+						onAllow(true, allow, remember, options),
 				})
 
 				// show notifs
@@ -753,7 +753,12 @@ export class NoauthBackend {
 		return k
 	}
 
-	private async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
+	private async confirm(
+		id: string,
+		allow: boolean,
+		remember: boolean,
+		options?: any,
+	) {
 		const req = this.confirmBuffer.find((r) => r.req.id === id)
 		if (!req) {
 			console.log('req ', id, 'not found')

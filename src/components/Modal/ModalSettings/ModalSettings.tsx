@@ -15,9 +15,15 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { ChangeEvent, useState } from 'react'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
+import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { swicCall } from '@/modules/swic'
+import { useParams } from 'react-router-dom'
 
 export const ModalSettings = () => {
 	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { npub = '' } = useParams<{ npub: string }>()
+
+	const notify = useEnqueueSnackbar()
 
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SETTINGS)
 	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.SETTINGS)
@@ -27,21 +33,15 @@ export const ModalSettings = () => {
 	const [isPasswordInvalid, setIsPasswordInvalid] = useState(false)
 	const [isPasswordSynched, setIsPasswordSynched] = useState(false)
 
+	const [isChecked, setIsChecked] = useState(false)
+
 	const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+		setIsPasswordInvalid(false)
 		setEnteredPassword(e.target.value)
 	}
 
 	const handlePasswordTypeChange = () =>
 		setIsPasswordShown((prevState) => !prevState)
-
-	const handleSync = () => {
-		setIsPasswordInvalid(false)
-
-		if (enteredPassword.trim().length < 6) {
-			return setIsPasswordInvalid(true)
-		}
-		setIsPasswordSynched(true)
-	}
 
 	const onClose = () => {
 		handleCloseModal()
@@ -50,10 +50,33 @@ export const ModalSettings = () => {
 		setIsPasswordSynched(false)
 	}
 
+	const handleChangeCheckbox = (e: unknown, checked: boolean) => {
+		setIsChecked(checked)
+	}
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		setIsPasswordInvalid(false)
+		setIsPasswordSynched(false)
+
+		if (enteredPassword.trim().length < 6) {
+			return setIsPasswordInvalid(true)
+		}
+		try {
+			await swicCall('saveKey', npub, enteredPassword)
+			notify('Key saved', 'success')
+			setIsPasswordInvalid(false)
+			setIsPasswordSynched(true)
+		} catch (error) {
+			setIsPasswordInvalid(false)
+			setIsPasswordSynched(false)
+		}
+	}
+
 	return (
 		<Modal open={isModalOpened} onClose={onClose} title='Settings'>
 			<Stack gap={'1rem'}>
-				<StyledSettingContainer>
+				<StyledSettingContainer onSubmit={handleSubmit}>
 					<Stack direction={'row'} justifyContent={'space-between'}>
 						<SectionTitle>Cloud sync</SectionTitle>
 						{isPasswordSynched && (
@@ -63,7 +86,10 @@ export const ModalSettings = () => {
 						)}
 					</Stack>
 					<Box>
-						<Checkbox />
+						<Checkbox
+							onChange={handleChangeCheckbox}
+							checked={isChecked}
+						/>
 						<Typography variant='caption'>
 							Use this login on multiple devices
 						</Typography>
@@ -82,7 +108,7 @@ export const ModalSettings = () => {
 								)}
 							</IconButton>
 						}
-						type={isPasswordShown ? 'password' : 'text'}
+						type={isPasswordShown ? 'text' : 'password'}
 						onChange={handlePasswordChange}
 						value={enteredPassword}
 						helperText={isPasswordInvalid ? 'Invalid password' : ''}
@@ -94,8 +120,9 @@ export const ModalSettings = () => {
 								},
 							},
 						}}
+						disabled={!isChecked}
 					/>
-					<StyledButton type='button' fullWidth onClick={handleSync}>
+					<StyledButton type='submit' fullWidth disabled={!isChecked}>
 						Sync
 					</StyledButton>
 				</StyledSettingContainer>

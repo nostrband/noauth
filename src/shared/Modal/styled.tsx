@@ -1,4 +1,6 @@
 import {
+	Box,
+	BoxProps,
 	Dialog,
 	DialogContent,
 	DialogContentProps,
@@ -56,3 +58,17 @@ export const StyledDialogContent = styled((props: DialogContentProps) => (
 		padding: '0 1rem 1rem',
 	}
 })
+
+export const StyledCloseButtonWrapper = styled((props: BoxProps) => (
+	<Box {...props} />
+))(() => ({
+	display: 'flex',
+	alignItems: 'center',
+	justifyContent: 'flex-end',
+	padding: '0.5rem 1rem',
+	position: 'relative',
+	'& > .close_btn': {
+		position: 'absolute',
+		transform: 'translateY(50%)',
+	},
+}))

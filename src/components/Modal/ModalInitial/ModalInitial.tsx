@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Button } from '@/shared/Button/Button'
 import { Modal } from '@/shared/Modal/Modal'
@@ -18,9 +18,17 @@ export const ModalInitial = () => {
 		setShowAdvancedContent(true)
 	}
 
+	useEffect(() => {
+		return () => {
+			if (isModalOpened) {
+				setShowAdvancedContent(false)
+			}
+		}
+	}, [isModalOpened])
+
 	return (
 		<Modal open={isModalOpened} onClose={handleCloseModal}>
-			<Stack paddingTop={'1rem'} gap={'1rem'}>
+			<Stack paddingTop={'2.5rem'} gap={'1rem'}>
 				<Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.SIGN_UP)}>
 					Sign up
 				</Button>

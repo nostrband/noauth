@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getShortenNpub } from '@/utils/helpers'
+import { call, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'

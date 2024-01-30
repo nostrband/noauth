@@ -8,7 +8,7 @@ import {
 } from '@mui/material'
 
 export const StyledSettingContainer = styled((props: StackProps) => (
-	<Stack {...props} gap={'1rem'} />
+	<Stack gap={'1rem'} component={'form'} {...props} />
 ))(({ theme }) => ({
 	padding: '0.75rem',
 	borderRadius: '1rem',

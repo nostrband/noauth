@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools'
-import { ACTION_TYPE, NIP46_RELAYS } from './consts'
+import { ACTION_TYPE, NIP46_RELAYS } from '../consts'
 import { DbPending } from '@/modules/db'
 
 export async function log(s: string) {
@@ -52,8 +52,7 @@ export function getSignReqKind(req: DbPending): number | undefined {
 export function getReqPerm(req: DbPending): string {
 	if (req.method === 'sign_event') {
 		const kind = getSignReqKind(req)
-		if (kind !== undefined)
-			return `${req.method}:${kind}`
+		if (kind !== undefined) return `${req.method}:${kind}`
 	}
 	return req.method
 }

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SectionTitle } from '../../shared/SectionTitle/SectionTitle'
 import { useAppSelector } from '../../store/hooks/redux'
-import { askNotificationPermission, getShortenNpub } from '../../utils/helpers'
+import {
+	askNotificationPermission,
+	getShortenNpub,
+} from '../../utils/helpers/helpers'
 import { useParams } from 'react-router-dom'
 import { fetchProfile } from '../../modules/nostr'
-import { nip19 } from 'nostr-tools'
 import { Badge, Box, CircularProgress, Stack } from '@mui/material'
 import { StyledIconButton } from './styled'
 import { SettingsIcon, ShareIcon } from '@/assets'
@@ -53,7 +55,10 @@ const KeyPage = () => {
 	const notify = useEnqueueSnackbar()
 
 	const [profile, setProfile] = useState<MetaEvent | null>(null)
-	const userName = profile?.info?.name || profile?.info?.display_name || getShortenNpub(npub)
+	const userName =
+		profile?.info?.name ||
+		profile?.info?.display_name ||
+		getShortenNpub(npub)
 	const userNameWithPrefix = userName + '@nsec.app'
 
 	const [showWarning, setShowWarning] = useState(false)
