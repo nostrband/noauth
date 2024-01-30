@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import LoginIcon from '@mui/icons-material/Login'
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
+import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded'
 import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { setThemeMode } from '@/store/reducers/ui.slice'
@@ -26,6 +27,7 @@ export const ProfileMenu = () => {
 	const { handleOpen } = useModalSearchParams()
 
 	const keys = useAppSelector(selectKeys)
+	const isNoKeys = !keys || keys.length === 0
 	const themeMode = useAppSelector((state) => state.ui.themeMode)
 	const isDarkMode = themeMode === 'dark'
 
@@ -84,9 +86,11 @@ export const ProfileMenu = () => {
 					title='Home'
 				/>
 				<MenuItem
-					Icon={<LoginIcon />}
+					Icon={
+						isNoKeys ? <LoginIcon /> : <PersonAddAltRoundedIcon />
+					}
 					onClick={handleNavigateToAuth}
-					title='Sign up'
+					title={isNoKeys ? 'Sign up' : 'Add account'}
 				/>
 				<MenuItem
 					Icon={themeIcon}

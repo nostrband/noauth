@@ -1,4 +1,4 @@
-import { FC, useRef } from 'react'
+import { FC } from 'react'
 import { DbKey } from '../../../modules/db'
 import {
 	Avatar,
@@ -8,8 +8,7 @@ import {
 	TypographyProps,
 	styled,
 } from '@mui/material'
-import { call, getShortenNpub, log } from '../../../utils/helpers'
-import { swicCall } from '../../../modules/swic'
+import { getShortenNpub } from '../../../utils/helpers/helpers'
 import { useNavigate } from 'react-router-dom'
 
 type ItemKeyProps = DbKey
@@ -17,17 +16,6 @@ type ItemKeyProps = DbKey
 export const ItemKey: FC<ItemKeyProps> = (props) => {
 	const { npub, profile } = props
 	const navigate = useNavigate()
-
-	const passPhraseInputRef = useRef<HTMLInputElement | null>(null)
-
-	// eslint-disable-next-line
-	async function saveKey(npub: string) {
-		call(async () => {
-			const passphrase = passPhraseInputRef.current?.value
-			await swicCall('saveKey', npub, passphrase)
-			log('Key saved')
-		})
-	}
 
 	const handleNavigate = () => {
 		navigate('/key/' + npub)

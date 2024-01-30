@@ -3,7 +3,7 @@ import { Avatar, Stack, Typography } from '@mui/material'
 import { FC } from 'react'
 import { Link } from 'react-router-dom'
 // import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
-import { getShortenNpub } from '@/utils/helpers'
+import { getShortenNpub } from '@/utils/helpers/helpers'
 import { StyledItemAppContainer } from './styled'
 
 type ItemAppProps = DbApp

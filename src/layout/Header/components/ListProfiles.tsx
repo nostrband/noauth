@@ -1,5 +1,5 @@
 import { DbKey } from '@/modules/db'
-import { getShortenNpub } from '@/utils/helpers'
+import { getShortenNpub } from '@/utils/helpers/helpers'
 import {
 	Avatar,
 	ListItemIcon,
