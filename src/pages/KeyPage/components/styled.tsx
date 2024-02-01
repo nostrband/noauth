@@ -31,4 +31,10 @@ export const StyledItemAppContainer = styled(
 	textDecoration: 'none',
 	boxShadow: 'none',
 	color: theme.palette.text.primary,
+	background: theme.palette.backgroundSecondary.default,
+	borderRadius: '12px',
+	padding: '0.5rem 1rem',
+	':hover': {
+		background: `${theme.palette.backgroundSecondary.default}95`,
+	},
 }))

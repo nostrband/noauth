@@ -48,12 +48,17 @@ export interface DbHistory {
 	allowed: boolean
 }
 
+export interface DbSyncHistory {
+	npub: string
+}
+
 export interface DbSchema extends Dexie {
 	keys: Dexie.Table<DbKey, string>
 	apps: Dexie.Table<DbApp, string>
 	perms: Dexie.Table<DbPerm, string>
 	pending: Dexie.Table<DbPending, string>
 	history: Dexie.Table<DbHistory, string>
+	syncHistory: Dexie.Table<DbSyncHistory, string>
 }
 
 export const db = new Dexie('noauthdb') as DbSchema
@@ -65,6 +70,7 @@ db.version(7).stores({
 	pending: 'id,npub,appNpub,timestamp,method',
 	history: 'id,npub,appNpub,timestamp,method,allowed',
 	requestHistory: 'id',
+	syncHistory: 'npub',
 })
 
 export const dbi = {
@@ -198,6 +204,14 @@ export const dbi = {
 			await db.history.add(r)
 		} catch (error) {
 			console.log(`db addConfirmed error: ${error}`)
+			return false
+		}
+	},
+	addSynced: async (npub: string) => {
+		try {
+			await db.syncHistory.add({ npub })
+		} catch (error) {
+			console.log(`db addSynced error: ${error}`)
 			return false
 		}
 	},

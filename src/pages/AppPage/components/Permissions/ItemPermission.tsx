@@ -1,0 +1,59 @@
+import { FC } from 'react'
+import { Box, IconButton, Typography } from '@mui/material'
+import { DbPerm } from '@/modules/db'
+import { formatTimestampDate } from '@/utils/helpers/date'
+import { ACTIONS } from '@/utils/consts'
+import { StyledPermissionItem } from './styled'
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded'
+import DoneRoundedIcon from '@mui/icons-material/DoneRounded'
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
+import { ItemPermissionMenu } from './ItemPermissionMenu'
+import { useOpenMenu } from '@/hooks/useOpenMenu'
+
+type ItemPermissionProps = {
+	permission: DbPerm
+}
+
+export const ItemPermission: FC<ItemPermissionProps> = ({ permission }) => {
+	const { perm, value, timestamp, id } = permission || {}
+
+	const { anchorEl, handleClose, handleOpen, open } = useOpenMenu()
+
+	const isAllowed = value === '1'
+
+	return (
+		<>
+			<StyledPermissionItem>
+				<Box
+					display={'flex'}
+					flexDirection={'column'}
+					gap={'0.5rem'}
+					flex={1}
+				>
+					<Typography flex={1} fontWeight={700}>
+						{ACTIONS[perm] || perm}
+					</Typography>
+					<Typography variant='body2'>
+						{formatTimestampDate(timestamp)}
+					</Typography>
+				</Box>
+				<Box>
+					{isAllowed ? (
+						<DoneRoundedIcon htmlColor='green' />
+					) : (
+						<ClearRoundedIcon htmlColor='red' />
+					)}
+				</Box>
+				<IconButton onClick={handleOpen}>
+					<MoreVertRoundedIcon />
+				</IconButton>
+			</StyledPermissionItem>
+			<ItemPermissionMenu
+				anchorEl={anchorEl}
+				open={open}
+				handleClose={handleClose}
+				permId={id}
+			/>
+		</>
+	)
+}

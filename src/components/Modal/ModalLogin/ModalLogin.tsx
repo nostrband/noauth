@@ -37,8 +37,12 @@ export const ModalLogin = () => {
 	const handlePasswordTypeChange = () =>
 		setIsPasswordShown((prevState) => !prevState)
 
+	const isFormValid =
+		enteredUsername.trim().length > 0 && enteredPassword.trim().length > 0
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
+		if (!isFormValid) return undefined
 		try {
 			const [username, domain] = enteredUsername.split('@')
 			const response = await fetch(
@@ -63,12 +67,7 @@ export const ModalLogin = () => {
 	}
 	return (
 		<Modal open={isModalOpened} onClose={handleCloseModal}>
-			<Stack
-				paddingTop={'1rem'}
-				gap={'1rem'}
-				component={'form'}
-				onSubmit={handleSubmit}
-			>
+			<Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit}>
 				<Stack
 					direction={'row'}
 					gap={'1rem'}
@@ -105,9 +104,9 @@ export const ModalLogin = () => {
 							)}
 						</IconButton>
 					}
-					type={isPasswordShown ? 'password' : 'text'}
+					type={isPasswordShown ? 'text' : 'password'}
 				/>
-				<Button type='submit' fullWidth>
+				<Button type='submit' fullWidth disabled={!isFormValid}>
 					Login
 				</Button>
 			</Stack>

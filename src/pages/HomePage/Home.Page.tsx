@@ -28,7 +28,12 @@ const HomePage = () => {
 				)}
 				{!isNoKeys && (
 					<Fragment>
-						<Box flex={1} overflow={'auto'} borderRadius={'8px'}>
+						<Box
+							flex={1}
+							overflow={'auto'}
+							borderRadius={'8px'}
+							padding={'0.25rem'}
+						>
 							{keys.map((key) => (
 								<ItemKey {...key} key={key.npub} />
 							))}

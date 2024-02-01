@@ -11,6 +11,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 
 type ModalProps = DialogProps & {
 	withCloseButton?: boolean
+	fixedHeight?: string
 }
 
 const Transition = forwardRef(function Transition(
@@ -27,10 +28,12 @@ export const Modal: FC<ModalProps> = ({
 	title,
 	onClose,
 	withCloseButton = true,
+	fixedHeight,
 	...props
 }) => {
 	return (
 		<StyledDialog
+			fixedHeight={fixedHeight}
 			{...props}
 			onClose={onClose}
 			TransitionComponent={Transition}
@@ -46,7 +49,13 @@ export const Modal: FC<ModalProps> = ({
 				</StyledCloseButtonWrapper>
 			)}
 			{title && <StyledDialogTitle>{title}</StyledDialogTitle>}
-			<StyledDialogContent>{children}</StyledDialogContent>
+			<StyledDialogContent
+				sx={{
+					paddingTop: withCloseButton ? '1.5rem' : '0',
+				}}
+			>
+				{children}
+			</StyledDialogContent>
 		</StyledDialog>
 	)
 }

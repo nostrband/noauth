@@ -15,7 +15,7 @@ const WelcomePage = () => {
 	const npubInputRef = useRef<HTMLInputElement | null>(null)
 	const passwordInputRef = useRef<HTMLInputElement | null>(null)
 
-	// if (isKeysExists) return <Navigate to={'/home'} />
+	if (isKeysExists) return <Navigate to={'/home'} />
 
 	async function generateKey() {
 		try {

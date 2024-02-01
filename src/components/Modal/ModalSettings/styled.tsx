@@ -8,9 +8,9 @@ import {
 } from '@mui/material'
 
 export const StyledSettingContainer = styled((props: StackProps) => (
-	<Stack gap={'1rem'} component={'form'} {...props} />
+	<Stack gap={'0.75rem'} component={'form'} {...props} />
 ))(({ theme }) => ({
-	padding: '0.75rem',
+	padding: '1rem',
 	borderRadius: '1rem',
 	background: theme.palette.background.default,
 	color: theme.palette.text.primary,
@@ -21,6 +21,9 @@ export const StyledButton = styled(Button)(({ theme }) => {
 		'&.button:is(:hover, :active, &)': {
 			background: theme.palette.secondary.main,
 			color: theme.palette.text.primary,
+		},
+		':disabled': {
+			cursor: 'not-allowed',
 		},
 	}
 })
