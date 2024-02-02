@@ -56,6 +56,7 @@ export const ModalImportKeys = () => {
 					value={enteredNsec}
 					onChange={handleNsecChange}
 					fullWidth
+					type='password'
 				/>
 				<Button type='submit'>Import nsec</Button>
 			</Stack>

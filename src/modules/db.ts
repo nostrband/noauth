@@ -63,7 +63,7 @@ export interface DbSchema extends Dexie {
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(7).stores({
+db.version(8).stores({
 	keys: 'npub',
 	apps: 'appNpub,npub,name,timestamp',
 	perms: 'id,npub,appNpub,perm,value,timestamp',

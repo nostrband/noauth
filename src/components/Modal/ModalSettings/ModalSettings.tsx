@@ -19,7 +19,7 @@ import { CheckmarkIcon } from '@/assets'
 import { Input } from '@/shared/Input/Input'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import { ChangeEvent, FC, useState } from 'react'
+import { ChangeEvent, FC, useEffect, useState } from 'react'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { swicCall } from '@/modules/swic'
@@ -46,6 +46,9 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
 	const [isChecked, setIsChecked] = useState(false)
 
 	const [isLoading, setIsLoading] = useState(false)
+
+
+	useEffect(() => setIsChecked(isSynced), [isModalOpened])
 
 	const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
 		setIsPasswordInvalid(false)
@@ -104,61 +107,61 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
 							checked={isChecked}
 						/>
 						<Typography variant='caption'>
-							Use this login on multiple devices
+							Use this key on multiple devices
 						</Typography>
 					</Box>
+					<Input
+						fullWidth
+						endAdornment={
+							<IconButton
+								size='small'
+								onClick={handlePasswordTypeChange}
+							>
+								{isPasswordShown ? (
+									<VisibilityOffOutlinedIcon htmlColor='#6b6b6b' />
+								) : (
+									<VisibilityOutlinedIcon htmlColor='#6b6b6b' />
+								)}
+							</IconButton>
+						}
+						type={isPasswordShown ? 'text' : 'password'}
+						onChange={handlePasswordChange}
+						value={enteredPassword}
+						helperText={
+							isPasswordInvalid ? 'Invalid password' : ''
+						}
+						placeholder='Enter a password'
+						helperTextProps={{
+							sx: {
+								'&.helper_text': {
+									color: 'red',
+								},
+							},
+						}}
+						disabled={!isChecked}
+					/>
 					{isSynced ? (
 						<Typography variant='body2' color={'GrayText'}>
-							This uploads your <u>private key</u>, encrypted by
-							your password, to Nsec App's server.
+							To change your password, type a new one and sync.
 						</Typography>
 					) : (
-						<>
-							<Input
-								fullWidth
-								endAdornment={
-									<IconButton
-										size='small'
-										onClick={handlePasswordTypeChange}
-									>
-										{isPasswordShown ? (
-											<VisibilityOffOutlinedIcon htmlColor='#6b6b6b' />
-										) : (
-											<VisibilityOutlinedIcon htmlColor='#6b6b6b' />
-										)}
-									</IconButton>
-								}
-								type={isPasswordShown ? 'text' : 'password'}
-								onChange={handlePasswordChange}
-								value={enteredPassword}
-								helperText={
-									isPasswordInvalid ? 'Invalid password' : ''
-								}
-								placeholder='Enter a password'
-								helperTextProps={{
-									sx: {
-										'&.helper_text': {
-											color: 'red',
-										},
-									},
-								}}
-								disabled={!isChecked}
-							/>
-							<StyledButton
-								type='submit'
-								fullWidth
-								disabled={!isChecked}
-							>
-								Sync{' '}
-								{isLoading && (
-									<CircularProgress
-										sx={{ marginLeft: '0.5rem' }}
-										size={'1rem'}
-									/>
-								)}
-							</StyledButton>
-						</>
+						<Typography variant='body2' color={'GrayText'}>
+							This key will be encrypted and stored on our server. You can use the password to download this key onto another device.
+						</Typography>
 					)}
+					<StyledButton
+						type='submit'
+						fullWidth
+						disabled={!isChecked}
+					>
+						Sync{' '}
+						{isLoading && (
+							<CircularProgress
+								sx={{ marginLeft: '0.5rem' }}
+								size={'1rem'}
+							/>
+						)}
+					</StyledButton>
 				</StyledSettingContainer>
 				<Button onClick={onClose}>Done</Button>
 			</Stack>
