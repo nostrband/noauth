@@ -50,7 +50,7 @@ type PendingRequest = DbPending & { checked: boolean }
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	confirmEventReqs,
 }) => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
 	const [searchParams] = useSearchParams()
 
@@ -86,23 +86,27 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 
 	const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
 
-	const handleCloseModal = handleClose(
+	const handleCloseModal = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
-		(sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-			selectedPendingRequests.forEach(
-				async (req) => await swicCall('confirm', req.id, false, false),
-			)
-		},
+		{
+			onClose: (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+				selectedPendingRequests.forEach(
+					async (req) => await swicCall('confirm', req.id, false, false),
+				)
+			}
+		}
 	)
 
-	const closeModalAfterRequest = handleClose(
+	const closeModalAfterRequest = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
-		(sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-		},
+		{
+			onClose: (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+			}
+		}
 	)
 
 	async function confirmPending(allow: boolean) {

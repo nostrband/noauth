@@ -7,10 +7,10 @@ import { Fade, Stack } from '@mui/material'
 import { AppLink } from '@/shared/AppLink/AppLink'
 
 export const ModalInitial = () => {
-	const { getModalOpened, handleClose, handleOpen } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.INITIAL)
 
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.INITIAL)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.INITIAL)
 
 	const [showAdvancedContent, setShowAdvancedContent] = useState(false)
 

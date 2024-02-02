@@ -12,9 +12,9 @@ import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 
 export const ModalSignUp = () => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SIGN_UP)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.SIGN_UP)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.SIGN_UP)
 	const notify = useEnqueueSnackbar()
 	const theme = useTheme()
 

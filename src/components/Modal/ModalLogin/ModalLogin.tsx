@@ -14,9 +14,9 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { useNavigate } from 'react-router-dom'
 
 export const ModalLogin = () => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.LOGIN)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.LOGIN)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.LOGIN)
 
 	const notify = useEnqueueSnackbar()
 
