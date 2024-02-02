@@ -24,9 +24,10 @@ import {
 } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { swicCall } from '@/modules/swic'
-import { IPendingsByAppNpub } from '@/pages/KeyPage/Key.Page'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { DbPending } from '@/modules/db'
+import { ACTIONS } from '@/utils/consts'
+import { IPendingsByAppNpub } from '@/pages/KeyPage/hooks/useTriggerConfirmModal'
 
 enum ACTION_TYPE {
 	ALWAYS = 'ALWAYS',
@@ -44,20 +45,12 @@ type ModalConfirmEventProps = {
 	confirmEventReqs: IPendingsByAppNpub
 }
 
-export const ACTIONS: { [type: string]: string } = {
-	get_public_key: 'Get public key',
-	sign_event: 'Sign event',
-	connect: 'Connect',
-	nip04_encrypt: 'Encrypt message',
-	nip04_decrypt: 'Decrypt message',
-}
-
 type PendingRequest = DbPending & { checked: boolean }
 
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	confirmEventReqs,
 }) => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
 	const [searchParams] = useSearchParams()
 
@@ -93,23 +86,27 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 
 	const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
 
-	const handleCloseModal = handleClose(
+	const handleCloseModal = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
-		(sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-			selectedPendingRequests.forEach(
-				async (req) => await swicCall('confirm', req.id, false, false),
-			)
-		},
+		{
+			onClose: (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+				selectedPendingRequests.forEach(
+					async (req) => await swicCall('confirm', req.id, false, false),
+				)
+			}
+		}
 	)
 
-	const closeModalAfterRequest = handleClose(
+	const closeModalAfterRequest = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_EVENT,
-		(sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-		},
+		{
+			onClose: (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+			}
+		}
 	)
 
 	async function confirmPending(allow: boolean) {
@@ -173,7 +170,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 					<List>
 						{pendingRequests.map((req) => {
 							return (
-								<ListItem>
+								<ListItem key={req.id}>
 									<ListItemIcon>
 										<Checkbox
 											checked={req.checked}

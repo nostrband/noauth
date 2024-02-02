@@ -1,5 +1,5 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
-import { dbi, DbKey, DbPending, DbPerm } from './db'
+import { DbApp, dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, {
 	IEventHandlingStrategy,
@@ -10,7 +10,7 @@ import NDK, {
 } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from '../utils/consts'
 import { Nip04 } from './nip04'
-import { getReqPerm, isPackagePerm } from '@/utils/helpers/helpers'
+import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -32,6 +32,7 @@ interface Key {
 interface Pending {
 	req: DbPending
 	cb: (allow: boolean, remember: boolean, options?: any) => void
+	notified?: boolean
 }
 
 interface IAllowCallbackParams {
@@ -145,6 +146,7 @@ export class NoauthBackend {
 	private enckeys: DbKey[] = []
 	private keys: Key[] = []
 	private perms: DbPerm[] = []
+	private apps: DbApp[] = []
 	private doneReqIds: string[] = []
 	private confirmBuffer: Pending[] = []
 	private accessBuffer: DbPending[] = []
@@ -193,16 +195,25 @@ export class NoauthBackend {
 							.matchAll({ type: 'window' })
 							.then((clientList) => {
 								console.log('clients', clientList.length)
+								// FIXME find a client that has our
+								// key page
 								for (const client of clientList) {
 									console.log('client', client.url)
 									if (
 										new URL(client.url).pathname === '/' &&
 										'focus' in client
-									)
-										return client.focus()
+									) {
+										client.focus()
+										return	
+									}
 								}
-								// if (self.swg.clients.openWindow)
-								//   return self.swg.clients.openWindow("/");
+
+								// confirm screen url
+								const req = event.notification.data.req
+								console.log("req", req)
+								// const url = `${self.swg.location.origin}/key/${req.npub}?confirm-connect=true&appNpub=${req.appNpub}&reqId=${req.id}`
+								const url = `${self.swg.location.origin}/key/${req.npub}`
+								self.swg.clients.openWindow(url)
 							}),
 					)
 				}
@@ -216,6 +227,8 @@ export class NoauthBackend {
 		console.log('started encKeys', this.listKeys())
 		this.perms = await dbi.listPerms()
 		console.log('started perms', this.perms)
+		this.apps = await dbi.listApps()
+		console.log('started apps', this.apps)
 
 		const sub = await this.swg.registration.pushManager.getSubscription()
 
@@ -381,21 +394,69 @@ export class NoauthBackend {
 		// and update the notifications
 
 		for (const r of this.confirmBuffer) {
-			const text = `Confirm "${r.req.method}" by "${r.req.appNpub}"`
-			this.swg.registration.showNotification('Signer access', {
-				body: text,
-				tag: 'confirm-' + r.req.appNpub,
-				actions: [
-					{
-						action: 'allow:' + r.req.id,
-						title: 'Yes',
-					},
-					{
-						action: 'disallow:' + r.req.id,
-						title: 'No',
-					},
-				],
-			})
+
+			if (r.notified) continue
+
+			const key = this.keys.find(k => k.npub === r.req.npub)
+			if (!key) continue
+
+			const app = this.apps.find(a => a.appNpub === r.req.appNpub)
+			if (r.req.method !== 'connect' && !app) continue
+
+			// FIXME use Nsec.app icon!
+			const icon = 'https://nostr.band/android-chrome-192x192.png'
+
+			const appName = app?.name || getShortenNpub(r.req.appNpub)
+			// FIXME load profile?
+			const keyName = getShortenNpub(r.req.npub)
+
+			const tag = 'confirm-' + r.req.appNpub
+			const allowAction = 'allow:' + r.req.id
+			const disallowAction = 'disallow:' + r.req.id
+			const data = { req: r.req }
+
+			if (r.req.method === 'connect') {
+				const title = `Connect with new app`
+				const body = `Allow app "${appName}" to connect to key "${keyName}"`
+				this.swg.registration.showNotification(title, {
+					body,
+					tag,
+					icon,
+					data,
+					actions: [
+						{
+							action: allowAction,
+							title: 'Connect',
+						},
+						{
+							action: disallowAction,
+							title: 'Ignore',
+						},
+					],
+				})
+			} else {
+				const title = `Permission request`
+				const body = `Allow "${r.req.method}" by "${appName}" to "${keyName}"`
+				this.swg.registration.showNotification(title, {
+					body,
+					tag,
+					icon,
+					data,
+					actions: [
+						{
+							action: allowAction,
+							title: 'Yes',
+						},
+						{
+							action: disallowAction,
+							title: 'No',
+						},
+					],
+				})
+			}
+
+			// mark
+			r.notified = true
 		}
 
 		if (this.notifCallback) this.notifCallback()
@@ -509,6 +570,9 @@ export class NoauthBackend {
 								icon: '',
 								url: '',
 							})
+
+							// reload
+							self.apps = await dbi.listApps()
 						}
 					}
 				} else {
@@ -771,6 +835,7 @@ export class NoauthBackend {
 	}
 
 	private async deleteApp(appNpub: string) {
+		this.apps = this.apps.filter((a) => a.appNpub !== appNpub)
 		this.perms = this.perms.filter((p) => p.appNpub !== appNpub)
 		await dbi.removeApp(appNpub)
 		await dbi.removeAppPerms(appNpub)

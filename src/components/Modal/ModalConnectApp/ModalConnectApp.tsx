@@ -12,13 +12,18 @@ import { useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
 export const ModalConnectApp = () => {
-	const { getModalOpened, handleClose, handleOpen } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
 	const timerRef = useRef<NodeJS.Timeout>()
 
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.CONNECT_APP, () => {
-		clearTimeout(timerRef.current)
-	})
+	const handleCloseModal = createHandleCloseReplace(
+		MODAL_PARAMS_KEYS.CONNECT_APP, 
+		{
+			onClose: () => {
+				clearTimeout(timerRef.current)
+			}
+		}
+	)
 
 	const notify = useEnqueueSnackbar()
 

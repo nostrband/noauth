@@ -8,13 +8,15 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography } from '@mui/material'
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 import { StyledAppLogo } from './styled'
+import { useNavigate } from 'react-router-dom'
 
 export const ModalImportKeys = () => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.IMPORT_KEYS)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.IMPORT_KEYS)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.IMPORT_KEYS)
 
 	const notify = useEnqueueSnackbar()
+	const navigate = useNavigate()
 
 	const [enteredNsec, setEnteredNsec] = useState('')
 
@@ -26,9 +28,9 @@ export const ModalImportKeys = () => {
 		e.preventDefault()
 		try {
 			if (!enteredNsec.trim().length) return
-			await swicCall('importKey', enteredNsec)
+			const k: any = await swicCall('importKey', enteredNsec)
 			notify('Key imported!', 'success')
-			handleCloseModal()
+			navigate(`/key/${k.npub}`)
 		} catch (error: any) {
 			notify(error.message, 'error')
 		}
@@ -36,12 +38,7 @@ export const ModalImportKeys = () => {
 
 	return (
 		<Modal open={isModalOpened} onClose={handleCloseModal}>
-			<Stack
-				paddingTop={'1rem'}
-				gap={'1rem'}
-				component={'form'}
-				onSubmit={handleSubmit}
-			>
+			<Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit}>
 				<Stack
 					direction={'row'}
 					gap={'1rem'}
@@ -59,8 +56,9 @@ export const ModalImportKeys = () => {
 					value={enteredNsec}
 					onChange={handleNsecChange}
 					fullWidth
+					type='password'
 				/>
-				<Button>Import nsec</Button>
+				<Button type='submit'>Import nsec</Button>
 			</Stack>
 		</Modal>
 	)

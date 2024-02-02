@@ -17,6 +17,11 @@ export type IExtraOptions = {
 	append?: boolean
 }
 
+export type IExtraCloseOptions = {
+	replace?: boolean
+	onClose?: (s: URLSearchParams) => void
+}
+
 export const useModalSearchParams = () => {
 	const [searchParams, setSearchParams] = useSearchParams()
 
@@ -29,13 +34,20 @@ export const useModalSearchParams = () => {
 		]
 	}, [])
 
-	const handleClose =
-		(modal: MODAL_PARAMS_KEYS, onClose?: (s: URLSearchParams) => void) =>
+	const createHandleClose =
+		(modal: MODAL_PARAMS_KEYS, extraOptions?: IExtraCloseOptions) =>
 		() => {
 			const enumKey = getEnumParam(modal)
 			searchParams.delete(enumKey)
-			onClose && onClose(searchParams)
-			setSearchParams(searchParams)
+			extraOptions?.onClose && extraOptions?.onClose(searchParams)
+			console.log({ searchParams })
+			setSearchParams(searchParams, { replace: !!extraOptions?.replace })
+		}
+
+	const createHandleCloseReplace =
+		(modal: MODAL_PARAMS_KEYS, extraOptions?: IExtraCloseOptions) =>
+		() => {
+			return createHandleClose(modal, { ...extraOptions, replace: true })
 		}
 
 	const handleOpen = useCallback(
@@ -61,7 +73,7 @@ export const useModalSearchParams = () => {
 					pathname: location.pathname,
 					search: searchString,
 				},
-				{ replace: extraOptions?.replace || true },
+				{ replace: !!extraOptions?.replace },
 			)
 		},
 		[location, navigate, getEnumParam],
@@ -78,7 +90,8 @@ export const useModalSearchParams = () => {
 
 	return {
 		getModalOpened,
-		handleClose,
+		createHandleClose,
+		createHandleCloseReplace,
 		handleOpen,
 	}
 }
