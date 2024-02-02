@@ -12,7 +12,7 @@ export const schema = yup.object().shape({
 			return USERNAME_WITH_DOMAIN_REGEXP.test(value)
 		})
 		.required(),
-	password: yup.string().required(),
+	password: yup.string().required().min(4),
 })
 
 export type FormInputType = yup.InferType<typeof schema>

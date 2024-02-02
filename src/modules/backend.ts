@@ -273,7 +273,7 @@ export class NoauthBackend {
 		})
 		if (r.status !== 200 && r.status !== 201) {
 			console.log('Fetch error', url, method, r.status)
-			throw new Error('Failed to fetch' + url)
+			throw new Error('Failed to fetch ' + url)
 		}
 
 		return await r.json()

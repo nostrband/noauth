@@ -64,13 +64,14 @@ export const ModalLogin = () => {
 			const pubkey = getNpub.names[username]
 			const npub = nip19.npubEncode(pubkey)
 			const passphrase = values.password
+
 			console.log('fetch', npub, passphrase)
 			const k: any = await swicCall('fetchKey', npub, passphrase)
 			notify(`Fetched ${k.npub}`, 'success')
 			cleanUpStates()
 			navigate(`/key/${k.npub}`)
 		} catch (error: any) {
-			notify(error.message, 'error')
+			notify(error?.message || 'Something went wrong!', 'error')
 		}
 	}
 
