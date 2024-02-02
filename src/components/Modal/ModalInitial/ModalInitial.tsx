@@ -28,7 +28,7 @@ export const ModalInitial = () => {
 
 	return (
 		<Modal open={isModalOpened} onClose={handleCloseModal}>
-			<Stack paddingTop={'2.5rem'} gap={'1rem'}>
+			<Stack paddingTop={'0.5rem'} gap={'1rem'}>
 				<Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.SIGN_UP)}>
 					Sign up
 				</Button>

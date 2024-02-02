@@ -24,9 +24,10 @@ import {
 } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { swicCall } from '@/modules/swic'
-import { IPendingsByAppNpub } from '@/pages/KeyPage/Key.Page'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { DbPending } from '@/modules/db'
+import { ACTIONS } from '@/utils/consts'
+import { IPendingsByAppNpub } from '@/pages/KeyPage/hooks/useTriggerConfirmModal'
 
 enum ACTION_TYPE {
 	ALWAYS = 'ALWAYS',
@@ -42,14 +43,6 @@ const ACTION_LABELS = {
 
 type ModalConfirmEventProps = {
 	confirmEventReqs: IPendingsByAppNpub
-}
-
-export const ACTIONS: { [type: string]: string } = {
-	get_public_key: 'Get public key',
-	sign_event: 'Sign event',
-	connect: 'Connect',
-	nip04_encrypt: 'Encrypt message',
-	nip04_decrypt: 'Decrypt message',
 }
 
 type PendingRequest = DbPending & { checked: boolean }
@@ -173,7 +166,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 					<List>
 						{pendingRequests.map((req) => {
 							return (
-								<ListItem>
+								<ListItem key={req.id}>
 									<ListItemIcon>
 										<Checkbox
 											checked={req.checked}

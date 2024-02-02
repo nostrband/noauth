@@ -1,11 +1,7 @@
 import { nip19 } from 'nostr-tools'
 import { ACTION_TYPE, NIP46_RELAYS } from '../consts'
 import { DbPending } from '@/modules/db'
-
-export async function log(s: string) {
-	const log = document.getElementById('log')
-	if (log) log.innerHTML = s
-}
+import { MetaEvent } from '@/types/meta-event'
 
 export async function call(cb: () => any) {
 	try {
@@ -19,6 +15,14 @@ export const getShortenNpub = (npub = '') => {
 	return npub.substring(0, 10) + '...' + npub.slice(-4)
 }
 
+export const getProfileUsername = (profile: MetaEvent | null, npub: string) => {
+	return (
+		profile?.info?.name ||
+		profile?.info?.display_name ||
+		getShortenNpub(npub)
+	)
+}
+
 export const getBunkerLink = (npub = '') => {
 	if (!npub) return ''
 	const { data: pubkey } = nip19.decode(npub)
@@ -29,11 +33,9 @@ export async function askNotificationPermission() {
 	return new Promise<void>((ok, rej) => {
 		// Let's check if the browser supports notifications
 		if (!('Notification' in window)) {
-			log('This browser does not support notifications.')
-			rej()
+			rej('This browser does not support notifications.')
 		} else {
 			Notification.requestPermission().then(() => {
-				log('notifications perm' + Notification.permission)
 				if (Notification.permission === 'granted') ok()
 				else rej()
 			})

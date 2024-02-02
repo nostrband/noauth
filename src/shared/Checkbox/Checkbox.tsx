@@ -34,4 +34,5 @@ const StyledCheckbox = styled(
 	),
 )(() => ({
 	'& .MuiSvgIcon-root': { fontSize: '1.5rem' },
+	marginLeft: '-10px',
 }))

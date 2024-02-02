@@ -1,13 +1,23 @@
 import { Input, InputProps } from '@/shared/Input/Input'
-import { Box, Button, ButtonProps, styled } from '@mui/material'
+import { Box, Button, ButtonProps, styled, Badge } from '@mui/material'
 
 type StyledIconButtonProps = ButtonProps & {
 	bgcolor_variant?: 'primary' | 'secondary'
+	withBadge?: boolean
 }
 
-export const StyledIconButton = styled((props: StyledIconButtonProps) => (
-	<Button {...props} />
-))(({ bgcolor_variant = 'primary', theme }) => {
+export const StyledIconButton = styled(
+	({ withBadge, ...props }: StyledIconButtonProps) => {
+		if (withBadge) {
+			return (
+				<Badge sx={{ flex: 1 }} badgeContent={''} color='error'>
+					<Button {...props} />
+				</Badge>
+			)
+		}
+		return <Button {...props} />
+	},
+)(({ bgcolor_variant = 'primary', theme }) => {
 	const isPrimary = bgcolor_variant === 'primary'
 	return {
 		flex: '1',

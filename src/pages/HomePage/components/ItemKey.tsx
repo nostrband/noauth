@@ -40,8 +40,8 @@ const StyledKeyContainer = styled((props: StackProps) => (
 	return {
 		boxShadow:
 			theme.palette.mode === 'dark'
-				? '2px 2px 8px 0px rgba(92, 92, 92, 0.2)'
-				: '2px 2px 8px 0px rgba(0, 0, 0, 0.2)',
+				? '0px 1px 6px 0px rgba(92, 92, 92, 0.2)'
+				: '0px 1px 6px 0px rgba(0, 0, 0, 0.2)',
 		borderRadius: '12px',
 		padding: '0.5rem 1rem',
 		background: theme.palette.background.paper,

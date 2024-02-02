@@ -43,5 +43,11 @@ const StyledButton = styled(
 			background: theme.palette.primary.main,
 		},
 		color: theme.palette.text.secondary,
+		':disabled': {
+			'&.button:is(:hover, :active, &)': {
+				background: theme.palette.backgroundSecondary.default,
+			},
+			color: theme.palette.backgroundSecondary.paper,
+		},
 	}
 })
