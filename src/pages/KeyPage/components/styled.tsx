@@ -1,18 +1,22 @@
 import { Input, InputProps } from '@/shared/Input/Input'
 import { Stack, StackProps, styled } from '@mui/material'
+import { forwardRef } from 'react'
 
-export const StyledInput = styled(({ className, ...props }: InputProps) => {
-	return (
-		<Input
-			{...props}
-			className='input'
-			containerProps={{
-				className,
-			}}
-			fullWidth
-		/>
-	)
-})(({ theme }) => ({
+export const StyledInput = styled(
+	forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => {
+		return (
+			<Input
+				{...props}
+				ref={ref}
+				className='input'
+				containerProps={{
+					className,
+				}}
+				fullWidth
+			/>
+		)
+	}),
+)(({ theme }) => ({
 	'& > .input': {
 		border: 'none',
 		background: theme.palette.secondary.main,

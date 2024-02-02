@@ -1,5 +1,6 @@
 import { Input, InputProps } from '@/shared/Input/Input'
 import { Box, Button, ButtonProps, styled, Badge } from '@mui/material'
+import { forwardRef } from 'react'
 
 type StyledIconButtonProps = ButtonProps & {
 	bgcolor_variant?: 'primary' | 'secondary'
@@ -57,18 +58,21 @@ export const StyledEmptyAppsBox = styled(Box)(({ theme }) => {
 	}
 })
 
-export const StyledInput = styled(({ className, ...props }: InputProps) => {
-	return (
-		<Input
-			{...props}
-			className='input'
-			containerProps={{
-				className,
-			}}
-			fullWidth
-		/>
-	)
-})(({ theme }) => ({
+export const StyledInput = styled(
+	forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => {
+		return (
+			<Input
+				{...props}
+				ref={ref}
+				className='input'
+				containerProps={{
+					className,
+				}}
+				fullWidth
+			/>
+		)
+	}),
+)(({ theme }) => ({
 	'& > .input': {
 		border: 'none',
 		background: theme.palette.secondary.main,
