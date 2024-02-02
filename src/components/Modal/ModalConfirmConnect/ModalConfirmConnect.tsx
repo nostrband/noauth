@@ -14,7 +14,7 @@ import { ACTION_TYPE } from '@/utils/consts'
 
 
 export const ModalConfirmConnect = () => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
 	const { npub = '' } = useParams<{ npub: string }>()
@@ -37,20 +37,24 @@ export const ModalConfirmConnect = () => {
 		return setSelectedActionType(value)
 	}
 
-	const handleCloseModal = handleClose(
+	const handleCloseModal = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_CONNECT,
-		async (sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-			await swicCall('confirm', pendingReqId, false, false)
+		{
+			onClose: async (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+				await swicCall('confirm', pendingReqId, false, false)
+			}
 		},
 	)
-	const closeModalAfterRequest = handleClose(
+	const closeModalAfterRequest = createHandleCloseReplace(
 		MODAL_PARAMS_KEYS.CONFIRM_CONNECT,
-		(sp) => {
-			sp.delete('appNpub')
-			sp.delete('reqId')
-		},
+		{
+			onClose: (sp) => {
+				sp.delete('appNpub')
+				sp.delete('reqId')
+			},
+		}
 	)
 
 	async function confirmPending(

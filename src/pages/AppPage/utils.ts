@@ -6,8 +6,11 @@ export const getActivityHistoryQuerier = (appNpub: string) => () => {
 	const result = db.history
 		.where('appNpub')
 		.equals(appNpub)
-		.limit(30)
-		.toArray()
+		.reverse()
+		.sortBy('timestamp')
+		.then(a => a.slice(0, 30))
+		// .limit(30)
+		// .toArray()
 
 	return result
 }

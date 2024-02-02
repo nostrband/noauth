@@ -11,9 +11,9 @@ import { StyledAppLogo } from './styled'
 import { useNavigate } from 'react-router-dom'
 
 export const ModalImportKeys = () => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.IMPORT_KEYS)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.IMPORT_KEYS)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.IMPORT_KEYS)
 
 	const notify = useEnqueueSnackbar()
 	const navigate = useNavigate()

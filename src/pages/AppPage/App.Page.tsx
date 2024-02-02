@@ -99,9 +99,7 @@ const AppPage = () => {
 				<Button
 					fullWidth
 					onClick={() =>
-						handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY, {
-							replace: true,
-						})
+						handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY)
 					}
 				>
 					Activity

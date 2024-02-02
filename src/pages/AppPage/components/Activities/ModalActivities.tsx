@@ -12,9 +12,9 @@ type ModalActivitiesProps = {
 }
 
 export const ModalActivities: FC<ModalActivitiesProps> = ({ appNpub }) => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.ACTIVITY)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.ACTIVITY)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.ACTIVITY)
 
 	const history = useLiveQuery(
 		getActivityHistoryQuerier(appNpub),
@@ -27,7 +27,7 @@ export const ModalActivities: FC<ModalActivitiesProps> = ({ appNpub }) => {
 			open={isModalOpened}
 			onClose={handleCloseModal}
 			fixedHeight='calc(100% - 5rem)'
-			title='Activities history'
+			title='Activity history'
 		>
 			<Box overflow={'auto'}>
 				{history.map((item) => {

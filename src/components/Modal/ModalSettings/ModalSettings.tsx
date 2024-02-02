@@ -31,13 +31,13 @@ type ModalSettingsProps = {
 }
 
 export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
-	const { getModalOpened, handleClose } = useModalSearchParams()
+	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const { npub = '' } = useParams<{ npub: string }>()
 
 	const notify = useEnqueueSnackbar()
 
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SETTINGS)
-	const handleCloseModal = handleClose(MODAL_PARAMS_KEYS.SETTINGS)
+	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.SETTINGS)
 
 	const [enteredPassword, setEnteredPassword] = useState('')
 	const [isPasswordShown, setIsPasswordShown] = useState(false)
@@ -48,7 +48,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
 	const [isLoading, setIsLoading] = useState(false)
 
 
-	useEffect(() => setIsChecked(isSynced), [isModalOpened])
+	useEffect(() => setIsChecked(isSynced), [isModalOpened, isSynced])
 
 	const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
 		setIsPasswordInvalid(false)
