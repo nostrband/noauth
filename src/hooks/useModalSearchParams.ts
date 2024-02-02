@@ -45,8 +45,7 @@ export const useModalSearchParams = () => {
 		}
 
 	const createHandleCloseReplace =
-		(modal: MODAL_PARAMS_KEYS, extraOptions?: IExtraCloseOptions) =>
-		() => {
+		(modal: MODAL_PARAMS_KEYS, extraOptions: IExtraCloseOptions = {}) => {
 			return createHandleClose(modal, { ...extraOptions, replace: true })
 		}
 
