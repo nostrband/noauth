@@ -8,9 +8,10 @@ import NDK, {
 	NDKPrivateKeySigner,
 	NDKSigner,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW } from '../utils/consts'
 import { Nip04 } from './nip04'
 import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { NostrPowEvent, minePow } from './pow'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -286,7 +287,8 @@ export class NoauthBackend {
 		})
 		if (r.status !== 200 && r.status !== 201) {
 			console.log('Fetch error', url, method, r.status)
-			throw new Error('Failed to fetch ' + url)
+			const body = await r.json()
+			throw new Error('Failed to fetch ' + url, { cause: body })
 		}
 
 		return await r.json()
@@ -297,11 +299,13 @@ export class NoauthBackend {
 		url,
 		method = 'GET',
 		body = '',
+		pow = 0
 	}: {
 		npub: string
 		url: string
 		method: string
 		body: string
+		pow?: number
 	}) {
 		const { data: pubkey } = nip19.decode(npub)
 
@@ -319,6 +323,15 @@ export class NoauthBackend {
 			],
 		})
 		if (body) authEvent.tags.push(['payload', await this.sha256(body)])
+
+		// generate pow on auth evevnt
+		if (pow) {
+			const start = Date.now()
+			const powEvent: NostrPowEvent = authEvent.rawEvent()
+			const minedEvent = minePow(powEvent, pow)
+			console.log("mined pow of", pow, "in", Date.now() - start, "ms", minedEvent)
+			authEvent.tags = minedEvent.tags
+		}
 
 		authEvent.sig = await authEvent.sign(key.signer)
 
@@ -354,6 +367,7 @@ export class NoauthBackend {
 			body,
 		})
 	}
+
 	private async sendKeyToServer(npub: string, enckey: string, pwh: string) {
 		const body = JSON.stringify({
 			npub,
@@ -387,6 +401,38 @@ export class NoauthBackend {
 			headers: {},
 			body,
 		})
+	}
+
+	private async sendNameToServer(npub: string, name: string) {
+		const body = JSON.stringify({
+			npub,
+			name
+		})
+
+		const method = 'POST'
+		const url = `${NOAUTHD_URL}/name`
+
+		// mas pow should be 21 or something like that
+		let pow = MIN_POW;
+		while(pow <= MAX_POW) {
+			console.log("Try name", name, "pow", pow);
+			try {
+				return await this.sendPostAuthd({
+					npub,
+					url,
+					method,
+					body,
+					pow
+				})
+			} catch (e: any) {
+				console.log("error", e.cause);
+				if (e.cause && e.cause.minPow > pow)
+					pow = e.cause.minPow
+				else
+					throw e;
+			}
+		}
+		throw new Error("Too many requests, retry later")
 	}
 
 	private notify() {
@@ -475,7 +521,11 @@ export class NoauthBackend {
 		return generatePrivateKey()
 	}
 
-	public async addKey(nsec?: string): Promise<KeyInfo> {
+	public async addKey(name: string, nsec?: string): Promise<KeyInfo> {
+
+		// lowercase
+		name = name.trim().toLocaleLowerCase()
+
 		let sk = ''
 		if (nsec) {
 			const { type, data } = nip19.decode(nsec)
@@ -486,13 +536,21 @@ export class NoauthBackend {
 		}
 		const pubkey = getPublicKey(sk)
 		const npub = nip19.npubEncode(pubkey)
+
 		const localKey = await this.keysModule.generateLocalKey()
 		const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
 		// @ts-ignore
-		const dbKey: DbKey = { npub, enckey, localKey }
+		const dbKey: DbKey = { npub, name, enckey, localKey }
 		await dbi.addKey(dbKey)
 		this.enckeys.push(dbKey)
 		await this.startKey({ npub, sk })
+
+		// assign nip05 before adding the key
+		// FIXME set name to db and if this call to 'send' fails
+		// then retry later
+		console.log("adding key", npub, name)
+		if (name)
+			await this.sendNameToServer(npub, name)
 
 		const sub = await this.swg.registration.pushManager.getSubscription()
 		if (sub) await this.sendSubscriptionToServer(npub, sub)
@@ -766,14 +824,14 @@ export class NoauthBackend {
 		await this.startKey({ npub, sk })
 	}
 
-	private async generateKey() {
-		const k = await this.addKey()
+	private async generateKey(name: string) {
+		const k = await this.addKey(name)
 		this.updateUI()
 		return k
 	}
 
-	private async importKey(nsec: string) {
-		const k = await this.addKey(nsec)
+	private async importKey(name: string, nsec: string) {
+		const k = await this.addKey(name, nsec)
 		this.updateUI()
 		return k
 	}
@@ -879,9 +937,9 @@ export class NoauthBackend {
 			//console.log("UI message", id, method, args)
 			let result = undefined
 			if (method === 'generateKey') {
-				result = await this.generateKey()
+				result = await this.generateKey(args[0])
 			} else if (method === 'importKey') {
-				result = await this.importKey(args[0])
+				result = await this.importKey(args[0], args[1])
 			} else if (method === 'saveKey') {
 				result = await this.saveKey(args[0], args[1])
 			} else if (method === 'fetchKey') {
@@ -902,6 +960,7 @@ export class NoauthBackend {
 				result,
 			})
 		} catch (e: any) {
+			console.log("backend error", e)
 			event.source.postMessage({
 				id,
 				error: e.toString(),

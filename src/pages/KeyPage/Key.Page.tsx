@@ -18,17 +18,21 @@ import UserValueSection from './components/UserValueSection'
 import { useTriggerConfirmModal } from './hooks/useTriggerConfirmModal'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { checkNpubSyncQuerier } from './utils'
+import { DOMAIN } from '@/utils/consts'
 
 const KeyPage = () => {
 	const { npub = '' } = useParams<{ npub: string }>()
-	const { apps, pending, perms } = useAppSelector((state) => state.content)
+	const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
 	const isSynced = useLiveQuery(checkNpubSyncQuerier(npub), [npub], false)
 
 	const { handleOpen } = useModalSearchParams()
 
-	const { userNameWithPrefix } = useProfile(npub)
+	// const { userNameWithPrefix } = useProfile(npub)
 	const { handleEnableBackground, showWarning, isEnabling } =
 		useBackgroundSigning()
+
+	const key = keys.find(k => k.npub === npub)
+	const username = key?.name ? `${key?.name}@${DOMAIN}` : ''
 
 	const filteredApps = apps.filter((a) => a.npub === npub)
 	const { prepareEventPendings } = useTriggerConfirmModal(
@@ -53,8 +57,8 @@ const KeyPage = () => {
 				)}
 				<UserValueSection
 					title='Your login'
-					value={userNameWithPrefix}
-					copyValue={npub + '@nsec.app'}
+					value={username}
+					copyValue={username}
 					explanationType={EXPLANATION_MODAL_KEYS.NPUB}
 				/>
 				<UserValueSection
