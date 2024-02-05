@@ -160,10 +160,12 @@ export class NoauthBackend {
 		const self = this
 		swg.addEventListener('activate', (event) => {
 			console.log('activate')
+//			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
 		})
 
 		swg.addEventListener('install', (event) => {
 			console.log('install')
+//			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
 		})
 
 		swg.addEventListener('push', (event) => {
@@ -521,7 +523,9 @@ export class NoauthBackend {
 		return generatePrivateKey()
 	}
 
-	public async addKey(name: string, nsec?: string): Promise<KeyInfo> {
+	public async addKey({ name, nsec, existingName } 
+		: { name: string, nsec?: string, existingName?: boolean }
+	): Promise<KeyInfo> {
 
 		// lowercase
 		name = name.trim().toLocaleLowerCase()
@@ -548,9 +552,10 @@ export class NoauthBackend {
 		// assign nip05 before adding the key
 		// FIXME set name to db and if this call to 'send' fails
 		// then retry later
-		console.log("adding key", npub, name)
-		if (name)
+		if (!existingName && name && !name.includes('@')) {
+			console.log("adding key", npub, name)
 			await this.sendNameToServer(npub, name)
+		}
 
 		const sub = await this.swg.registration.pushManager.getSubscription()
 		if (sub) await this.sendSubscriptionToServer(npub, sub)
@@ -825,13 +830,13 @@ export class NoauthBackend {
 	}
 
 	private async generateKey(name: string) {
-		const k = await this.addKey(name)
+		const k = await this.addKey({ name })
 		this.updateUI()
 		return k
 	}
 
 	private async importKey(name: string, nsec: string) {
-		const k = await this.addKey(name, nsec)
+		const k = await this.addKey({ name, nsec })
 		this.updateUI()
 		return k
 	}
@@ -851,7 +856,7 @@ export class NoauthBackend {
 		await this.sendKeyToServer(npub, enckey, pwh)
 	}
 
-	private async fetchKey(npub: string, passphrase: string) {
+	private async fetchKey(npub: string, passphrase: string, name: string) {
 		const { type, data: pubkey } = nip19.decode(npub)
 		if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
 		const { pwh } = await this.keysModule.generatePassKey(
@@ -870,7 +875,7 @@ export class NoauthBackend {
 			enckey,
 			passphrase,
 		})
-		const k = await this.addKey(nsec)
+		const k = await this.addKey({ name, nsec, existingName: true })
 		this.updateUI()
 		return k
 	}
@@ -943,7 +948,7 @@ export class NoauthBackend {
 			} else if (method === 'saveKey') {
 				result = await this.saveKey(args[0], args[1])
 			} else if (method === 'fetchKey') {
-				result = await this.fetchKey(args[0], args[1])
+				result = await this.fetchKey(args[0], args[1], args[2])
 			} else if (method === 'confirm') {
 				result = await this.confirm(args[0], args[1], args[2], args[3])
 			} else if (method === 'deleteApp') {
@@ -969,7 +974,9 @@ export class NoauthBackend {
 	}
 
 	private async updateUI() {
-		const clients = await this.swg.clients.matchAll()
+		const clients = await this.swg.clients.matchAll({
+			includeUncontrolled: true
+		})
 		console.log('updateUI clients', clients.length)
 		for (const client of clients) {
 			client.postMessage({})

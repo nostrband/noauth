@@ -53,8 +53,16 @@ export const ModalLogin = () => {
 	const submitHandler = async (values: FormInputType) => {
 		try {
 			let npub = values.username
-			if (!npub.startsWith('npub1') && !npub.includes('@')) {
-				npub += '@' + DOMAIN
+			let name = ''
+			if (!npub.startsWith('npub1')) {
+				name = npub
+				if (!npub.includes('@')) {
+					npub += '@' + DOMAIN
+				} else {
+					const nameDomain = npub.split('@')
+					if (nameDomain[1] === DOMAIN)
+						name = nameDomain[0];
+				}
 			}
 			if (npub.includes('@')) {
 				const npubNip05 = await fetchNip05(npub)
@@ -63,12 +71,13 @@ export const ModalLogin = () => {
 			}
 			const passphrase = values.password
 
-			console.log('fetch', npub, passphrase)
-			const k: any = await swicCall('fetchKey', npub, passphrase)
+			console.log('fetch', npub, name)
+			const k: any = await swicCall('fetchKey', npub, passphrase, name)
 			notify(`Fetched ${k.npub}`, 'success')
 			cleanUpStates()
 			navigate(`/key/${k.npub}`)
 		} catch (error: any) {
+			console.log("error", error);
 			notify(error?.message || 'Something went wrong!', 'error')
 		}
 	}

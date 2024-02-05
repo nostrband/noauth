@@ -17,7 +17,17 @@ export async function swicRegister() {
 		},
 	})
 
-	navigator.serviceWorker.ready.then((r) => (swr = r))
+	navigator.serviceWorker.ready.then((r) => {
+		console.log("sw ready")
+		swr = r
+		if (navigator.serviceWorker.controller) {
+			console.log(
+				`This page is currently controlled by: ${navigator.serviceWorker.controller}`,
+			);
+		} else {
+			console.log("This page is not currently controlled by a service worker.");
+		}
+	})
 
 	navigator.serviceWorker.addEventListener('message', (event) => {
 		onMessage((event as MessageEvent).data)
