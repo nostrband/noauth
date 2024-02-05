@@ -4,6 +4,7 @@ import { StyledAppLogo, StyledContent } from './styled'
 import { Button } from '@/shared/Button/Button'
 import { ChangeEvent, useState } from 'react'
 import { CheckmarkIcon } from '@/assets'
+import { DOMAIN } from '@/utils/consts'
 
 const AuthPage = () => {
 	const isMobile = useMediaQuery('(max-width:600px)')
@@ -34,7 +35,7 @@ const AuthPage = () => {
 				placeholder='Username'
 				helperText={inputHelperText}
 				endAdornment={
-					<Typography color={'#FFFFFFA8'}>@nsec.app</Typography>
+					<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>
 				}
 				onChange={handleInputChange}
 				value={enteredValue}
