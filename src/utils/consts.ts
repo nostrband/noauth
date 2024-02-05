@@ -3,6 +3,9 @@ export const NOAUTHD_URL = process.env.REACT_APP_NOAUTHD_URL
 export const WEB_PUSH_PUBKEY = process.env.REACT_APP_WEB_PUSH_PUBKEY
 export const DOMAIN = process.env.REACT_APP_DOMAIN
 
+export const MIN_POW = 14
+export const MAX_POW = 19
+
 export enum ACTION_TYPE {
 	BASIC = 'basic',
 	ADVANCED = 'advanced',

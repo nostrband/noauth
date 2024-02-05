@@ -10,6 +10,8 @@ import { Button } from '@/shared/Button/Button'
 import { CheckmarkIcon } from '@/assets'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
+import { DOMAIN, NOAUTHD_URL } from '@/utils/consts'
+import { fetchNip05 } from '@/utils/helpers/helpers'
 
 export const ModalSignUp = () => {
 	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -21,27 +23,41 @@ export const ModalSignUp = () => {
 	const navigate = useNavigate()
 
 	const [enteredValue, setEnteredValue] = useState('')
+	const [isAvailable, setIsAvailable] = useState(false)
 
-	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+	const handleInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
 		setEnteredValue(e.target.value)
+		const name = e.target.value.trim()
+		if (name) {
+			const npubNip05 = await fetchNip05(`${name}@${DOMAIN}`)
+			setIsAvailable(!npubNip05)
+		} else {
+			setIsAvailable(false)
+		}
 	}
 
-	const isAvailable = enteredValue.trim().length > 2
-
-	const inputHelperText = isAvailable ? (
-		<>
-			<CheckmarkIcon /> Available
-		</>
+	const inputHelperText = enteredValue 
+	? (
+		isAvailable ? (
+			<>
+				<CheckmarkIcon /> Available
+			</>
+		) : (
+			<>
+				Already taken
+			</>
+		)
 	) : (
 		"Don't worry, username can be changed later."
-	)
+	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
-		if (!enteredValue.trim().length) return
+		const name = enteredValue.trim()
+		if (!name.length) return
 		e.preventDefault()
 		try {
-			const k: any = await swicCall('generateKey')
-			notify(`New key ${k.npub}`, 'success')
+			const k: any = await swicCall('generateKey', name)
+			notify(`Account created for "${name}"`, 'success')
 			navigate(`/key/${k.npub}`)
 		} catch (error: any) {
 			notify(error.message, 'error')
@@ -73,22 +89,26 @@ export const ModalSignUp = () => {
 					placeholder='Username'
 					helperText={inputHelperText}
 					endAdornment={
-						<Typography color={'#FFFFFFA8'}>@nsec.app</Typography>
+						<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>
 					}
 					onChange={handleInputChange}
 					value={enteredValue}
 					helperTextProps={{
 						sx: {
 							'&.helper_text': {
-								color: isAvailable
+								color: enteredValue && isAvailable
 									? theme.palette.success.main
-									: theme.palette.textSecondaryDecorate.main,
+									: (enteredValue && !isAvailable
+										 ? theme.palette.error.main
+										 : theme.palette.textSecondaryDecorate.main
+										)
+								,
 							},
 						},
 					}}
 				/>
 				<Button fullWidth type='submit'>
-					Sign up
+					Create account
 				</Button>
 			</Stack>
 		</Modal>

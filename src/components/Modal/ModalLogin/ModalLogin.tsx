@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { swicCall } from '@/modules/swic'
@@ -6,7 +6,6 @@ import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { IconButton, Stack, Typography } from '@mui/material'
 import { StyledAppLogo } from './styled'
-import { nip19 } from 'nostr-tools'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
@@ -15,6 +14,8 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
+import { DOMAIN } from '@/utils/consts'
+import { fetchNip05 } from '@/utils/helpers/helpers'
 
 export const ModalLogin = () => {
 	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -51,18 +52,15 @@ export const ModalLogin = () => {
 
 	const submitHandler = async (values: FormInputType) => {
 		try {
-			const [username, domain] = values.username.split('@')
-			const response = await fetch(
-				`https://${domain}/.well-known/nostr.json?name=${username}`,
-			)
-			const getNpub: {
-				names: {
-					[name: string]: string
-				}
-			} = await response.json()
-
-			const pubkey = getNpub.names[username]
-			const npub = nip19.npubEncode(pubkey)
+			let npub = values.username
+			if (!npub.startsWith('npub1') && !npub.includes('@')) {
+				npub += '@' + DOMAIN
+			}
+			if (npub.includes('@')) {
+				const npubNip05 = await fetchNip05(npub)
+				if (!npubNip05) throw new Error(`Username ${npub} not found`)
+				npub = npubNip05
+			}
 			const passphrase = values.password
 
 			console.log('fetch', npub, passphrase)
@@ -103,9 +101,9 @@ export const ModalLogin = () => {
 					</Typography>
 				</Stack>
 				<Input
-					label='Enter a Username'
+					label='Username or nip05 or npub'
 					fullWidth
-					placeholder='user@nsec.app'
+					placeholder='name or name@domain.com or npub1...'
 					{...register('username')}
 					error={!!errors.username}
 				/>
@@ -130,7 +128,7 @@ export const ModalLogin = () => {
 					error={!!errors.password}
 				/>
 				<Button type='submit' fullWidth>
-					Login
+					Add account
 				</Button>
 			</Stack>
 		</Modal>

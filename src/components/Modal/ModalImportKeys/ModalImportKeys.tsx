@@ -28,7 +28,8 @@ export const ModalImportKeys = () => {
 		e.preventDefault()
 		try {
 			if (!enteredNsec.trim().length) return
-			const k: any = await swicCall('importKey', enteredNsec)
+			const enteredName = '' // FIXME get from input
+			const k: any = await swicCall('importKey', enteredName, enteredNsec)
 			notify('Key imported!', 'success')
 			navigate(`/key/${k.npub}`)
 		} catch (error: any) {

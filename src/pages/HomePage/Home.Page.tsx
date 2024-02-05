@@ -24,7 +24,7 @@ const HomePage = () => {
 	return (
 		<Stack maxHeight={'100%'} overflow={'auto'}>
 			<SectionTitle marginBottom={'0.5rem'}>
-				{isNoKeys ? 'Welcome' : 'Keys:'}
+				{isNoKeys ? 'Welcome' : 'Accounts:'}
 			</SectionTitle>
 			<Stack gap={'0.5rem'} overflow={'auto'}>
 				{isNoKeys && (
