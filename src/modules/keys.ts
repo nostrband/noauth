@@ -122,7 +122,7 @@ export class Keys {
     const encrypted = Buffer.concat([cipher.update(nsec), cipher.final()])
     console.log("encrypted key in ", Date.now() - start)
     return {
-      enckey: `${PREFIX}:${VERSION}:${iv.toString('hex')}:${encrypted.toString('hex')}}`,
+      enckey: `${PREFIX}:${VERSION}:${iv.toString('hex')}:${encrypted.toString('hex')}`,
       pwh
     }
   }
