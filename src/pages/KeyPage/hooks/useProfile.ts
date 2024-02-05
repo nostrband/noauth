@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { fetchProfile } from '@/modules/nostr'
 import { MetaEvent } from '@/types/meta-event'
 import { getProfileUsername } from '@/utils/helpers/helpers'
+import { DOMAIN } from '@/utils/consts'
 
 export const useProfile = (npub: string) => {
 	const [profile, setProfile] = useState<MetaEvent | null>(null)
 
 	const userName = getProfileUsername(profile, npub)
-	const userNameWithPrefix = userName + '@nsec.app'
+	// FIXME use nip05?
+	const userNameWithPrefix = userName + '@' + DOMAIN
 
 	const loadProfile = useCallback(async () => {
 		try {
