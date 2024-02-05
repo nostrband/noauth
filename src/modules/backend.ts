@@ -160,10 +160,12 @@ export class NoauthBackend {
 		const self = this
 		swg.addEventListener('activate', (event) => {
 			console.log('activate')
+//			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
 		})
 
 		swg.addEventListener('install', (event) => {
 			console.log('install')
+//			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
 		})
 
 		swg.addEventListener('push', (event) => {
@@ -972,7 +974,9 @@ export class NoauthBackend {
 	}
 
 	private async updateUI() {
-		const clients = await this.swg.clients.matchAll()
+		const clients = await this.swg.clients.matchAll({
+			includeUncontrolled: true
+		})
 		console.log('updateUI clients', clients.length)
 		for (const client of clients) {
 			client.postMessage({})
