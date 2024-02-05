@@ -1,4 +1,4 @@
-import { FC, ReactNode } from 'react'
+import { ReactNode, forwardRef } from 'react'
 import {
 	Box,
 	BoxProps,
@@ -17,29 +17,33 @@ export type InputProps = InputBaseProps & {
 	label?: string
 }
 
-export const Input: FC<InputProps> = ({
-	helperText,
-	containerProps,
-	helperTextProps,
-	label,
-	...props
-}) => {
-	return (
-		<StyledInputContainer {...containerProps}>
-			{label ? (
-				<FormLabel className='label' htmlFor={props.id}>
-					{label}
-				</FormLabel>
-			) : null}
-			<InputBase className='input' {...props} />
-			{helperText ? (
-				<FormHelperText {...helperTextProps} className='helper_text'>
-					{helperText}
-				</FormHelperText>
-			) : null}
-		</StyledInputContainer>
-	)
-}
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+	({ helperText, containerProps, helperTextProps, label, ...props }, ref) => {
+		return (
+			<StyledInputContainer {...containerProps}>
+				{label ? (
+					<FormLabel className='label' htmlFor={props.id}>
+						{label}
+					</FormLabel>
+				) : null}
+				<InputBase
+					className='input'
+					{...props}
+					classes={{ error: 'error' }}
+					inputRef={ref}
+				/>
+				{helperText ? (
+					<FormHelperText
+						{...helperTextProps}
+						className='helper_text'
+					>
+						{helperText}
+					</FormHelperText>
+				) : null}
+			</StyledInputContainer>
+		)
+	},
+)
 
 const StyledInputContainer = styled((props: BoxProps) => <Box {...props} />)(
 	({ theme }) => {
@@ -55,6 +59,9 @@ const StyledInputContainer = styled((props: BoxProps) => <Box {...props} />)(
 				fontSize: '0.875rem',
 				'& input::placeholder': {
 					color: '#fff',
+				},
+				'&.error': {
+					border: '0.3px solid ' + theme.palette.error.main,
 				},
 			},
 			'& > .helper_text': {

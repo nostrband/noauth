@@ -37,6 +37,7 @@ export const ModalSignUp = () => {
 	)
 
 	const handleSubmit = async (e: React.FormEvent) => {
+		if (!enteredValue.trim().length) return
 		e.preventDefault()
 		try {
 			const k: any = await swicCall('generateKey')
