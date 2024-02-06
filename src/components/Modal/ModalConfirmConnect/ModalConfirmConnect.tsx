@@ -27,6 +27,7 @@ export const ModalConfirmConnect = () => {
 	const [searchParams] = useSearchParams()
 	const appNpub = searchParams.get('appNpub') || ''
 	const pendingReqId = searchParams.get('reqId') || ''
+	const isPopup = searchParams.get('popup') === 'true'
 
 	const triggerApp = apps.find((app) => app.appNpub === appNpub)
 	const { name, icon = '' } = triggerApp || {}
@@ -68,17 +69,36 @@ export const ModalConfirmConnect = () => {
 			console.log('confirmed', id, allow, remember, options)
 			closeModalAfterRequest()
 		})
+		if (isPopup) window.close();
 	}
 
 	const allow = () => {
 		const options: any = {};
 		if (selectedActionType === ACTION_TYPE.BASIC)
-			options.perm = ACTION_TYPE.BASIC;
+			options.perms = [ACTION_TYPE.BASIC];
+		// else
+		// 	options.perms = ['connect','get_public_key'];
 		confirmPending(pendingReqId, true, true, options)
 	}
 
+	const disallow = () => {
+		confirmPending(pendingReqId, false, true)
+	}
+
+	if (isPopup) {
+		document.addEventListener('visibilitychange', function() {
+			if (document.visibilityState == 'hidden') {
+				disallow();
+			}
+		})
+	}
+
 	return (
-		<Modal open={isModalOpened} onClose={handleCloseModal}>
+		<Modal 
+			open={isModalOpened} 
+			withCloseButton={!isPopup}
+			onClose={!isPopup ? handleCloseModal : undefined}
+		>
 			<Stack gap={'1rem'} paddingTop={'1rem'}>
 				<Stack
 					direction={'row'}
@@ -128,7 +148,7 @@ export const ModalConfirmConnect = () => {
 				</StyledToggleButtonsGroup>
 				<Stack direction={'row'} gap={'1rem'}>
 					<StyledButton
-						onClick={() => confirmPending(pendingReqId, false, true)}
+						onClick={disallow}
 						varianttype='secondary'
 					>
 						Disallow

@@ -1,7 +1,6 @@
 export const NOAUTHD_URL = process.env.REACT_APP_NOAUTHD_URL
 export const WEB_PUSH_PUBKEY = process.env.REACT_APP_WEB_PUSH_PUBKEY
 export const DOMAIN = process.env.REACT_APP_DOMAIN
-export const APP_DOMAIN = process.env.REACT_APP_APP_DOMAIN
 export const RELAY = process.env.REACT_APP_RELAY || 'wss://relay.nsec.app'
 export const NIP46_RELAYS = [RELAY]
 
