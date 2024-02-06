@@ -5,21 +5,21 @@ import useIsIOS from '@/hooks/useIsIOS'
 import { StyledButton } from './styled'
 
 type IOSBackButtonProps = ButtonProps & {
-	onNavigate?: () => void
+  onNavigate?: () => void
 }
 
 export const IOSBackButton: FC<IOSBackButtonProps> = ({ onNavigate }) => {
-	const isIOS = useIsIOS()
-	const navigate = useNavigate()
+  const isIOS = useIsIOS()
+  const navigate = useNavigate()
 
-	const handleNavigateBack = () => {
-		if (onNavigate && typeof onNavigate === 'function') {
-			return onNavigate()
-		}
-		navigate(-1)
-	}
+  const handleNavigateBack = () => {
+    if (onNavigate && typeof onNavigate === 'function') {
+      return onNavigate()
+    }
+    navigate(-1)
+  }
 
-	if (!isIOS) return null
+  if (!isIOS) return null
 
-	return <StyledButton onClick={handleNavigateBack}>Back</StyledButton>
+  return <StyledButton onClick={handleNavigateBack}>Back</StyledButton>
 }

@@ -20,103 +20,77 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 
 const AppPage = () => {
-	const { appNpub = '', npub = '' } = useParams()
-	const navigate = useNavigate()
-	const notify = useEnqueueSnackbar()
+  const { appNpub = '', npub = '' } = useParams()
+  const navigate = useNavigate()
+  const notify = useEnqueueSnackbar()
 
-	const perms = useAppSelector((state) =>
-		selectPermsByNpubAndAppNpub(state, npub, appNpub),
-	)
-	const currentApp = useAppSelector((state) =>
-		selectAppByAppNpub(state, appNpub),
-	)
+  const perms = useAppSelector((state) => selectPermsByNpubAndAppNpub(state, npub, appNpub))
+  const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
 
-	const { open, handleClose, handleShow } = useToggleConfirm()
-	const { handleOpen: handleOpenModal } = useModalSearchParams()
+  const { open, handleClose, handleShow } = useToggleConfirm()
+  const { handleOpen: handleOpenModal } = useModalSearchParams()
 
-	const connectPerm = perms.find(
-		(perm) => perm.perm === 'connect' || perm.perm === ACTION_TYPE.BASIC,
-	)
+  const connectPerm = perms.find((perm) => perm.perm === 'connect' || perm.perm === ACTION_TYPE.BASIC)
 
-	if (!currentApp) {
-		return <Navigate to={`/key/${npub}`} />
-	}
+  if (!currentApp) {
+    return <Navigate to={`/key/${npub}`} />
+  }
 
-	const { icon = '', name = '' } = currentApp || {}
-	const appName = name || getShortenNpub(appNpub)
-	const { timestamp } = connectPerm || {}
+  const { icon = '', name = '' } = currentApp || {}
+  const appName = name || getShortenNpub(appNpub)
+  const { timestamp } = connectPerm || {}
 
-	const connectedOn =
-		connectPerm && timestamp
-			? `Connected at ${formatTimestampDate(timestamp)}`
-			: 'Not connected'
+  const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
 
-	const handleDeleteApp = async () => {
-		try {
-			await swicCall('deleteApp', appNpub)
-			notify(`App: «${appName}» successfully deleted!`, 'success')
-			navigate(`/key/${npub}`)
-		} catch (error: any) {
-			notify(error?.message || 'Failed to delete app', 'error')
-		}
-	}
+  const handleDeleteApp = async () => {
+    try {
+      await swicCall('deleteApp', appNpub)
+      notify(`App: «${appName}» successfully deleted!`, 'success')
+      navigate(`/key/${npub}`)
+    } catch (error: any) {
+      notify(error?.message || 'Failed to delete app', 'error')
+    }
+  }
 
-	return (
-		<>
-			<Stack
-				maxHeight={'100%'}
-				overflow={'auto'}
-				alignItems={'flex-start'}
-				height={'100%'}
-			>
-				<IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
-				<Stack
-					marginBottom={'1rem'}
-					direction={'row'}
-					gap={'1rem'}
-					width={'100%'}
-				>
-					<StyledAppIcon src={icon} />
-					<Box flex={'1'} overflow={'hidden'}>
-						<Typography variant='h4' noWrap>
-							{appName}
-						</Typography>
-						<Typography variant='body2' noWrap>
-							{connectedOn}
-						</Typography>
-					</Box>
-				</Stack>
-				<Box marginBottom={'1rem'}>
-					<SectionTitle marginBottom={'0.5rem'}>
-						Disconnect
-					</SectionTitle>
-					<Button fullWidth onClick={handleShow}>
-						Delete app
-					</Button>
-				</Box>
-				<Permissions perms={perms} />
+  return (
+    <>
+      <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
+        <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
+        <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'}>
+          <StyledAppIcon src={icon} />
+          <Box flex={'1'} overflow={'hidden'}>
+            <Typography variant="h4" noWrap>
+              {appName}
+            </Typography>
+            <Typography variant="body2" noWrap>
+              {connectedOn}
+            </Typography>
+          </Box>
+        </Stack>
+        <Box marginBottom={'1rem'}>
+          <SectionTitle marginBottom={'0.5rem'}>Disconnect</SectionTitle>
+          <Button fullWidth onClick={handleShow}>
+            Delete app
+          </Button>
+        </Box>
+        <Permissions perms={perms} />
 
-				<Button
-					fullWidth
-					onClick={() =>
-						handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY)
-					}
-				>
-					Activity
-				</Button>
-			</Stack>
+        <Button fullWidth onClick={() => handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY)}>
+          Activity
+        </Button>
+      </Stack>
 
-			<ConfirmModal
-				open={open}
-				headingText='Delete app'
-				description='Are you sure you want to delete this app?'
-				onCancel={handleClose}
-				onConfirm={handleDeleteApp}
-				onClose={handleClose}
-			/>
-			<ModalActivities appNpub={appNpub} />
-		</>
-	)
+      <ConfirmModal
+        open={open}
+        headingText="Delete app"
+        description="Are you sure you want to delete this app?"
+        onCancel={handleClose}
+        onConfirm={handleDeleteApp}
+        onClose={handleClose}
+      />
+      <ModalActivities appNpub={appNpub} />
+    </>
+  )
 }
 
 export default AppPage

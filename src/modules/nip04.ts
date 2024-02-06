@@ -7,25 +7,25 @@ export const utf8Decoder = new TextDecoder('utf-8')
 export const utf8Encoder = new TextEncoder()
 
 function toBase64(uInt8Array: Uint8Array) {
-  let strChunks = new Array(uInt8Array.length);
-  let i = 0;
+  let strChunks = new Array(uInt8Array.length)
+  let i = 0
   // @ts-ignore
   for (let byte of uInt8Array) {
-    strChunks[i] = String.fromCharCode(byte); // bytes to utf16 string
-    i++;
+    strChunks[i] = String.fromCharCode(byte) // bytes to utf16 string
+    i++
   }
-  return btoa(strChunks.join(""));
+  return btoa(strChunks.join(''))
 }
 
 function fromBase64(base64String: string) {
-  const binaryString = atob(base64String);
-  const length = binaryString.length;
-  const bytes = new Uint8Array(length);
+  const binaryString = atob(base64String)
+  const length = binaryString.length
+  const bytes = new Uint8Array(length)
 
   for (let i = 0; i < length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+    bytes[i] = binaryString.charCodeAt(i)
   }
-  return bytes;
+  return bytes
 }
 
 function getNormalizedX(key: Uint8Array): Uint8Array {
@@ -65,7 +65,7 @@ export class Nip04 {
     // let ctb64 = toBase64(new Uint8Array(ciphertext))
     // let ivb64 = toBase64(new Uint8Array(iv.buffer))
 
-    console.log("nip04_encrypt", text, "t1", t2 - t1, "t2", t3 - t2, "t3", Date.now() - t3)
+    console.log('nip04_encrypt', text, 't1', t2 - t1, 't2', t3 - t2, 't3', Date.now() - t3)
 
     return `${ctb64}?iv=${ivb64}`
   }
@@ -85,7 +85,4 @@ export class Nip04 {
     let text = utf8Decoder.decode(plaintext)
     return text
   }
-
 }
-
-

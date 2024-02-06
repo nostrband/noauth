@@ -8,16 +8,15 @@ import { useState, useEffect } from 'react'
 const iOSRegex = /iPad|iPhone|iPod/
 
 function useIsIOS() {
-	const [isIOS, setIsIOS] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
 
-	useEffect(() => {
-		const isIOSUserAgent =
-			iOSRegex.test(navigator.userAgent) ||
-			(navigator.userAgent.includes('Mac') && 'ontouchend' in document)
-		setIsIOS(isIOSUserAgent)
-	}, [])
+  useEffect(() => {
+    const isIOSUserAgent =
+      iOSRegex.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
+    setIsIOS(isIOSUserAgent)
+  }, [])
 
-	return isIOS
+  return isIOS
 }
 
 export default useIsIOS

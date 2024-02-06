@@ -8,32 +8,23 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 
 type ModalActivitiesProps = {
-	appNpub: string
+  appNpub: string
 }
 
 export const ModalActivities: FC<ModalActivitiesProps> = ({ appNpub }) => {
-	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
-	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.ACTIVITY)
-	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.ACTIVITY)
+  const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
+  const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.ACTIVITY)
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.ACTIVITY)
 
-	const history = useLiveQuery(
-		getActivityHistoryQuerier(appNpub),
-		[],
-		HistoryDefaultValue,
-	)
+  const history = useLiveQuery(getActivityHistoryQuerier(appNpub), [], HistoryDefaultValue)
 
-	return (
-		<Modal
-			open={isModalOpened}
-			onClose={handleCloseModal}
-			fixedHeight='calc(100% - 5rem)'
-			title='Activity history'
-		>
-			<Box overflow={'auto'}>
-				{history.map((item) => {
-					return <ItemActivity {...item} key={item.id} />
-				})}
-			</Box>
-		</Modal>
-	)
+  return (
+    <Modal open={isModalOpened} onClose={handleCloseModal} fixedHeight="calc(100% - 5rem)" title="Activity history">
+      <Box overflow={'auto'}>
+        {history.map((item) => {
+          return <ItemActivity {...item} key={item.id} />
+        })}
+      </Box>
+    </Modal>
+  )
 }

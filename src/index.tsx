@@ -13,19 +13,19 @@ import { SnackbarProvider } from 'notistack'
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
-	<React.StrictMode>
-		<BrowserRouter>
-			<Provider store={store}>
-				<PersistGate loading={null} persistor={persistor}>
-					<ThemeProvider>
-						<SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-							<App />
-						</SnackbarProvider>
-					</ThemeProvider>
-				</PersistGate>
-			</Provider>
-		</BrowserRouter>
-	</React.StrictMode>,
+  <React.StrictMode>
+    <BrowserRouter>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider>
+            <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+              <App />
+            </SnackbarProvider>
+          </ThemeProvider>
+        </PersistGate>
+      </Provider>
+    </BrowserRouter>
+  </React.StrictMode>
 )
 
 // If you want your app to work offline and load faster, you can change

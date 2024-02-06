@@ -10,14 +10,14 @@ import { ReactComponent as UnchekedLightIcon } from './icons/unchecked-light.svg
 import { default as AddImageIcon } from './icons/add-image.svg'
 
 export {
-	AppLogo,
-	ShareIcon,
-	SettingsIcon,
-	CopyIcon,
-	CheckmarkIcon,
-	CheckedIcon,
-	CheckedLightIcon,
-	UnchekedIcon,
-	UnchekedLightIcon,
-	AddImageIcon,
+  AppLogo,
+  ShareIcon,
+  SettingsIcon,
+  CopyIcon,
+  CheckmarkIcon,
+  CheckedIcon,
+  CheckedLightIcon,
+  UnchekedIcon,
+  UnchekedLightIcon,
+  AddImageIcon,
 }
