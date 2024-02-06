@@ -111,7 +111,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
 
   if (isPopup) {
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState == 'hidden') {
+      if (document.visibilityState === 'hidden') {
         confirmPending(false)
       }
     })

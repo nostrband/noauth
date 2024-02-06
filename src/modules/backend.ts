@@ -666,13 +666,18 @@ export class NoauthBackend {
         // OAuth flow
         const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
         const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
+        console.log('sending authUrl', authUrl, 'for', req)
+        // NOTE: if you set 'Update on reload' in the Chrome SW console
+        // then this message will cause a new tab opened by the peer,
+        // which will cause SW (this code) to reload, to fetch
+        // the pending requests and to re-send this event,
+        // looping for 10 seconds (our request age threshold)
         backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
 
         // show notifs
         this.notify()
 
         // notify main thread to ask for user concent
-        // FIXME show a 'confirm' notification?
         this.updateUI()
       }
     })
@@ -687,7 +692,7 @@ export class NoauthBackend {
     ndk.connect()
 
     const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
-    const backend = new NDKNip46Backend(ndk, sk, () => Promise.resolve(true))
+    const backend = new NDKNip46Backend(ndk, signer, () => Promise.resolve(true))
     this.keys.push({ npub, backend, signer, ndk, backoff })
 
     // new method
