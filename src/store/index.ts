@@ -44,6 +44,10 @@ export type AppDispatch = typeof store.dispatch
 
 export const selectKeys = (state: RootState) => state.content.keys
 
+export const selectKeyByNpub = (state: RootState, npub: string) => {
+	return state.content.keys.find((key) => key.npub === npub)
+}
+
 export const selectAppsByNpub = memoizeOne((state: RootState, npub: string) => {
 	return state.content.apps.filter((app) => app.npub === npub)
 }, isDeepEqual)

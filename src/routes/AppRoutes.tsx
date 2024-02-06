@@ -1,7 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes, Navigate } from 'react-router-dom'
 import HomePage from '../pages/HomePage/Home.Page'
-import WelcomePage from '../pages/Welcome.Page'
 import { Layout } from '../layout/Layout'
 import { CircularProgress, Stack } from '@mui/material'
 

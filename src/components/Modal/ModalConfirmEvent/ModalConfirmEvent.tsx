@@ -94,10 +94,11 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 				sp.delete('appNpub')
 				sp.delete('reqId')
 				selectedPendingRequests.forEach(
-					async (req) => await swicCall('confirm', req.id, false, false),
+					async (req) =>
+						await swicCall('confirm', req.id, false, false),
 				)
-			}
-		}
+			},
+		},
 	)
 
 	const closeModalAfterRequest = createHandleCloseReplace(
@@ -106,8 +107,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 			onClose: (sp) => {
 				sp.delete('appNpub')
 				sp.delete('reqId')
-			}
-		}
+			},
+		},
 	)
 
 	async function confirmPending(allow: boolean) {
@@ -119,7 +120,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 			})
 		})
 		closeModalAfterRequest()
-		if (isPopup) window.close();
+		if (isPopup) window.close()
 	}
 
 	const handleChangeCheckbox = (reqId: string) => () => {
@@ -141,8 +142,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 
 	if (isPopup) {
 		document.addEventListener('visibilitychange', () => {
-			if (document.visibilityState == 'hidden') {
-				confirmPending(false);
+			if (document.visibilityState === 'hidden') {
+				confirmPending(false)
 			}
 		})
 	}

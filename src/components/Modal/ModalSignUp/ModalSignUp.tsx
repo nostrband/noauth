@@ -10,7 +10,7 @@ import { Button } from '@/shared/Button/Button'
 import { CheckmarkIcon } from '@/assets'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
-import { DOMAIN, NOAUTHD_URL } from '@/utils/consts'
+import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 
 export const ModalSignUp = () => {
@@ -36,20 +36,17 @@ export const ModalSignUp = () => {
 		}
 	}
 
-	const inputHelperText = enteredValue 
-	? (
+	const inputHelperText = enteredValue ? (
 		isAvailable ? (
 			<>
 				<CheckmarkIcon /> Available
 			</>
 		) : (
-			<>
-				Already taken
-			</>
+			<>Already taken</>
 		)
 	) : (
 		"Don't worry, username can be changed later."
-	);
+	)
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		const name = enteredValue.trim()
@@ -96,13 +93,13 @@ export const ModalSignUp = () => {
 					helperTextProps={{
 						sx: {
 							'&.helper_text': {
-								color: enteredValue && isAvailable
-									? theme.palette.success.main
-									: (enteredValue && !isAvailable
-										 ? theme.palette.error.main
-										 : theme.palette.textSecondaryDecorate.main
-										)
-								,
+								color:
+									enteredValue && isAvailable
+										? theme.palette.success.main
+										: enteredValue && !isAvailable
+											? theme.palette.error.main
+											: theme.palette
+													.textSecondaryDecorate.main,
 							},
 						},
 					}}

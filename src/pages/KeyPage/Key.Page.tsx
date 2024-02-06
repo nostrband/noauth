@@ -11,7 +11,6 @@ import { ModalSettings } from '@/components/Modal/ModalSettings/ModalSettings'
 import { ModalExplanation } from '@/components/Modal/ModalExplanation/ModalExplanation'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
 import { ModalConfirmEvent } from '@/components/Modal/ModalConfirmEvent/ModalConfirmEvent'
-import { useProfile } from './hooks/useProfile'
 import { useBackgroundSigning } from './hooks/useBackgroundSigning'
 import { BackgroundSigningWarning } from './components/BackgroundSigningWarning'
 import UserValueSection from './components/UserValueSection'
@@ -22,23 +21,23 @@ import { DOMAIN } from '@/utils/consts'
 
 const KeyPage = () => {
 	const { npub = '' } = useParams<{ npub: string }>()
-	const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
+	const { keys, apps, pending, perms } = useAppSelector(
+		(state) => state.content,
+	)
 	const isSynced = useLiveQuery(checkNpubSyncQuerier(npub), [npub], false)
 
 	const { handleOpen } = useModalSearchParams()
 
-	// const { userNameWithPrefix } = useProfile(npub)
 	const { handleEnableBackground, showWarning, isEnabling } =
 		useBackgroundSigning()
 
-	const key = keys.find(k => k.npub === npub)
+	const key = keys.find((k) => k.npub === npub)
+
 	let username = ''
 	if (key?.name) {
-		if (key.name.includes('@'))
-			username = key.name
-		else
-			username = `${key?.name}@${DOMAIN}`
-	} 
+		if (key.name.includes('@')) username = key.name
+		else username = `${key?.name}@${DOMAIN}`
+	}
 
 	const filteredApps = apps.filter((a) => a.npub === npub)
 	const { prepareEventPendings } = useTriggerConfirmModal(

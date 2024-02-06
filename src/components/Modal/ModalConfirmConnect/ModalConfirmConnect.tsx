@@ -12,7 +12,6 @@ import { useState } from 'react'
 import { swicCall } from '@/modules/swic'
 import { ACTION_TYPE } from '@/utils/consts'
 
-
 export const ModalConfirmConnect = () => {
 	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
 	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
@@ -45,7 +44,7 @@ export const ModalConfirmConnect = () => {
 				sp.delete('appNpub')
 				sp.delete('reqId')
 				await swicCall('confirm', pendingReqId, false, false)
-			}
+			},
 		},
 	)
 	const closeModalAfterRequest = createHandleCloseReplace(
@@ -55,27 +54,27 @@ export const ModalConfirmConnect = () => {
 				sp.delete('appNpub')
 				sp.delete('reqId')
 			},
-		}
+		},
 	)
 
 	async function confirmPending(
 		id: string,
 		allow: boolean,
 		remember: boolean,
-		options?: any
+		options?: any,
 	) {
 		call(async () => {
 			await swicCall('confirm', id, allow, remember, options)
 			console.log('confirmed', id, allow, remember, options)
 			closeModalAfterRequest()
 		})
-		if (isPopup) window.close();
+		if (isPopup) window.close()
 	}
 
 	const allow = () => {
-		const options: any = {};
+		const options: any = {}
 		if (selectedActionType === ACTION_TYPE.BASIC)
-			options.perms = [ACTION_TYPE.BASIC];
+			options.perms = [ACTION_TYPE.BASIC]
 		// else
 		// 	options.perms = ['connect','get_public_key'];
 		confirmPending(pendingReqId, true, true, options)
@@ -86,16 +85,16 @@ export const ModalConfirmConnect = () => {
 	}
 
 	if (isPopup) {
-		document.addEventListener('visibilitychange', function() {
-			if (document.visibilityState == 'hidden') {
-				disallow();
+		document.addEventListener('visibilitychange', function () {
+			if (document.visibilityState === 'hidden') {
+				disallow()
 			}
 		})
 	}
 
 	return (
-		<Modal 
-			open={isModalOpened} 
+		<Modal
+			open={isModalOpened}
 			withCloseButton={!isPopup}
 			onClose={!isPopup ? handleCloseModal : undefined}
 		>
@@ -147,16 +146,10 @@ export const ModalConfirmConnect = () => {
 					/>
 				</StyledToggleButtonsGroup>
 				<Stack direction={'row'} gap={'1rem'}>
-					<StyledButton
-						onClick={disallow}
-						varianttype='secondary'
-					>
+					<StyledButton onClick={disallow} varianttype='secondary'>
 						Disallow
 					</StyledButton>
-					<StyledButton
-						fullWidth
-						onClick={allow}
-					>
+					<StyledButton fullWidth onClick={allow}>
 						{/* Allow {selectedActionType} actions */}
 						Connect
 					</StyledButton>

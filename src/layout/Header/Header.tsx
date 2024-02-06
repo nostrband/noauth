@@ -2,35 +2,20 @@ import { Avatar, Stack, Toolbar, Typography } from '@mui/material'
 import { AppLogo } from '../../assets'
 import { StyledAppBar, StyledAppName } from './styled'
 import { Menu } from './components/Menu'
-import { useParams } from 'react-router-dom'
-import { useCallback, useEffect, useState } from 'react'
-import { MetaEvent } from '@/types/meta-event'
-import { fetchProfile } from '@/modules/nostr'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
-import { getShortenNpub } from '@/utils/helpers/helpers'
+import { useProfile } from '@/hooks/useProfile'
 
 export const Header = () => {
 	const { npub = '' } = useParams<{ npub: string }>()
-	const [profile, setProfile] = useState<MetaEvent | null>(null)
+	const { userName, userAvatar, avatarTitle } = useProfile(npub)
+	const showProfile = Boolean(npub)
 
-	const load = useCallback(async () => {
-		if (!npub) return setProfile(null)
+	const navigate = useNavigate()
 
-		try {
-			const response = await fetchProfile(npub)
-			setProfile(response as any)
-		} catch (e) {
-			return setProfile(null)
-		}
-	}, [npub])
-
-	useEffect(() => {
-		load()
-	}, [load])
-
-	const showProfile = Boolean(npub || profile)
-	const userName = profile?.info?.name || getShortenNpub(npub)
-	const userAvatar = profile?.info?.picture || ''
+	const handleNavigate = () => {
+		navigate(`/key/${npub}`)
+	}
 
 	return (
 		<StyledAppBar position='fixed'>
@@ -41,17 +26,30 @@ export const Header = () => {
 					alignItems={'center'}
 					width={'100%'}
 				>
-					{showProfile ? (
+					{showProfile && (
 						<Stack
 							gap={'1rem'}
 							direction={'row'}
 							alignItems={'center'}
 							flex={1}
 						>
-							<Avatar src={userAvatar} alt={userName} />
-							<Typography fontWeight={600}>{userName}</Typography>
+							<Avatar
+								src={userAvatar}
+								alt={userName}
+								onClick={handleNavigate}
+							>
+								{avatarTitle}
+							</Avatar>
+							<Typography
+								fontWeight={600}
+								onClick={handleNavigate}
+							>
+								{userName}
+							</Typography>
 						</Stack>
-					) : (
+					)}
+
+					{!showProfile && (
 						<StyledAppName>
 							<AppLogo />
 							<span>Nsec.app</span>
