@@ -8,7 +8,7 @@ import NDK, {
 	NDKPrivateKeySigner,
 	NDKSigner,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, APP_DOMAIN } from '../utils/consts'
 import { Nip04 } from './nip04'
 import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
@@ -37,6 +37,7 @@ interface Pending {
 }
 
 interface IAllowCallbackParams {
+	backend: NDKNip46Backend
 	npub: string
 	id: string
 	method: string
@@ -89,17 +90,20 @@ class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
 }
 
 class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
+	readonly backend: NDKNip46Backend
 	readonly npub: string
 	readonly method: string
 	private body: IEventHandlingStrategy
 	private allowCb: (params: IAllowCallbackParams) => Promise<boolean>
 
 	constructor(
+		backend: NDKNip46Backend,
 		npub: string,
 		method: string,
 		body: IEventHandlingStrategy,
 		allowCb: (params: IAllowCallbackParams) => Promise<boolean>,
 	) {
+		this.backend = backend
 		this.npub = npub
 		this.method = method
 		this.body = body
@@ -119,6 +123,7 @@ class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
 			params,
 		})
 		const allow = await this.allowCb({
+			backend: this.backend,
 			npub: this.npub,
 			id,
 			method: this.method,
@@ -579,6 +584,7 @@ export class NoauthBackend {
 	}
 
 	private async allowPermitCallback({
+		backend,
 		npub,
 		id,
 		method,
@@ -720,6 +726,11 @@ export class NoauthBackend {
 						onAllow(true, allow, remember, options),
 				})
 
+				// OAuth flow
+				const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
+				const authUrl = `https://${APP_DOMAIN}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}`
+				backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+
 				// show notifs
 				this.notify()
 
@@ -758,6 +769,7 @@ export class NoauthBackend {
 		// assign our own permission callback
 		for (const method in backend.handlers) {
 			backend.handlers[method] = new EventHandlingStrategyWrapper(
+				backend,
 				npub,
 				method,
 				backend.handlers[method],

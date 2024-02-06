@@ -32,7 +32,13 @@ const KeyPage = () => {
 		useBackgroundSigning()
 
 	const key = keys.find(k => k.npub === npub)
-	const username = key?.name ? `${key?.name}@${DOMAIN}` : ''
+	let username = ''
+	if (key?.name) {
+		if (key.name.includes('@'))
+			username = key.name
+		else
+			username = `${key?.name}@${DOMAIN}`
+	} 
 
 	const filteredApps = apps.filter((a) => a.npub === npub)
 	const { prepareEventPendings } = useTriggerConfirmModal(
