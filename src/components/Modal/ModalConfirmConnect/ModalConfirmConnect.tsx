@@ -86,8 +86,8 @@ export const ModalConfirmConnect = () => {
 	}
 
 	if (isPopup) {
-		document.addEventListener('visibilitychange', function() {
-			if (document.visibilityState == 'hidden') {
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') {
 				disallow();
 			}
 		})
