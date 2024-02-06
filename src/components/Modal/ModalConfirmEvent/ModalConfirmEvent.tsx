@@ -55,6 +55,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 	const [searchParams] = useSearchParams()
 
 	const appNpub = searchParams.get('appNpub') || ''
+	const isPopup = searchParams.get('popup') === 'true'
 
 	const { npub = '' } = useParams<{ npub: string }>()
 	const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
@@ -118,6 +119,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 			})
 		})
 		closeModalAfterRequest()
+		if (isPopup) window.close();
 	}
 
 	const handleChangeCheckbox = (reqId: string) => () => {
@@ -137,8 +139,20 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({
 		return action
 	}
 
+	if (isPopup) {
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState == 'hidden') {
+				confirmPending(false);
+			}
+		})
+	}
+
 	return (
-		<Modal open={isModalOpened} onClose={handleCloseModal}>
+		<Modal
+			open={isModalOpened}
+			withCloseButton={!isPopup}
+			onClose={!isPopup ? handleCloseModal : undefined}
+		>
 			<Stack gap={'1rem'} paddingTop={'1rem'}>
 				<Stack
 					direction={'row'}

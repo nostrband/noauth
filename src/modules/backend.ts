@@ -8,7 +8,7 @@ import NDK, {
 	NDKPrivateKeySigner,
 	NDKSigner,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, APP_DOMAIN } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC } from '../utils/consts'
 import { Nip04 } from './nip04'
 import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
@@ -647,7 +647,6 @@ export class NoauthBackend {
 					}
 				} else {
 					// just send to db w/o waiting for it
-					// if (!PERF_TEST)
 					dbi.addConfirmed({
 						...req,
 						allowed: allow,
@@ -664,17 +663,18 @@ export class NoauthBackend {
 				if (index >= 0) self.confirmBuffer.splice(index, 1)
 
 				if (remember) {
-					let perm = getReqPerm(req)
-					if (allow && options && options.perm) perm = options.perm
+					let newPerms = [getReqPerm(req)]
+					if (allow && options && options.perms) newPerms = options.perms
 
-					await dbi.addPerm({
-						id: req.id,
-						npub: req.npub,
-						appNpub: req.appNpub,
-						perm,
-						value: allow ? '1' : '0',
-						timestamp: Date.now(),
-					})
+					for (const p of newPerms)
+						await dbi.addPerm({
+							id: req.id,
+							npub: req.npub,
+							appNpub: req.appNpub,
+							perm: p,
+							value: allow ? '1' : '0',
+							timestamp: Date.now(),
+						})
 
 					this.perms = await dbi.listPerms()
 
@@ -689,7 +689,6 @@ export class NoauthBackend {
 					)
 					for (const r of otherReqs) {
 						const perm = this.getPerm(r.req)
-						//						if (r.req.method === req.method) {
 						if (perm) {
 							r.cb(perm === '1', false)
 						}
@@ -728,7 +727,7 @@ export class NoauthBackend {
 
 				// OAuth flow
 				const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
-				const authUrl = `https://${APP_DOMAIN}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}`
+				const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
 				backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
 
 				// show notifs
