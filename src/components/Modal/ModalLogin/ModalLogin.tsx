@@ -18,128 +18,110 @@ import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 
 export const ModalLogin = () => {
-	const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
-	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.LOGIN)
-	const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.LOGIN)
+  const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
+  const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.LOGIN)
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.LOGIN)
 
-	const notify = useEnqueueSnackbar()
+  const notify = useEnqueueSnackbar()
 
-	const navigate = useNavigate()
+  const navigate = useNavigate()
 
-	const {
-		handleSubmit,
-		reset,
-		register,
-		formState: { errors },
-	} = useForm<FormInputType>({
-		defaultValues: {
-			username: '',
-			password: '',
-		},
-		resolver: yupResolver(schema),
-		mode: 'onSubmit',
-	})
+  const {
+    handleSubmit,
+    reset,
+    register,
+    formState: { errors },
+  } = useForm<FormInputType>({
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+    resolver: yupResolver(schema),
+    mode: 'onSubmit',
+  })
 
-	const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [isPasswordShown, setIsPasswordShown] = useState(false)
 
-	const handlePasswordTypeChange = () =>
-		setIsPasswordShown((prevState) => !prevState)
+  const handlePasswordTypeChange = () => setIsPasswordShown((prevState) => !prevState)
 
-	const cleanUpStates = useCallback(() => {
-		setIsPasswordShown(false)
-		reset()
-	}, [reset])
+  const cleanUpStates = useCallback(() => {
+    setIsPasswordShown(false)
+    reset()
+  }, [reset])
 
-	const submitHandler = async (values: FormInputType) => {
-		try {
-			let npub = values.username
-			let name = ''
-			if (!npub.startsWith('npub1')) {
-				name = npub
-				if (!npub.includes('@')) {
-					npub += '@' + DOMAIN
-				} else {
-					const nameDomain = npub.split('@')
-					if (nameDomain[1] === DOMAIN)
-						name = nameDomain[0];
-				}
-			}
-			if (npub.includes('@')) {
-				const npubNip05 = await fetchNip05(npub)
-				if (!npubNip05) throw new Error(`Username ${npub} not found`)
-				npub = npubNip05
-			}
-			const passphrase = values.password
+  const submitHandler = async (values: FormInputType) => {
+    try {
+      let npub = values.username
+      let name = ''
+      if (!npub.startsWith('npub1')) {
+        name = npub
+        if (!npub.includes('@')) {
+          npub += '@' + DOMAIN
+        } else {
+          const nameDomain = npub.split('@')
+          if (nameDomain[1] === DOMAIN) name = nameDomain[0]
+        }
+      }
+      if (npub.includes('@')) {
+        const npubNip05 = await fetchNip05(npub)
+        if (!npubNip05) throw new Error(`Username ${npub} not found`)
+        npub = npubNip05
+      }
+      const passphrase = values.password
 
-			console.log('fetch', npub, name)
-			const k: any = await swicCall('fetchKey', npub, passphrase, name)
-			notify(`Fetched ${k.npub}`, 'success')
-			cleanUpStates()
-			navigate(`/key/${k.npub}`)
-		} catch (error: any) {
-			console.log("error", error);
-			notify(error?.message || 'Something went wrong!', 'error')
-		}
-	}
+      console.log('fetch', npub, name)
+      const k: any = await swicCall('fetchKey', npub, passphrase, name)
+      notify(`Fetched ${k.npub}`, 'success')
+      cleanUpStates()
+      navigate(`/key/${k.npub}`)
+    } catch (error: any) {
+      console.log('error', error)
+      notify(error?.message || 'Something went wrong!', 'error')
+    }
+  }
 
-	useEffect(() => {
-		return () => {
-			if (isModalOpened) {
-				// modal closed
-				cleanUpStates()
-			}
-		}
-	}, [isModalOpened, cleanUpStates])
+  useEffect(() => {
+    return () => {
+      if (isModalOpened) {
+        // modal closed
+        cleanUpStates()
+      }
+    }
+  }, [isModalOpened, cleanUpStates])
 
-	return (
-		<Modal open={isModalOpened} onClose={handleCloseModal}>
-			<Stack
-				gap={'1rem'}
-				component={'form'}
-				onSubmit={handleSubmit(submitHandler)}
-			>
-				<Stack
-					direction={'row'}
-					gap={'1rem'}
-					alignItems={'center'}
-					alignSelf={'flex-start'}
-				>
-					<StyledAppLogo />
-					<Typography fontWeight={600} variant='h5'>
-						Login
-					</Typography>
-				</Stack>
-				<Input
-					label='Username or nip05 or npub'
-					fullWidth
-					placeholder='name or name@domain.com or npub1...'
-					{...register('username')}
-					error={!!errors.username}
-				/>
-				<Input
-					label='Password'
-					fullWidth
-					placeholder='Your password'
-					{...register('password')}
-					endAdornment={
-						<IconButton
-							size='small'
-							onClick={handlePasswordTypeChange}
-						>
-							{isPasswordShown ? (
-								<VisibilityOffOutlinedIcon />
-							) : (
-								<VisibilityOutlinedIcon />
-							)}
-						</IconButton>
-					}
-					type={isPasswordShown ? 'text' : 'password'}
-					error={!!errors.password}
-				/>
-				<Button type='submit' fullWidth>
-					Add account
-				</Button>
-			</Stack>
-		</Modal>
-	)
+  return (
+    <Modal open={isModalOpened} onClose={handleCloseModal}>
+      <Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
+          <StyledAppLogo />
+          <Typography fontWeight={600} variant="h5">
+            Login
+          </Typography>
+        </Stack>
+        <Input
+          label="Username or nip05 or npub"
+          fullWidth
+          placeholder="name or name@domain.com or npub1..."
+          {...register('username')}
+          error={!!errors.username}
+        />
+        <Input
+          label="Password"
+          fullWidth
+          placeholder="Your password"
+          {...register('password')}
+          endAdornment={
+            <IconButton size="small" onClick={handlePasswordTypeChange}>
+              {isPasswordShown ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+            </IconButton>
+          }
+          type={isPasswordShown ? 'text' : 'password'}
+          error={!!errors.password}
+        />
+        <Button type="submit" fullWidth>
+          Add account
+        </Button>
+      </Stack>
+    </Modal>
+  )
 }
