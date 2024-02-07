@@ -20,7 +20,7 @@ export const useBackgroundSigning = () => {
       await askNotificationPermission()
       const result = await swicCall('enablePush')
       if (!result) throw new Error('Failed to activate the push subscription')
-      notify('Push notifications enabled!', 'success')
+      notify('Background service enabled!', 'success')
       setShowWarning(false)
     } catch (error: any) {
       notify(`Failed to enable push subscription: ${error}`, 'error')

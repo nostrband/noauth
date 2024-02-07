@@ -15,6 +15,12 @@ export const getShortenNpub = (npub = '') => {
   return npub.substring(0, 10) + '...' + npub.slice(-4)
 }
 
+export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
+	return name 
+		? name[0].toLocaleUpperCase()
+		: appNpub.substring(4, 7);
+}
+
 export const getProfileUsername = (profile: MetaEvent | null, npub: string) => {
   return profile?.info?.name || profile?.info?.display_name || getShortenNpub(npub)
 }

@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -57,6 +57,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, icon = '' } = triggerApp || {}
   const appName = name || getShortenNpub(appNpub)
+	const appAvatarTitle = getAppIconTitle(name, appNpub)
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -118,7 +119,9 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   }
 
   return (
-    <Modal open={isModalOpened} withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}>
+    <Modal title='Permission request' open={isModalOpened} withCloseButton={false}
+			// withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
+		>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
@@ -129,13 +132,15 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
               borderRadius: '12px',
             }}
             src={icon}
-          />
+          >
+						{appAvatarTitle}
+					</Avatar>
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
             </Typography>
             <Typography variant="body2" color={'GrayText'}>
-              Would like your permission to
+              App wants to perform these actions
             </Typography>
           </Box>
         </Stack>

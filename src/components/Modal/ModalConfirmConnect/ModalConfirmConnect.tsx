@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getShortenNpub } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -29,19 +29,20 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, icon = '' } = triggerApp || {}
   const appName = name || getShortenNpub(appNpub)
+	const appAvatarTitle = getAppIconTitle(name, appNpub)
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
     return setSelectedActionType(value)
   }
 
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
-    onClose: async (sp) => {
-      sp.delete('appNpub')
-      sp.delete('reqId')
-      await swicCall('confirm', pendingReqId, false, false)
-    },
-  })
+  // const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
+  //   onClose: async (sp) => {
+  //     sp.delete('appNpub')
+  //     sp.delete('reqId')
+  //     await swicCall('confirm', pendingReqId, false, false)
+  //   },
+  // })
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
       sp.delete('appNpub')
@@ -79,23 +80,27 @@ export const ModalConfirmConnect = () => {
   }
 
   return (
-    <Modal open={isModalOpened} withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}>
+    <Modal title='Connection request' open={isModalOpened} withCloseButton={false}
+		//  withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
+		>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
-            variant="square"
+            variant="rounded"
             sx={{
               width: 56,
               height: 56,
             }}
             src={icon}
-          />
+          >
+						{appAvatarTitle}
+					</Avatar>
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
             </Typography>
             <Typography variant="body2" color={'GrayText'}>
-              Would like to connect to your account
+              New app would like to connect
             </Typography>
           </Box>
         </Stack>
@@ -103,7 +108,7 @@ export const ModalConfirmConnect = () => {
           <ActionToggleButton
             value={ACTION_TYPE.BASIC}
             title="Basic permissions"
-            description="Read your public key, sign notes and reactions"
+            description="Read your public key, sign notes, reactions, zaps, etc"
             // hasinfo
           />
           {/* <ActionToggleButton
@@ -115,7 +120,7 @@ export const ModalConfirmConnect = () => {
           <ActionToggleButton
             value={ACTION_TYPE.CUSTOM}
             title="On demand"
-            description="Assign permissions when the app asks for them"
+            description="Confirm permissions when the app asks for them"
           />
         </StyledToggleButtonsGroup>
         <Stack direction={'row'} gap={'1rem'}>
