@@ -1,7 +1,7 @@
-import React, { FC } from 'react'
+import { FC } from 'react'
 import { Warning } from '@/components/Warning/Warning'
-import { CircularProgress, Stack } from '@mui/material'
-import GppMaybeIcon from '@mui/icons-material/GppMaybe'
+import { CircularProgress, Stack, Typography } from '@mui/material'
+import AutoModeOutlinedIcon from '@mui/icons-material/AutoModeOutlined'
 
 type BackgroundSigningWarningProps = {
   isEnabling: boolean
@@ -13,10 +13,16 @@ export const BackgroundSigningWarning: FC<BackgroundSigningWarningProps> = ({ is
     <Warning
       message={
         <Stack direction={'row'} alignItems={'center'} gap={'1rem'}>
-          Please enable push notifications {isEnabling ? <CircularProgress size={'1.5rem'} /> : null}
+          Enable background service {isEnabling ? <CircularProgress size={'1.5rem'} /> : null}
         </Stack>
       }
-      Icon={<GppMaybeIcon htmlColor="white" />}
+      hint={
+        <Typography variant='body2'>
+          Please allow notifications
+          for background operation. 
+        </Typography>
+      }
+      icon={<AutoModeOutlinedIcon htmlColor="white" />}
       onClick={isEnabling ? undefined : onEnableBackSigning}
     />
   )

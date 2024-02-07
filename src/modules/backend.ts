@@ -8,9 +8,9 @@ import NDK, {
   NDKPrivateKeySigner,
   NDKSigner,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN } from '../utils/consts'
 import { Nip04 } from './nip04'
-import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
 //import { PrivateKeySigner } from './signer'
 
@@ -225,7 +225,7 @@ export class NoauthBackend {
 
   public setNotifCallback(cb: () => void) {
     if (this.notifCallback) {
-      this.notify()
+      // this.notify()
     }
     this.notifCallback = cb
   }
@@ -245,6 +245,13 @@ export class NoauthBackend {
   private async sha256(s: string) {
     return Buffer.from(await this.swg.crypto.subtle.digest('SHA-256', Buffer.from(s))).toString('hex')
   }
+
+	private async fetchNpubName(npub: string) {
+    const url = `${NOAUTHD_URL}/name?npub=${npub}`
+    const r = await fetch(url)
+		const d = await r.json()
+		return d?.names?.length ? d.names[0] as string : ''
+	}
 
   private async sendPost({ url, method, headers, body }: { url: string; method: string; headers: any; body: string }) {
     const r = await fetch(url, {
@@ -559,7 +566,13 @@ export class NoauthBackend {
     }
 
     const appNpub = nip19.npubEncode(remotePubkey)
-    const req: DbPending = {
+		const connected = !!this.apps.find(a => a.appNpub === appNpub)
+		if (!connected && method !== 'connect') {
+      console.log('ignoring request before connect', method, id, appNpub, npub)
+      return false
+		}
+
+		const req: DbPending = {
       id,
       npub,
       appNpub,
@@ -574,25 +587,25 @@ export class NoauthBackend {
       const onAllow = async (manual: boolean, allow: boolean, remember: boolean, options?: any) => {
         // confirm
         console.log(Date.now(), allow ? 'allowed' : 'disallowed', npub, method, options, params)
-        if (manual) {
+
+				if (manual) {
           await dbi.confirmPending(id, allow)
 
-          if (!(method === 'connect' && !allow)) {
-            // only add app if it's not 'disallow connect'
-            if (!(await dbi.getApp(req.appNpub))) {
-              await dbi.addApp({
-                appNpub: req.appNpub,
-                npub: req.npub,
-                timestamp: Date.now(),
-                name: '',
-                icon: '',
-                url: '',
-              })
+					// add app on 'allow connect'
+          if (method === 'connect' && allow) {
+            // if (!(await dbi.getApp(req.appNpub))) {
+						await dbi.addApp({
+							appNpub: req.appNpub,
+							npub: req.npub,
+							timestamp: Date.now(),
+							name: '',
+							icon: '',
+							url: '',
+						})
 
-              // reload
-              self.apps = await dbi.listApps()
-            }
-          }
+						// reload
+						self.apps = await dbi.listApps()
+					}
         } else {
           // just send to db w/o waiting for it
           dbi.addConfirmed({
@@ -612,7 +625,8 @@ export class NoauthBackend {
           let newPerms = [getReqPerm(req)]
           if (allow && options && options.perms) newPerms = options.perms
 
-          for (const p of newPerms)
+					// write new perms confirmed by user
+          for (const p of newPerms) {
             await dbi.addPerm({
               id: req.id,
               npub: req.npub,
@@ -621,13 +635,17 @@ export class NoauthBackend {
               value: allow ? '1' : '0',
               timestamp: Date.now(),
             })
+					}
 
+					// reload
           this.perms = await dbi.listPerms()
 
-          const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
-          console.log('updated perms', this.perms, 'otherReqs', otherReqs)
+					// confirm pending requests that might now have
+					// the proper perms
+					const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
+          console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
           for (const r of otherReqs) {
-            const perm = this.getPerm(r.req)
+            let perm = this.getPerm(r.req)
             if (perm) {
               r.cb(perm === '1', false)
             }
@@ -675,7 +693,7 @@ export class NoauthBackend {
         backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
 
         // show notifs
-        this.notify()
+        // this.notify()
 
         // notify main thread to ask for user concent
         this.updateUI()
@@ -793,7 +811,7 @@ export class NoauthBackend {
     await this.sendKeyToServer(npub, enckey, pwh)
   }
 
-  private async fetchKey(npub: string, passphrase: string, name: string) {
+  private async fetchKey(npub: string, passphrase: string, nip05: string) {
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
     const { pwh } = await this.keysModule.generatePassKey(pubkey, passphrase)
@@ -803,13 +821,50 @@ export class NoauthBackend {
     const key = this.enckeys.find((k) => k.npub === npub)
     if (key) return this.keyInfo(key)
 
+		let name = ''
+		let existingName = true
+		// check name - user might have provided external nip05,
+		// or just his npub - we must fetch their name from our 
+		// server, and if not exists - try to assign one
+		const npubName = await this.fetchNpubName(npub)
+		if (npubName) {
+			// already have name for this npub
+			console.log("existing npub name", npub, npubName)
+			name = npubName
+		} else if (nip05.includes('@')) {
+			// no name for them?
+			const [nip05name, domain] = nip05.split('@')
+			if (domain === DOMAIN) {
+				// wtf? how did we learn their npub if 
+				// it's the name on our server but we can't fetch it?
+				console.log("existing name", nip05name)
+				name = nip05name
+			} else {
+				// try to take same name on our domain
+				existingName = false
+				name = nip05name
+				let takenName = await fetchNip05(`${name}@${DOMAIN}`)
+				if (takenName) {
+					// already taken? try name_domain as name
+					name = `${nip05name}_${domain}`
+					takenName = await fetchNip05(`${name}@${DOMAIN}`)
+				}
+				if (takenName) {
+					console.log("All names taken, leave without a name?")
+					name = ''
+				}
+			}	
+		}
+
+		console.log("fetch", { name, existingName })
+
     // add new key
     const nsec = await this.keysModule.decryptKeyPass({
       pubkey,
       enckey,
       passphrase,
     })
-    const k = await this.addKey({ name, nsec, existingName: true })
+    const k = await this.addKey({ name, nsec, existingName })
     this.updateUI()
     return k
   }
