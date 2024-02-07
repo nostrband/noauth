@@ -4,15 +4,15 @@ import { darkTheme, lightTheme } from './theme'
 import { useAppSelector } from '../../store/hooks/redux'
 
 const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
-	const themeMode = useAppSelector((state) => state.ui.themeMode)
-	const isDarkMode = themeMode === 'dark'
+  const themeMode = useAppSelector((state) => state.ui.themeMode)
+  const isDarkMode = themeMode === 'dark'
 
-	return (
-		<ThemeMuiProvider theme={isDarkMode ? darkTheme : lightTheme}>
-			<CssBaseline />
-			{children}
-		</ThemeMuiProvider>
-	)
+  return (
+    <ThemeMuiProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      {children}
+    </ThemeMuiProvider>
+  )
 }
 
 export default ThemeProvider

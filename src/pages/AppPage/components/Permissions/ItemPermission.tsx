@@ -11,49 +11,31 @@ import { ItemPermissionMenu } from './ItemPermissionMenu'
 import { useOpenMenu } from '@/hooks/useOpenMenu'
 
 type ItemPermissionProps = {
-	permission: DbPerm
+  permission: DbPerm
 }
 
 export const ItemPermission: FC<ItemPermissionProps> = ({ permission }) => {
-	const { perm, value, timestamp, id } = permission || {}
+  const { perm, value, timestamp, id } = permission || {}
 
-	const { anchorEl, handleClose, handleOpen, open } = useOpenMenu()
+  const { anchorEl, handleClose, handleOpen, open } = useOpenMenu()
 
-	const isAllowed = value === '1'
+  const isAllowed = value === '1'
 
-	return (
-		<>
-			<StyledPermissionItem>
-				<Box
-					display={'flex'}
-					flexDirection={'column'}
-					gap={'0.5rem'}
-					flex={1}
-				>
-					<Typography flex={1} fontWeight={700}>
-						{ACTIONS[perm] || perm}
-					</Typography>
-					<Typography variant='body2'>
-						{formatTimestampDate(timestamp)}
-					</Typography>
-				</Box>
-				<Box>
-					{isAllowed ? (
-						<DoneRoundedIcon htmlColor='green' />
-					) : (
-						<ClearRoundedIcon htmlColor='red' />
-					)}
-				</Box>
-				<IconButton onClick={handleOpen}>
-					<MoreVertRoundedIcon />
-				</IconButton>
-			</StyledPermissionItem>
-			<ItemPermissionMenu
-				anchorEl={anchorEl}
-				open={open}
-				handleClose={handleClose}
-				permId={id}
-			/>
-		</>
-	)
+  return (
+    <>
+      <StyledPermissionItem>
+        <Box display={'flex'} flexDirection={'column'} gap={'0.5rem'} flex={1}>
+          <Typography flex={1} fontWeight={700}>
+            {ACTIONS[perm] || perm}
+          </Typography>
+          <Typography variant="body2">{formatTimestampDate(timestamp)}</Typography>
+        </Box>
+        <Box>{isAllowed ? <DoneRoundedIcon htmlColor="green" /> : <ClearRoundedIcon htmlColor="red" />}</Box>
+        <IconButton onClick={handleOpen}>
+          <MoreVertRoundedIcon />
+        </IconButton>
+      </StyledPermissionItem>
+      <ItemPermissionMenu anchorEl={anchorEl} open={open} handleClose={handleClose} permId={id} />
+    </>
+  )
 }

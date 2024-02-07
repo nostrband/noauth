@@ -10,36 +10,19 @@ import { ACTIONS } from '@/utils/consts'
 
 type ItemActivityProps = DbHistory
 
-export const ItemActivity: FC<ItemActivityProps> = ({
-	allowed,
-	method,
-	timestamp,
-}) => {
-	return (
-		<StyledActivityItem>
-			<Box
-				display={'flex'}
-				flexDirection={'column'}
-				gap={'0.5rem'}
-				flex={1}
-			>
-				<Typography flex={1} fontWeight={700}>
-					{ACTIONS[method] || method}
-				</Typography>
-				<Typography variant='body2'>
-					{formatTimestampDate(timestamp)}
-				</Typography>
-			</Box>
-			<Box>
-				{allowed ? (
-					<DoneRoundedIcon htmlColor='green' />
-				) : (
-					<ClearRoundedIcon htmlColor='red' />
-				)}
-			</Box>
-			<IconButton>
-				<MoreVertRoundedIcon />
-			</IconButton>
-		</StyledActivityItem>
-	)
+export const ItemActivity: FC<ItemActivityProps> = ({ allowed, method, timestamp }) => {
+  return (
+    <StyledActivityItem>
+      <Box display={'flex'} flexDirection={'column'} gap={'0.5rem'} flex={1}>
+        <Typography flex={1} fontWeight={700}>
+          {ACTIONS[method] || method}
+        </Typography>
+        <Typography variant="body2">{formatTimestampDate(timestamp)}</Typography>
+      </Box>
+      <Box>{allowed ? <DoneRoundedIcon htmlColor="green" /> : <ClearRoundedIcon htmlColor="red" />}</Box>
+      <IconButton>
+        <MoreVertRoundedIcon />
+      </IconButton>
+    </StyledActivityItem>
+  )
 }

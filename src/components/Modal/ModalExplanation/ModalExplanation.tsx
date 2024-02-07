@@ -7,39 +7,37 @@ import { Button } from '@/shared/Button/Button'
 import { useSearchParams } from 'react-router-dom'
 
 type ModalExplanationProps = {
-	explanationText?: string
+  explanationText?: string
 }
 
-export const ModalExplanation: FC<ModalExplanationProps> = ({
-	explanationText = '',
-}) => {
-	const { getModalOpened } = useModalSearchParams()
-	const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EXPLANATION)
-	const [searchParams, setSearchParams] = useSearchParams()
+export const ModalExplanation: FC<ModalExplanationProps> = ({ explanationText = '' }) => {
+  const { getModalOpened } = useModalSearchParams()
+  const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EXPLANATION)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-	const handleCloseModal = () => {
-		searchParams.delete('type')
-		searchParams.delete(MODAL_PARAMS_KEYS.EXPLANATION)
-		setSearchParams(searchParams)
-	}
+  const handleCloseModal = () => {
+    searchParams.delete('type')
+    searchParams.delete(MODAL_PARAMS_KEYS.EXPLANATION)
+    setSearchParams(searchParams)
+  }
 
-	return (
-		<Modal
-			title='What is this?'
-			open={isModalOpened}
-			onClose={handleCloseModal}
-			PaperProps={{
-				sx: {
-					minHeight: '60%',
-				},
-			}}
-		>
-			<Stack height={'100%'}>
-				<Typography flex={1}>{explanationText}</Typography>
-				<Button fullWidth onClick={handleCloseModal}>
-					Got it!
-				</Button>
-			</Stack>
-		</Modal>
-	)
+  return (
+    <Modal
+      title="What is this?"
+      open={isModalOpened}
+      onClose={handleCloseModal}
+      PaperProps={{
+        sx: {
+          minHeight: '60%',
+        },
+      }}
+    >
+      <Stack height={'100%'}>
+        <Typography flex={1}>{explanationText}</Typography>
+        <Button fullWidth onClick={handleCloseModal}>
+          Got it!
+        </Button>
+      </Stack>
+    </Modal>
+  )
 }

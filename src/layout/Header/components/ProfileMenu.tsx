@@ -18,86 +18,61 @@ import { ListProfiles } from './ListProfiles'
 import { DbKey } from '@/modules/db'
 
 export const ProfileMenu = () => {
-	const {
-		anchorEl,
-		handleOpen: handleOpenMenu,
-		open,
-		handleClose,
-	} = useOpenMenu()
-	const { handleOpen } = useModalSearchParams()
+  const { anchorEl, handleOpen: handleOpenMenu, open, handleClose } = useOpenMenu()
+  const { handleOpen } = useModalSearchParams()
 
-	const keys = useAppSelector(selectKeys)
-	const isNoKeys = !keys || keys.length === 0
-	const themeMode = useAppSelector((state) => state.ui.themeMode)
-	const isDarkMode = themeMode === 'dark'
+  const keys = useAppSelector(selectKeys)
+  const isNoKeys = !keys || keys.length === 0
+  const themeMode = useAppSelector((state) => state.ui.themeMode)
+  const isDarkMode = themeMode === 'dark'
 
-	const dispatch = useAppDispatch()
-	const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
 
-	const handleNavigateToAuth = () => {
-		handleOpen(MODAL_PARAMS_KEYS.INITIAL)
-		handleClose()
-	}
+  const handleNavigateToAuth = () => {
+    handleOpen(MODAL_PARAMS_KEYS.INITIAL)
+    handleClose()
+  }
 
-	const handleNavigateHome = () => {
-		navigate('/home')
-		handleClose()
-	}
+  const handleNavigateHome = () => {
+    navigate('/home')
+    handleClose()
+  }
 
-	const handleChangeMode = () => {
-		dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
-	}
+  const handleChangeMode = () => {
+    dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
+  }
 
-	const handleNavigateToKeyInnerPage = (key: DbKey) => {
-		navigate('/key/' + key.npub)
-		handleClose()
-	}
+  const handleNavigateToKeyInnerPage = (key: DbKey) => {
+    navigate('/key/' + key.npub)
+    handleClose()
+  }
 
-	const themeIcon = isDarkMode ? (
-		<DarkModeIcon htmlColor='#fff' />
-	) : (
-		<LightModeIcon htmlColor='#feb94a' />
-	)
+  const themeIcon = isDarkMode ? <DarkModeIcon htmlColor="#fff" /> : <LightModeIcon htmlColor="#feb94a" />
 
-	return (
-		<>
-			<MenuButton onClick={handleOpenMenu}>
-				<KeyboardArrowDownRoundedIcon
-					color='inherit'
-					fontSize='large'
-				/>
-			</MenuButton>
-			<Menu
-				open={open}
-				anchorEl={anchorEl}
-				onClose={handleClose}
-				sx={{
-					zIndex: 1302,
-				}}
-			>
-				<ListProfiles
-					keys={keys}
-					onClickItem={handleNavigateToKeyInnerPage}
-				/>
-				<Divider />
-				<MenuItem
-					Icon={<HomeRoundedIcon />}
-					onClick={handleNavigateHome}
-					title='Home'
-				/>
-				<MenuItem
-					Icon={
-						isNoKeys ? <LoginIcon /> : <PersonAddAltRoundedIcon />
-					}
-					onClick={handleNavigateToAuth}
-					title={isNoKeys ? 'Sign up' : 'Add account'}
-				/>
-				<MenuItem
-					Icon={themeIcon}
-					onClick={handleChangeMode}
-					title='Change theme'
-				/>
-			</Menu>
-		</>
-	)
+  return (
+    <>
+      <MenuButton onClick={handleOpenMenu}>
+        <KeyboardArrowDownRoundedIcon color="inherit" fontSize="large" />
+      </MenuButton>
+      <Menu
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        sx={{
+          zIndex: 1302,
+        }}
+      >
+        <ListProfiles keys={keys} onClickItem={handleNavigateToKeyInnerPage} />
+        <Divider />
+        <MenuItem Icon={<HomeRoundedIcon />} onClick={handleNavigateHome} title="Home" />
+        <MenuItem
+          Icon={isNoKeys ? <LoginIcon /> : <PersonAddAltRoundedIcon />}
+          onClick={handleNavigateToAuth}
+          title={isNoKeys ? 'Sign up' : 'Add account'}
+        />
+        <MenuItem Icon={themeIcon} onClick={handleChangeMode} title="Change theme" />
+      </Menu>
+    </>
+  )
 }
