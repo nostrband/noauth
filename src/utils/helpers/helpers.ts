@@ -3,12 +3,21 @@ import { ACTIONS, ACTION_TYPE, NIP46_RELAYS } from '../consts'
 import { DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
-export async function call(cb: () => any) {
+export async function call(cb: () => any, err?: (e: string) => void) {
   try {
     return await cb()
-  } catch (e) {
+  } catch (e: any) {
     console.log(`Error: ${e}`)
+		err?.(e.toString());
   }
+}
+
+export const getDomain = (url: string) => {
+	try {
+		return new URL(url).hostname
+	} catch {
+		return ''
+	}
 }
 
 export const getShortenNpub = (npub = '') => {

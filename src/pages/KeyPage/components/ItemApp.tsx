@@ -2,15 +2,16 @@ import { DbApp } from '@/modules/db'
 import { Avatar, Stack, Typography } from '@mui/material'
 import { FC } from 'react'
 import { Link } from 'react-router-dom'
-// import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
-import { getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { StyledItemAppContainer } from './styled'
 
 type ItemAppProps = DbApp
 
-export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name }) => {
-  const appName = name || getShortenNpub(appNpub)
-	const appAvatarTitle = getAppIconTitle(name, appNpub)
+export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) => {
+  const appDomain = getDomain(url)
+  const appName = name || appDomain || getShortenNpub(appNpub)
+  const appIcon = icon || `https://${appDomain}/favicon.ico`
+	const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   return (
     <StyledItemAppContainer
       direction={'row'}
@@ -23,8 +24,8 @@ export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name }) => {
       <Avatar 
         variant="rounded" 
         sx={{ width: 56, height: 56 }} 
-        src={icon} 
-        alt={name}
+        src={appIcon} 
+        alt={appName}
       >
         {appAvatarTitle}
       </Avatar>

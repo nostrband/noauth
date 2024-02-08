@@ -15,7 +15,7 @@ type AppsProps = {
   npub: string
 }
 
-export const Apps: FC<AppsProps> = ({ apps = [], npub = '' }) => {
+export const Apps: FC<AppsProps> = ({ apps = [] }) => {
   const notify = useEnqueueSnackbar()
 
   // eslint-disable-next-line

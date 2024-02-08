@@ -18,7 +18,7 @@ const HomePage = () => {
 
   const handleLearnMore = () => {
     // @ts-ignore
-    window.open(`https://info.${DOMAIN}`, '_blank').focus()
+    window.open(`https://${DOMAIN}`, '_blank').focus()
   }
 
   return (

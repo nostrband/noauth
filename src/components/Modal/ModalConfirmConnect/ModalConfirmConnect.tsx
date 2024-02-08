@@ -1,9 +1,9 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
@@ -11,25 +11,33 @@ import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
 import { swicCall } from '@/modules/swic'
 import { ACTION_TYPE } from '@/utils/consts'
+import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
+  const notify = useEnqueueSnackbar()
+	const navigate = useNavigate()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
-  const { npub = '' } = useParams<{ npub: string }>()
+  const [searchParams] = useSearchParams()
+	const paramNpub = searchParams.get('npub') || ''
+  const { npub = paramNpub } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.BASIC)
 
-  const [searchParams] = useSearchParams()
   const appNpub = searchParams.get('appNpub') || ''
   const pendingReqId = searchParams.get('reqId') || ''
   const isPopup = searchParams.get('popup') === 'true'
+  const token = searchParams.get('token') || ''
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  const { name, icon = '' } = triggerApp || {}
-  const appName = name || getShortenNpub(appNpub)
-	const appAvatarTitle = getAppIconTitle(name, appNpub)
+  const { name, url = '', icon = '' } = triggerApp || {}
+  const appUrl = url || searchParams.get('appUrl') || ''
+	const appDomain = getDomain(appUrl)
+  const appName = name || appDomain || getShortenNpub(appNpub)
+	const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+	const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -47,6 +55,9 @@ export const ModalConfirmConnect = () => {
     onClose: (sp) => {
       sp.delete('appNpub')
       sp.delete('reqId')
+      sp.delete('popup')
+      sp.delete('npub')
+      sp.delete('appUrl')
     },
   })
 
@@ -59,16 +70,57 @@ export const ModalConfirmConnect = () => {
     if (isPopup) window.close()
   }
 
-  const allow = () => {
-    const options: any = {}
-    if (selectedActionType === ACTION_TYPE.BASIC) options.perms = [ACTION_TYPE.BASIC]
-    // else
-    // 	options.perms = ['connect','get_public_key'];
-    confirmPending(pendingReqId, true, true, options)
+  const allow = async () => {
+		let perms = ['connect','get_public_key'];
+		if (selectedActionType === ACTION_TYPE.BASIC) perms = [ACTION_TYPE.BASIC]
+
+		if (pendingReqId) {
+			const options = { perms }
+			await confirmPending(pendingReqId, true, true, options)	
+		} else {
+			try {
+				await swicCall('enablePush')
+				console.log('enablePush done')	
+			} catch (e: any) {
+				console.log('error', e)
+				notify('Please enable Notifications in website settings!', 'error')
+				return;
+			}
+
+			try {
+				await swicCall('connectApp', { npub, appNpub, appUrl, perms })
+				console.log('connectApp done', npub, appNpub, appUrl, perms)
+			} catch (e: any) {
+				notify(e.toString(), 'error')
+				return;
+			}
+
+			if (token) {
+				try {
+					await swicCall('redeemToken', npub, token)
+					console.log('redeemToken done')	
+				} catch (e) {
+					console.log("error", e);
+					notify('App did not reply. Please try to log in now.', 'error')
+					navigate(`/key/${npub}`, { replace: true })
+					return;
+				}
+			}
+
+			notify('App connected! Closing...', 'success')
+
+			if (isPopup)
+				setTimeout(() => window.close(), 3000);
+			else
+				navigate(`/key/${npub}`, { replace: true })
+		}
   }
 
   const disallow = () => {
-    confirmPending(pendingReqId, false, true)
+		if (pendingReqId)
+	    confirmPending(pendingReqId, false, true)
+		else
+			closeModalAfterRequest()
   }
 
   if (isPopup) {
@@ -91,7 +143,7 @@ export const ModalConfirmConnect = () => {
               width: 56,
               height: 56,
             }}
-            src={icon}
+            src={appIcon}
           >
 						{appAvatarTitle}
 					</Avatar>
