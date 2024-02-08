@@ -4,6 +4,7 @@ import HomePage from '../pages/HomePage/Home.Page'
 import WelcomePage from '../pages/Welcome.Page'
 import { Layout } from '../layout/Layout'
 import { CircularProgress, Stack } from '@mui/material'
+import CreatePage from '@/pages/CreatePage/Create.Page'
 
 const KeyPage = lazy(() => import('../pages/KeyPage/Key.Page'))
 const ConfirmPage = lazy(() => import('../pages/Confirm.Page'))
@@ -26,6 +27,7 @@ const AppRoutes = () => {
           <Route path="/key/:npub" element={<KeyPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/key/:npub/:req_id" element={<ConfirmPage />} />
+          <Route path="/create" element={<CreatePage />} />
         </Route>
         <Route path="*" element={<Navigate to={'/home'} />} />
       </Routes>

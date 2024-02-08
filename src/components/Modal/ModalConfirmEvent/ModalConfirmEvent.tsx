@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getReqActionName, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'

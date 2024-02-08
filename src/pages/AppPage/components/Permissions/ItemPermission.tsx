@@ -15,7 +15,7 @@ type ItemPermissionProps = {
 }
 
 export const ItemPermission: FC<ItemPermissionProps> = ({ permission }) => {
-  const { perm, value, timestamp, id } = permission || {}
+  const { value, timestamp, id } = permission || {}
 
   const { anchorEl, handleClose, handleOpen, open } = useOpenMenu()
 
