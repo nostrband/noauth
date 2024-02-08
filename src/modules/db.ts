@@ -103,6 +103,17 @@ export const dbi = {
       console.log(`db addApp error: ${error}`)
     }
   },
+  updateApp: async (app: Omit<DbApp, 'npub' | 'timestamp'>) => {
+    try {
+      await db.apps.where({ appNpub: app.appNpub }).modify({
+        name: app.name,
+        icon: app.icon,
+        url: app.url,
+      })
+    } catch (error) {
+      console.log(`db updateApp error: ${error}`)
+    }
+  },
   listApps: async (): Promise<DbApp[]> => {
     try {
       return await db.apps.toArray()

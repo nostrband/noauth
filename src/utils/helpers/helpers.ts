@@ -127,3 +127,7 @@ export function getPermActionName(req: DbPerm) {
   }
   return action
 }
+
+export const isEmptyString = (str = '') => {
+  return str.trim().length === 0
+}

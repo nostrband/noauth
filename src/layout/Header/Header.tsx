@@ -1,20 +1,33 @@
 import { Avatar, Stack, Toolbar, Typography } from '@mui/material'
 import { AppLogo } from '../../assets'
-import { StyledAppBar, StyledAppName } from './styled'
+import { StyledAppBar, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
 import { Menu } from './components/Menu'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
 import { useProfile } from '@/hooks/useProfile'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
+import { setThemeMode } from '@/store/reducers/ui.slice'
 
 export const Header = () => {
+  const themeMode = useAppSelector((state) => state.ui.themeMode)
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+
   const { npub = '' } = useParams<{ npub: string }>()
   const { userName, userAvatar, avatarTitle } = useProfile(npub)
   const showProfile = Boolean(npub)
 
-  const navigate = useNavigate()
-
   const handleNavigate = () => {
     navigate(`/key/${npub}`)
+  }
+
+  const isDarkMode = themeMode === 'dark'
+  const themeIcon = isDarkMode ? <DarkModeIcon htmlColor="#fff" /> : <LightModeIcon htmlColor="#000" />
+
+  const handleChangeMode = () => {
+    dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
   }
 
   return (
@@ -22,14 +35,14 @@ export const Header = () => {
       <Toolbar sx={{ padding: '12px' }}>
         <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
           {showProfile && (
-            <Stack gap={'1rem'} direction={'row'} alignItems={'center'} flex={1}>
-              <Avatar src={userAvatar} alt={userName} onClick={handleNavigate}>
+            <StyledProfileContainer>
+              <Avatar src={userAvatar} alt={userName} onClick={handleNavigate} className="avatar">
                 {avatarTitle}
               </Avatar>
-              <Typography fontWeight={600} onClick={handleNavigate}>
+              <Typography fontWeight={600} onClick={handleNavigate} className="username">
                 {userName}
               </Typography>
-            </Stack>
+            </StyledProfileContainer>
           )}
 
           {!showProfile && (
@@ -38,6 +51,8 @@ export const Header = () => {
               <span>Nsec.app</span>
             </StyledAppName>
           )}
+
+          <StyledThemeButton onClick={handleChangeMode}>{themeIcon}</StyledThemeButton>
 
           {showProfile ? <ProfileMenu /> : <Menu />}
         </Stack>

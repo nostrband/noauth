@@ -5,6 +5,8 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import { Modal } from '@/shared/Modal/Modal'
+import { selectKeys } from '@/store'
+import { useAppSelector } from '@/store/hooks/redux'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
 import { Stack, Typography } from '@mui/material'
@@ -12,9 +14,14 @@ import { useRef } from 'react'
 import { useParams } from 'react-router-dom'
 
 export const ModalConnectApp = () => {
-  const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
-  const timerRef = useRef<NodeJS.Timeout>()
+  const keys = useAppSelector(selectKeys)
 
+  const timerRef = useRef<NodeJS.Timeout>()
+  const notify = useEnqueueSnackbar()
+  const { npub = '' } = useParams<{ npub: string }>()
+  const bunkerStr = getBunkerLink(npub)
+
+  const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONNECT_APP, {
     onClose: () => {
@@ -22,11 +29,11 @@ export const ModalConnectApp = () => {
     },
   })
 
-  const notify = useEnqueueSnackbar()
-
-  const { npub = '' } = useParams<{ npub: string }>()
-
-  const bunkerStr = getBunkerLink(npub)
+  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+  if (isModalOpened && !isNpubExists) {
+    handleCloseModal()
+    return null
+  }
 
   const handleShareBunker = async () => {
     const shareData = {

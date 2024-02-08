@@ -43,9 +43,10 @@ export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 export const selectKeys = (state: RootState) => state.content.keys
+export const selectApps = (state: RootState) => state.content.apps
 
 export const selectKeyByNpub = (state: RootState, npub: string) => {
-	return state.content.keys.find((key) => key.npub === npub)
+  return state.content.keys.find((key) => key.npub === npub)
 }
 
 export const selectAppsByNpub = memoizeOne((state: RootState, npub: string) => {

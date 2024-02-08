@@ -9,6 +9,7 @@ export enum MODAL_PARAMS_KEYS {
   CONFIRM_CONNECT = 'confirm-connect',
   CONFIRM_EVENT = 'confirm-event',
   ACTIVITY = 'activity',
+  APP_DETAILS = 'app-details',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

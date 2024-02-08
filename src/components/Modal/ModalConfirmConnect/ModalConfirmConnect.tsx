@@ -5,7 +5,7 @@ import { call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helper
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub } from '@/store'
+import { selectAppsByNpub, selectKeys } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
@@ -14,6 +14,8 @@ import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 
 export const ModalConfirmConnect = () => {
+  const keys = useAppSelector(selectKeys)
+
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
@@ -39,18 +41,6 @@ export const ModalConfirmConnect = () => {
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
-  const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
-    if (!value) return undefined
-    return setSelectedActionType(value)
-  }
-
-  // const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
-  //   onClose: async (sp) => {
-  //     sp.delete('appNpub')
-  //     sp.delete('reqId')
-  //     await swicCall('confirm', pendingReqId, false, false)
-  //   },
-  // })
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
       sp.delete('appNpub')
@@ -60,6 +50,19 @@ export const ModalConfirmConnect = () => {
       sp.delete('appUrl')
     },
   })
+
+  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+  const isPendingReqIdExists = pendingReqId.trim().length
+  if (isModalOpened && (!isNpubExists || !isAppNpubExists || !isPendingReqIdExists)) {
+    closeModalAfterRequest()
+    return null
+  }
+
+  const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
+    if (!value) return undefined
+    return setSelectedActionType(value)
+  }
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     call(async () => {
@@ -128,12 +131,7 @@ export const ModalConfirmConnect = () => {
   }
 
   return (
-    <Modal
-      title="Connection request"
-      open={isModalOpened}
-      withCloseButton={false}
-      //  withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
-    >
+    <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
@@ -160,14 +158,7 @@ export const ModalConfirmConnect = () => {
             value={ACTION_TYPE.BASIC}
             title="Basic permissions"
             description="Read your public key, sign notes, reactions, zaps, etc"
-            // hasinfo
           />
-          {/* <ActionToggleButton
-						value={ACTION_TYPE.ADVANCED}
-						title='Advanced'
-						description='Use for trusted apps only'
-						hasinfo
-					/> */}
           <ActionToggleButton
             value={ACTION_TYPE.CUSTOM}
             title="On demand"

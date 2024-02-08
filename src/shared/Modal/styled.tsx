@@ -10,7 +10,7 @@ import {
   styled,
 } from '@mui/material'
 
-export const StyledDialog = styled((props: DialogProps & { fixedHeight?: string }) => (
+export const StyledDialog = styled((props: DialogProps & { fixedheight?: string }) => (
   <Dialog
     {...props}
     classes={{
@@ -26,8 +26,8 @@ export const StyledDialog = styled((props: DialogProps & { fixedHeight?: string 
     }}
     fullWidth
   />
-))(({ theme, fixedHeight = '' }) => {
-  const fixedHeightStyles = fixedHeight ? { height: fixedHeight } : {}
+))(({ theme, fixedheight = '' }) => {
+  const fixedHeightStyles = fixedheight ? { height: fixedheight } : {}
   return {
     '& .container': {
       alignItems: 'flex-end',

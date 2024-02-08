@@ -1,4 +1,4 @@
-import { AppBar, Typography, TypographyProps, styled } from '@mui/material'
+import { AppBar, IconButton, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 import { Link } from 'react-router-dom'
 
 export const StyledAppBar = styled(AppBar)(({ theme }) => {
@@ -11,6 +11,7 @@ export const StyledAppBar = styled(AppBar)(({ theme }) => {
     maxWidth: 'inherit',
     left: '50%',
     transform: 'translateX(-50%)',
+    borderRadius: '8px',
   }
 })
 
@@ -29,3 +30,23 @@ export const StyledAppName = styled((props: TypographyProps) => (
   lineHeight: '22.4px',
   marginLeft: '0.5rem',
 }))
+
+export const StyledProfileContainer = styled((props: StackProps) => <Stack {...props} />)(() => ({
+  gap: '1rem',
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+  '& .avatar': {
+    cursor: 'pointer',
+  },
+  '& .username': {
+    cursor: 'pointer',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+}))
+
+export const StyledThemeButton = styled(IconButton)({
+  margin: '0 0.5rem',
+})
