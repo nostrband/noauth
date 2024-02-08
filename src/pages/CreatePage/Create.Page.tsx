@@ -46,9 +46,12 @@ const CreatePage = () => {
           appNpub,
           appUrl,
           token,
+          // needed for this screen itself
+          name,
           // will close after all done
           popup: 'true'
         },
+        replace: true
       });
 
     } catch (error: any) {
