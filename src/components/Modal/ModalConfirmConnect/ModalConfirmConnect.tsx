@@ -16,11 +16,11 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
-	const navigate = useNavigate()
+  const navigate = useNavigate()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
   const [searchParams] = useSearchParams()
-	const paramNpub = searchParams.get('npub') || ''
+  const paramNpub = searchParams.get('npub') || ''
   const { npub = paramNpub } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
@@ -34,10 +34,10 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
   const appUrl = url || searchParams.get('appUrl') || ''
-	const appDomain = getDomain(appUrl)
+  const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
-	const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-	const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -71,56 +71,52 @@ export const ModalConfirmConnect = () => {
   }
 
   const allow = async () => {
-		let perms = ['connect','get_public_key'];
-		if (selectedActionType === ACTION_TYPE.BASIC) perms = [ACTION_TYPE.BASIC]
+    let perms = ['connect', 'get_public_key']
+    if (selectedActionType === ACTION_TYPE.BASIC) perms = [ACTION_TYPE.BASIC]
 
-		if (pendingReqId) {
-			const options = { perms }
-			await confirmPending(pendingReqId, true, true, options)	
-		} else {
-			try {
-				await swicCall('enablePush')
-				console.log('enablePush done')	
-			} catch (e: any) {
-				console.log('error', e)
-				notify('Please enable Notifications in website settings!', 'error')
-				return;
-			}
+    if (pendingReqId) {
+      const options = { perms }
+      await confirmPending(pendingReqId, true, true, options)
+    } else {
+      try {
+        await swicCall('enablePush')
+        console.log('enablePush done')
+      } catch (e: any) {
+        console.log('error', e)
+        notify('Please enable Notifications in website settings!', 'error')
+        return
+      }
 
-			try {
-				await swicCall('connectApp', { npub, appNpub, appUrl, perms })
-				console.log('connectApp done', npub, appNpub, appUrl, perms)
-			} catch (e: any) {
-				notify(e.toString(), 'error')
-				return;
-			}
+      try {
+        await swicCall('connectApp', { npub, appNpub, appUrl, perms })
+        console.log('connectApp done', npub, appNpub, appUrl, perms)
+      } catch (e: any) {
+        notify(e.toString(), 'error')
+        return
+      }
 
-			if (token) {
-				try {
-					await swicCall('redeemToken', npub, token)
-					console.log('redeemToken done')	
-				} catch (e) {
-					console.log("error", e);
-					notify('App did not reply. Please try to log in now.', 'error')
-					navigate(`/key/${npub}`, { replace: true })
-					return;
-				}
-			}
+      if (token) {
+        try {
+          await swicCall('redeemToken', npub, token)
+          console.log('redeemToken done')
+        } catch (e) {
+          console.log('error', e)
+          notify('App did not reply. Please try to log in now.', 'error')
+          navigate(`/key/${npub}`, { replace: true })
+          return
+        }
+      }
 
-			notify('App connected! Closing...', 'success')
+      notify('App connected! Closing...', 'success')
 
-			if (isPopup)
-				setTimeout(() => window.close(), 3000);
-			else
-				navigate(`/key/${npub}`, { replace: true })
-		}
+      if (isPopup) setTimeout(() => window.close(), 3000)
+      else navigate(`/key/${npub}`, { replace: true })
+    }
   }
 
   const disallow = () => {
-		if (pendingReqId)
-	    confirmPending(pendingReqId, false, true)
-		else
-			closeModalAfterRequest()
+    if (pendingReqId) confirmPending(pendingReqId, false, true)
+    else closeModalAfterRequest()
   }
 
   if (isPopup) {
@@ -132,10 +128,19 @@ export const ModalConfirmConnect = () => {
   }
 
   return (
-    <Modal title='Connection request' open={isModalOpened} withCloseButton={false}
-		//  withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
-		>
+    <Modal
+      title="Connection request"
+      open={isModalOpened}
+      withCloseButton={false}
+      //  withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
+    >
       <Stack gap={'1rem'} paddingTop={'1rem'}>
+        {!pendingReqId && (
+          <Typography variant="body1" color={'GrayText'}>
+            You will be asked to <b>enable notifications</b>, this
+						is needed for a reliable communication with Nostr apps.  
+          </Typography>
+        )}
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
             variant="rounded"
@@ -145,8 +150,8 @@ export const ModalConfirmConnect = () => {
             }}
             src={appIcon}
           >
-						{appAvatarTitle}
-					</Avatar>
+            {appAvatarTitle}
+          </Avatar>
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
