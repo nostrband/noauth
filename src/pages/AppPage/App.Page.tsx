@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { formatTimestampDate } from '@/utils/helpers/date'
 import { Box, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
 import { ACTION_TYPE } from '@/utils/consts'
 import { Permissions } from './components/Permissions/Permissions'
@@ -38,6 +38,8 @@ const AppPage = () => {
 
   const { icon = '', name = '' } = currentApp || {}
   const appName = name || getShortenNpub(appNpub)
+	const appAvatarTitle = getAppIconTitle(name, appNpub)
+
   const { timestamp } = connectPerm || {}
 
   const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
@@ -57,7 +59,9 @@ const AppPage = () => {
       <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
         <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'}>
-          <StyledAppIcon src={icon} />
+          <StyledAppIcon src={icon}>
+            {appAvatarTitle}
+          </StyledAppIcon>
           <Box flex={'1'} overflow={'hidden'}>
             <Typography variant="h4" noWrap>
               {appName}

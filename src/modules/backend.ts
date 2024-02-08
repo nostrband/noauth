@@ -420,8 +420,8 @@ export class NoauthBackend {
       const app = this.apps.find((a) => a.appNpub === r.req.appNpub)
       if (r.req.method !== 'connect' && !app) continue
 
-      // FIXME use Nsec.app icon!
-      const icon = 'https://nostr.band/android-chrome-192x192.png'
+      // FIXME check
+      const icon = 'assets/icons/logo.svg'
 
       const appName = app?.name || getShortenNpub(r.req.appNpub)
       // FIXME load profile?

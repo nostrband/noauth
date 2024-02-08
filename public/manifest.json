@@ -1,6 +1,6 @@
 {
-	"name": "Noauth",
-	"short_name": "Noauth Nostr key manager",
+	"name": "Nsec.app",
+	"short_name": "Nsec.app - Nostr key management tool",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",
