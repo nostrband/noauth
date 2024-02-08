@@ -5,52 +5,45 @@ import { CopyIcon } from '@/assets'
 import { StyledContainer } from './styled'
 
 type InputCopyButtonProps = {
-	value: string
-	onCopy?: () => void
+  value: string
+  onCopy?: () => void
 }
 
-export const InputCopyButton: FC<InputCopyButtonProps> = ({
-	value,
-	onCopy = () => undefined,
-}) => {
-	const [isCopied, setIsCopied] = useState(false)
+export const InputCopyButton: FC<InputCopyButtonProps> = ({ value, onCopy = () => undefined }) => {
+  const [isCopied, setIsCopied] = useState(false)
 
-	const handleCopy = () => {
-		setIsCopied(true)
-		onCopy && onCopy()
-	}
+  const handleCopy = () => {
+    setIsCopied(true)
+    onCopy && onCopy()
+  }
 
-	useEffect(() => {
-		let timerId: any
+  useEffect(() => {
+    let timerId: any
 
-		if (!isCopied) return clearTimeout(timerId)
+    if (!isCopied) return clearTimeout(timerId)
 
-		timerId = setTimeout(() => {
-			setIsCopied(false)
-		}, 2000)
+    timerId = setTimeout(() => {
+      setIsCopied(false)
+    }, 2000)
 
-		return () => {
-			clearTimeout(timerId)
-		}
-	}, [isCopied])
-	return (
-		<StyledContainer copied={isCopied ? 1 : 0}>
-			{isCopied && (
-				<Fade in exit>
-					<Typography
-						marginLeft={'0.5rem'}
-						variant='body2'
-						color={'inherit'}
-					>
-						Copied
-					</Typography>
-				</Fade>
-			)}
-			<CopyToClipboard text={value} onCopy={handleCopy}>
-				<IconButton color='inherit'>
-					<CopyIcon />
-				</IconButton>
-			</CopyToClipboard>
-		</StyledContainer>
-	)
+    return () => {
+      clearTimeout(timerId)
+    }
+  }, [isCopied])
+  return (
+    <StyledContainer copied={isCopied ? 1 : 0}>
+      {isCopied && (
+        <Fade in exit>
+          <Typography marginLeft={'0.5rem'} variant="body2" color={'inherit'}>
+            Copied
+          </Typography>
+        </Fade>
+      )}
+      <CopyToClipboard text={value} onCopy={handleCopy}>
+        <IconButton color="inherit">
+          <CopyIcon />
+        </IconButton>
+      </CopyToClipboard>
+    </StyledContainer>
+  )
 }

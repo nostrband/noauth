@@ -2,1002 +2,1044 @@ import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
 import { DbApp, dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, {
-	IEventHandlingStrategy,
-	NDKEvent,
-	NDKNip46Backend,
-	NDKPrivateKeySigner,
-	NDKSigner,
+  IEventHandlingStrategy,
+  NDKEvent,
+  NDKNip46Backend,
+  NDKPrivateKeySigner,
+  NDKSigner,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN } from '../utils/consts'
 import { Nip04 } from './nip04'
-import { getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
 
 export interface KeyInfo {
-	npub: string
-	nip05?: string
-	locked: boolean
+  npub: string
+  nip05?: string
+  locked: boolean
 }
 
 interface Key {
-	npub: string
-	ndk: NDK
-	backoff: number
-	signer: NDKSigner
-	backend: NDKNip46Backend
+  npub: string
+  ndk: NDK
+  backoff: number
+  signer: NDKSigner
+  backend: NDKNip46Backend
 }
 
 interface Pending {
-	req: DbPending
-	cb: (allow: boolean, remember: boolean, options?: any) => void
-	notified?: boolean
+  req: DbPending
+  cb: (allow: boolean, remember: boolean, options?: any) => void
+  notified?: boolean
 }
 
 interface IAllowCallbackParams {
-	backend: NDKNip46Backend
-	npub: string
-	id: string
-	method: string
-	remotePubkey: string
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	params?: any
+  backend: NDKNip46Backend
+  npub: string
+  id: string
+  method: string
+  remotePubkey: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params?: any
 }
 
 class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
-	private privkey: string
-	private nip04 = new Nip04()
+  private privkey: string
+  private nip04 = new Nip04()
 
-	constructor(privkey: string) {
-		this.privkey = privkey
-	}
+  constructor(privkey: string) {
+    this.privkey = privkey
+  }
 
-	private async getKey(
-		backend: NDKNip46Backend,
-		id: string,
-		remotePubkey: string,
-		recipientPubkey: string,
-	) {
-		if (
-			!(await backend.pubkeyAllowed({
-				id,
-				pubkey: remotePubkey,
-				// @ts-ignore
-				method: 'get_nip04_key',
-				params: recipientPubkey,
-			}))
-		) {
-			backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
-			return undefined
-		}
+  private async getKey(backend: NDKNip46Backend, id: string, remotePubkey: string, recipientPubkey: string) {
+    if (
+      !(await backend.pubkeyAllowed({
+        id,
+        pubkey: remotePubkey,
+        // @ts-ignore
+        method: 'get_nip04_key',
+        params: recipientPubkey,
+      }))
+    ) {
+      backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
+      return undefined
+    }
 
-		return Buffer.from(
-			this.nip04.createKey(this.privkey, recipientPubkey),
-		).toString('hex')
-	}
+    return Buffer.from(this.nip04.createKey(this.privkey, recipientPubkey)).toString('hex')
+  }
 
-	async handle(
-		backend: NDKNip46Backend,
-		id: string,
-		remotePubkey: string,
-		params: string[],
-	) {
-		const [recipientPubkey] = params
-		return await this.getKey(backend, id, remotePubkey, recipientPubkey)
-	}
+  async handle(backend: NDKNip46Backend, id: string, remotePubkey: string, params: string[]) {
+    const [recipientPubkey] = params
+    return await this.getKey(backend, id, remotePubkey, recipientPubkey)
+  }
 }
 
 class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
-	readonly backend: NDKNip46Backend
-	readonly npub: string
-	readonly method: string
-	private body: IEventHandlingStrategy
-	private allowCb: (params: IAllowCallbackParams) => Promise<boolean>
+  readonly backend: NDKNip46Backend
+  readonly npub: string
+  readonly method: string
+  private body: IEventHandlingStrategy
+  private allowCb: (params: IAllowCallbackParams) => Promise<boolean>
 
-	constructor(
-		backend: NDKNip46Backend,
-		npub: string,
-		method: string,
-		body: IEventHandlingStrategy,
-		allowCb: (params: IAllowCallbackParams) => Promise<boolean>,
-	) {
-		this.backend = backend
-		this.npub = npub
-		this.method = method
-		this.body = body
-		this.allowCb = allowCb
-	}
+  constructor(
+    backend: NDKNip46Backend,
+    npub: string,
+    method: string,
+    body: IEventHandlingStrategy,
+    allowCb: (params: IAllowCallbackParams) => Promise<boolean>
+  ) {
+    this.backend = backend
+    this.npub = npub
+    this.method = method
+    this.body = body
+    this.allowCb = allowCb
+  }
 
-	async handle(
-		backend: NDKNip46Backend,
-		id: string,
-		remotePubkey: string,
-		params: string[],
-	): Promise<string | undefined> {
-		console.log(Date.now(), 'handle', {
-			method: this.method,
-			id,
-			remotePubkey,
-			params,
-		})
-		const allow = await this.allowCb({
-			backend: this.backend,
-			npub: this.npub,
-			id,
-			method: this.method,
-			remotePubkey,
-			params,
-		})
-		if (!allow) return undefined
-		return this.body.handle(backend, id, remotePubkey, params).then((r) => {
-			console.log(
-				Date.now(),
-				'req',
-				id,
-				'method',
-				this.method,
-				'result',
-				r,
-			)
-			return r
-		})
-	}
+  async handle(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[]
+  ): Promise<string | undefined> {
+    console.log(Date.now(), 'handle', {
+      method: this.method,
+      id,
+      remotePubkey,
+      params,
+    })
+    const allow = await this.allowCb({
+      backend: this.backend,
+      npub: this.npub,
+      id,
+      method: this.method,
+      remotePubkey,
+      params,
+    })
+    if (!allow) return undefined
+    return this.body.handle(backend, id, remotePubkey, params).then((r) => {
+      console.log(Date.now(), 'req', id, 'method', this.method, 'result', r)
+      return r
+    })
+  }
 }
 
 export class NoauthBackend {
-	readonly swg: ServiceWorkerGlobalScope
-	private keysModule: Keys
-	private enckeys: DbKey[] = []
-	private keys: Key[] = []
-	private perms: DbPerm[] = []
-	private apps: DbApp[] = []
-	private doneReqIds: string[] = []
-	private confirmBuffer: Pending[] = []
-	private accessBuffer: DbPending[] = []
-	private notifCallback: (() => void) | null = null
+  readonly swg: ServiceWorkerGlobalScope
+  private keysModule: Keys
+  private enckeys: DbKey[] = []
+  private keys: Key[] = []
+  private perms: DbPerm[] = []
+  private apps: DbApp[] = []
+  private doneReqIds: string[] = []
+  private confirmBuffer: Pending[] = []
+  private accessBuffer: DbPending[] = []
+  private notifCallback: (() => void) | null = null
 
-	public constructor(swg: ServiceWorkerGlobalScope) {
-		this.swg = swg
-		this.keysModule = new Keys(swg.crypto.subtle)
+  public constructor(swg: ServiceWorkerGlobalScope) {
+    this.swg = swg
+    this.keysModule = new Keys(swg.crypto.subtle)
 
-		const self = this
-		swg.addEventListener('activate', (event) => {
-			console.log('activate')
-//			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
-		})
+    const self = this
+    swg.addEventListener('activate', (event) => {
+      console.log('activate')
+      //			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
+    })
 
-		swg.addEventListener('install', (event) => {
-			console.log('install')
-//			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
-		})
+    swg.addEventListener('install', (event) => {
+      console.log('install')
+      //			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
+    })
 
-		swg.addEventListener('push', (event) => {
-			console.log('got push', event)
-			self.onPush(event)
-			event.waitUntil(
-				new Promise((ok: any) => {
-					self.setNotifCallback(ok)
-				}),
-			)
-		})
+    swg.addEventListener('push', (event) => {
+      console.log('got push', event)
+      self.onPush(event)
+      event.waitUntil(
+        new Promise((ok: any) => {
+          self.setNotifCallback(ok)
+        })
+      )
+    })
 
-		swg.addEventListener('message', (event) => {
-			self.onMessage(event)
-		})
+    swg.addEventListener('message', (event) => {
+      self.onMessage(event)
+    })
 
-		swg.addEventListener(
-			'notificationclick',
-			(event) => {
-				event.notification.close()
-				if (event.action.startsWith('allow:')) {
-					self.confirm(event.action.split(':')[1], true, false)
-				} else if (event.action.startsWith('allow-remember:')) {
-					self.confirm(event.action.split(':')[1], true, true)
-				} else if (event.action.startsWith('disallow:')) {
-					self.confirm(event.action.split(':')[1], false, false)
-				} else {
-					event.waitUntil(
-						self.swg.clients
-							.matchAll({ type: 'window' })
-							.then((clientList) => {
-								console.log('clients', clientList.length)
-								// FIXME find a client that has our
-								// key page
-								for (const client of clientList) {
-									console.log('client', client.url)
-									if (
-										new URL(client.url).pathname === '/' &&
-										'focus' in client
-									) {
-										client.focus()
-										return	
-									}
-								}
+    swg.addEventListener(
+      'notificationclick',
+      (event) => {
+        event.notification.close()
+        if (event.action.startsWith('allow:')) {
+          self.confirm(event.action.split(':')[1], true, false)
+        } else if (event.action.startsWith('allow-remember:')) {
+          self.confirm(event.action.split(':')[1], true, true)
+        } else if (event.action.startsWith('disallow:')) {
+          self.confirm(event.action.split(':')[1], false, false)
+        } else {
+          event.waitUntil(
+            self.swg.clients.matchAll({ type: 'window' }).then((clientList) => {
+              console.log('clients', clientList.length)
+              // FIXME find a client that has our
+              // key page
+              for (const client of clientList) {
+                console.log('client', client.url)
+                if (new URL(client.url).pathname === '/' && 'focus' in client) {
+                  client.focus()
+                  return
+                }
+              }
 
-								// confirm screen url
-								const req = event.notification.data.req
-								console.log("req", req)
-								// const url = `${self.swg.location.origin}/key/${req.npub}?confirm-connect=true&appNpub=${req.appNpub}&reqId=${req.id}`
-								const url = `${self.swg.location.origin}/key/${req.npub}`
-								self.swg.clients.openWindow(url)
-							}),
-					)
-				}
-			},
-			false, // ???
-		)
-	}
+              // confirm screen url
+              const req = event.notification.data.req
+              console.log('req', req)
+              // const url = `${self.swg.location.origin}/key/${req.npub}?confirm-connect=true&appNpub=${req.appNpub}&reqId=${req.id}`
+              const url = `${self.swg.location.origin}/key/${req.npub}`
+              self.swg.clients.openWindow(url)
+            })
+          )
+        }
+      },
+      false // ???
+    )
+  }
 
-	public async start() {
-		this.enckeys = await dbi.listKeys()
-		console.log('started encKeys', this.listKeys())
-		this.perms = await dbi.listPerms()
-		console.log('started perms', this.perms)
-		this.apps = await dbi.listApps()
-		console.log('started apps', this.apps)
+  public async start() {
+    this.enckeys = await dbi.listKeys()
+    console.log('started encKeys', this.listKeys())
+    this.perms = await dbi.listPerms()
+    console.log('started perms', this.perms)
+    this.apps = await dbi.listApps()
+    console.log('started apps', this.apps)
 
-		const sub = await this.swg.registration.pushManager.getSubscription()
+    const sub = await this.swg.registration.pushManager.getSubscription()
 
-		for (const k of this.enckeys) {
-			await this.unlock(k.npub)
+    for (const k of this.enckeys) {
+      await this.unlock(k.npub)
 
-			// ensure we're subscribed on the server
-			if (sub) await this.sendSubscriptionToServer(k.npub, sub)
-		}
-	}
+      // ensure we're subscribed on the server
+      if (sub) await this.sendSubscriptionToServer(k.npub, sub)
+    }
+  }
 
-	public setNotifCallback(cb: () => void) {
-		if (this.notifCallback) {
-			this.notify()
-		}
-		this.notifCallback = cb
-	}
+  public setNotifCallback(cb: () => void) {
+    if (this.notifCallback) {
+      // this.notify()
+    }
+    this.notifCallback = cb
+  }
 
-	public listKeys(): KeyInfo[] {
-		return this.enckeys.map<KeyInfo>((k) => this.keyInfo(k))
-	}
+  public listKeys(): KeyInfo[] {
+    return this.enckeys.map<KeyInfo>((k) => this.keyInfo(k))
+  }
 
-	public isLocked(npub: string): boolean {
-		return !this.keys.find((k) => k.npub === npub)
-	}
+  public isLocked(npub: string): boolean {
+    return !this.keys.find((k) => k.npub === npub)
+  }
 
-	public hasKey(npub: string): boolean {
-		return !!this.enckeys.find((k) => k.npub === npub)
-	}
+  public hasKey(npub: string): boolean {
+    return !!this.enckeys.find((k) => k.npub === npub)
+  }
 
-	private async sha256(s: string) {
-		return Buffer.from(
-			await this.swg.crypto.subtle.digest('SHA-256', Buffer.from(s)),
-		).toString('hex')
-	}
+  private async sha256(s: string) {
+    return Buffer.from(await this.swg.crypto.subtle.digest('SHA-256', Buffer.from(s))).toString('hex')
+  }
 
-	private async sendPost({
-		url,
-		method,
-		headers,
-		body,
-	}: {
-		url: string
-		method: string
-		headers: any
-		body: string
-	}) {
-		const r = await fetch(url, {
-			method,
-			headers: {
-				'Content-Type': 'application/json',
-				...headers,
-			},
-			body,
-		})
-		if (r.status !== 200 && r.status !== 201) {
-			console.log('Fetch error', url, method, r.status)
-			const body = await r.json()
-			throw new Error('Failed to fetch ' + url, { cause: body })
-		}
+  private async fetchNpubName(npub: string) {
+    const url = `${NOAUTHD_URL}/name?npub=${npub}`
+    const r = await fetch(url)
+    const d = await r.json()
+    return d?.names?.length ? (d.names[0] as string) : ''
+  }
 
-		return await r.json()
-	}
+  private async sendPost({ url, method, headers, body }: { url: string; method: string; headers: any; body: string }) {
+    const r = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body,
+    })
+    if (r.status !== 200 && r.status !== 201) {
+      console.log('Fetch error', url, method, r.status)
+      const body = await r.json()
+      throw new Error('Failed to fetch ' + url, { cause: body })
+    }
 
-	private async sendPostAuthd({
+    return await r.json()
+  }
+
+  private async sendPostAuthd({
+    npub,
+    url,
+    method = 'GET',
+    body = '',
+    pow = 0,
+  }: {
+    npub: string
+    url: string
+    method: string
+    body: string
+    pow?: number
+  }) {
+    const { data: pubkey } = nip19.decode(npub)
+
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Unknown key')
+
+    const authEvent = new NDKEvent(key.ndk, {
+      pubkey: pubkey as string,
+      kind: 27235,
+      created_at: Math.floor(Date.now() / 1000),
+      content: '',
+      tags: [
+        ['u', url],
+        ['method', method],
+      ],
+    })
+    if (body) authEvent.tags.push(['payload', await this.sha256(body)])
+
+    // generate pow on auth evevnt
+    if (pow) {
+      const start = Date.now()
+      const powEvent: NostrPowEvent = authEvent.rawEvent()
+      const minedEvent = minePow(powEvent, pow)
+      console.log('mined pow of', pow, 'in', Date.now() - start, 'ms', minedEvent)
+      authEvent.tags = minedEvent.tags
+    }
+
+    authEvent.sig = await authEvent.sign(key.signer)
+
+    const auth = this.swg.btoa(JSON.stringify(authEvent.rawEvent()))
+
+    return await this.sendPost({
+      url,
+      method,
+      headers: {
+        Authorization: `Nostr ${auth}`,
+      },
+      body,
+    })
+  }
+
+  private async sendSubscriptionToServer(npub: string, pushSubscription: PushSubscription) {
+    const body = JSON.stringify({
+      npub,
+      relays: NIP46_RELAYS,
+      pushSubscription,
+    })
+
+    const method = 'POST'
+    const url = `${NOAUTHD_URL}/subscribe`
+
+    return this.sendPostAuthd({
+      npub,
+      url,
+      method,
+      body,
+    })
+  }
+
+  private async sendKeyToServer(npub: string, enckey: string, pwh: string) {
+    const body = JSON.stringify({
+      npub,
+      data: enckey,
+      pwh,
+    })
+
+    const method = 'POST'
+    const url = `${NOAUTHD_URL}/put`
+
+    return this.sendPostAuthd({
+      npub,
+      url,
+      method,
+      body,
+    })
+  }
+
+  private async fetchKeyFromServer(npub: string, pwh: string) {
+    const body = JSON.stringify({
+      npub,
+      pwh,
+    })
+
+    const method = 'POST'
+    const url = `${NOAUTHD_URL}/get`
+
+    return await this.sendPost({
+      url,
+      method,
+      headers: {},
+      body,
+    })
+  }
+
+  private async sendNameToServer(npub: string, name: string) {
+    const body = JSON.stringify({
+      npub,
+      name,
+    })
+
+    const method = 'POST'
+    const url = `${NOAUTHD_URL}/name`
+
+    // mas pow should be 21 or something like that
+    let pow = MIN_POW
+    while (pow <= MAX_POW) {
+      console.log('Try name', name, 'pow', pow)
+      try {
+        return await this.sendPostAuthd({
+          npub,
+          url,
+          method,
+          body,
+          pow,
+        })
+      } catch (e: any) {
+        console.log('error', e.cause)
+        if (e.cause && e.cause.minPow > pow) pow = e.cause.minPow
+        else throw e
+      }
+    }
+    throw new Error('Too many requests, retry later')
+  }
+
+  private async sendTokenToServer(npub: string, token: string) {
+    const body = JSON.stringify({
+      npub,
+      token,
+    })
+
+    const method = 'POST'
+    const url = `${NOAUTHD_URL}/created`
+
+    return this.sendPostAuthd({
+      npub,
+      url,
+      method,
+      body,
+    })
+  }
+
+  private notify() {
+    // FIXME collect info from accessBuffer and confirmBuffer
+    // and update the notifications
+
+    for (const r of this.confirmBuffer) {
+      if (r.notified) continue
+
+      const key = this.keys.find((k) => k.npub === r.req.npub)
+      if (!key) continue
+
+      const app = this.apps.find((a) => a.appNpub === r.req.appNpub)
+      if (r.req.method !== 'connect' && !app) continue
+
+      // FIXME check
+      const icon = 'assets/icons/logo.svg'
+
+      const appName = app?.name || getShortenNpub(r.req.appNpub)
+      // FIXME load profile?
+      const keyName = getShortenNpub(r.req.npub)
+
+      const tag = 'confirm-' + r.req.appNpub
+      const allowAction = 'allow:' + r.req.id
+      const disallowAction = 'disallow:' + r.req.id
+      const data = { req: r.req }
+
+      if (r.req.method === 'connect') {
+        const title = `Connect with new app`
+        const body = `Allow app "${appName}" to connect to key "${keyName}"`
+        this.swg.registration.showNotification(title, {
+          body,
+          tag,
+          icon,
+          data,
+          actions: [
+            {
+              action: allowAction,
+              title: 'Connect',
+            },
+            {
+              action: disallowAction,
+              title: 'Ignore',
+            },
+          ],
+        })
+      } else {
+        const title = `Permission request`
+        const body = `Allow "${r.req.method}" by "${appName}" to "${keyName}"`
+        this.swg.registration.showNotification(title, {
+          body,
+          tag,
+          icon,
+          data,
+          actions: [
+            {
+              action: allowAction,
+              title: 'Yes',
+            },
+            {
+              action: disallowAction,
+              title: 'No',
+            },
+          ],
+        })
+      }
+
+      // mark
+      r.notified = true
+    }
+
+    if (this.notifCallback) this.notifCallback()
+    this.notifCallback = null
+  }
+
+  private keyInfo(k: DbKey): KeyInfo {
+    return {
+      npub: k.npub,
+      nip05: k.nip05,
+      locked: this.isLocked(k.npub),
+    }
+  }
+
+  private async generateGoodKey(): Promise<string> {
+    return generatePrivateKey()
+  }
+
+  public async addKey({
+    name,
+    nsec,
+    existingName,
+  }: {
+    name: string
+    nsec?: string
+    existingName?: boolean
+  }): Promise<KeyInfo> {
+    // lowercase
+    name = name.trim().toLocaleLowerCase()
+
+    let sk = ''
+    if (nsec) {
+      const { type, data } = nip19.decode(nsec)
+      if (type !== 'nsec') throw new Error('Bad nsec')
+      sk = data
+    } else {
+      sk = await this.generateGoodKey()
+    }
+    const pubkey = getPublicKey(sk)
+    const npub = nip19.npubEncode(pubkey)
+
+    const localKey = await this.keysModule.generateLocalKey()
+    const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
+    // @ts-ignore
+    const dbKey: DbKey = { npub, name, enckey, localKey }
+    await dbi.addKey(dbKey)
+    this.enckeys.push(dbKey)
+    await this.startKey({ npub, sk })
+
+    // assign nip05 before adding the key
+    // FIXME set name to db and if this call to 'send' fails
+    // then retry later
+    if (!existingName && name && !name.includes('@')) {
+      console.log('adding key', npub, name)
+      await this.sendNameToServer(npub, name)
+    }
+
+    const sub = await this.swg.registration.pushManager.getSubscription()
+    if (sub) await this.sendSubscriptionToServer(npub, sub)
+
+    return this.keyInfo(dbKey)
+  }
+
+  private getPerm(req: DbPending): string {
+    const reqPerm = getReqPerm(req)
+    const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
+
+    // exact match first
+    let perm = appPerms.find((p) => p.perm === reqPerm)
+    // non-exact next
+    if (!perm) perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
+
+    console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
+    return perm?.value || ''
+  }
+
+  private async connectApp({
 		npub,
-		url,
-		method = 'GET',
-		body = '',
-		pow = 0
-	}: {
-		npub: string
-		url: string
-		method: string
-		body: string
-		pow?: number
+		appNpub,
+		appUrl,
+		perms,
+		appName = '',
+		appIcon = ''
+	}: { 
+		npub: string, 
+		appNpub: string, 
+		appUrl: string,
+		appName?: string,
+		appIcon?: string, 
+		perms: string[] 
 	}) {
-		const { data: pubkey } = nip19.decode(npub)
-
-		const key = this.keys.find((k) => k.npub === npub)
-		if (!key) throw new Error('Unknown key')
-
-		const authEvent = new NDKEvent(key.ndk, {
-			pubkey: pubkey as string,
-			kind: 27235,
-			created_at: Math.floor(Date.now() / 1000),
-			content: '',
-			tags: [
-				['u', url],
-				['method', method],
-			],
-		})
-		if (body) authEvent.tags.push(['payload', await this.sha256(body)])
-
-		// generate pow on auth evevnt
-		if (pow) {
-			const start = Date.now()
-			const powEvent: NostrPowEvent = authEvent.rawEvent()
-			const minedEvent = minePow(powEvent, pow)
-			console.log("mined pow of", pow, "in", Date.now() - start, "ms", minedEvent)
-			authEvent.tags = minedEvent.tags
-		}
-
-		authEvent.sig = await authEvent.sign(key.signer)
-
-		const auth = this.swg.btoa(JSON.stringify(authEvent.rawEvent()))
-
-		return await this.sendPost({
-			url,
-			method,
-			headers: {
-				Authorization: `Nostr ${auth}`,
-			},
-			body,
-		})
-	}
-
-	private async sendSubscriptionToServer(
-		npub: string,
-		pushSubscription: PushSubscription,
-	) {
-		const body = JSON.stringify({
-			npub,
-			relays: NIP46_RELAYS,
-			pushSubscription,
-		})
-
-		const method = 'POST'
-		const url = `${NOAUTHD_URL}/subscribe`
-
-		return this.sendPostAuthd({
-			npub,
-			url,
-			method,
-			body,
-		})
-	}
-
-	private async sendKeyToServer(npub: string, enckey: string, pwh: string) {
-		const body = JSON.stringify({
-			npub,
-			data: enckey,
-			pwh,
-		})
-
-		const method = 'POST'
-		const url = `${NOAUTHD_URL}/put`
-
-		return this.sendPostAuthd({
-			npub,
-			url,
-			method,
-			body,
-		})
-	}
-
-	private async fetchKeyFromServer(npub: string, pwh: string) {
-		const body = JSON.stringify({
-			npub,
-			pwh,
-		})
-
-		const method = 'POST'
-		const url = `${NOAUTHD_URL}/get`
-
-		return await this.sendPost({
-			url,
-			method,
-			headers: {},
-			body,
-		})
-	}
-
-	private async sendNameToServer(npub: string, name: string) {
-		const body = JSON.stringify({
-			npub,
-			name
-		})
-
-		const method = 'POST'
-		const url = `${NOAUTHD_URL}/name`
-
-		// mas pow should be 21 or something like that
-		let pow = MIN_POW;
-		while(pow <= MAX_POW) {
-			console.log("Try name", name, "pow", pow);
-			try {
-				return await this.sendPostAuthd({
-					npub,
-					url,
-					method,
-					body,
-					pow
-				})
-			} catch (e: any) {
-				console.log("error", e.cause);
-				if (e.cause && e.cause.minPow > pow)
-					pow = e.cause.minPow
-				else
-					throw e;
-			}
-		}
-		throw new Error("Too many requests, retry later")
-	}
-
-	private notify() {
-		// FIXME collect info from accessBuffer and confirmBuffer
-		// and update the notifications
-
-		for (const r of this.confirmBuffer) {
-
-			if (r.notified) continue
-
-			const key = this.keys.find(k => k.npub === r.req.npub)
-			if (!key) continue
-
-			const app = this.apps.find(a => a.appNpub === r.req.appNpub)
-			if (r.req.method !== 'connect' && !app) continue
-
-			// FIXME use Nsec.app icon!
-			const icon = 'https://nostr.band/android-chrome-192x192.png'
-
-			const appName = app?.name || getShortenNpub(r.req.appNpub)
-			// FIXME load profile?
-			const keyName = getShortenNpub(r.req.npub)
-
-			const tag = 'confirm-' + r.req.appNpub
-			const allowAction = 'allow:' + r.req.id
-			const disallowAction = 'disallow:' + r.req.id
-			const data = { req: r.req }
-
-			if (r.req.method === 'connect') {
-				const title = `Connect with new app`
-				const body = `Allow app "${appName}" to connect to key "${keyName}"`
-				this.swg.registration.showNotification(title, {
-					body,
-					tag,
-					icon,
-					data,
-					actions: [
-						{
-							action: allowAction,
-							title: 'Connect',
-						},
-						{
-							action: disallowAction,
-							title: 'Ignore',
-						},
-					],
-				})
-			} else {
-				const title = `Permission request`
-				const body = `Allow "${r.req.method}" by "${appName}" to "${keyName}"`
-				this.swg.registration.showNotification(title, {
-					body,
-					tag,
-					icon,
-					data,
-					actions: [
-						{
-							action: allowAction,
-							title: 'Yes',
-						},
-						{
-							action: disallowAction,
-							title: 'No',
-						},
-					],
-				})
-			}
-
-			// mark
-			r.notified = true
-		}
-
-		if (this.notifCallback) this.notifCallback()
-		this.notifCallback = null
-	}
-
-	private keyInfo(k: DbKey): KeyInfo {
-		return {
-			npub: k.npub,
-			nip05: k.nip05,
-			locked: this.isLocked(k.npub),
-		}
-	}
-
-	private async generateGoodKey(): Promise<string> {
-		return generatePrivateKey()
-	}
-
-	public async addKey({ name, nsec, existingName } 
-		: { name: string, nsec?: string, existingName?: boolean }
-	): Promise<KeyInfo> {
-
-		// lowercase
-		name = name.trim().toLocaleLowerCase()
-
-		let sk = ''
-		if (nsec) {
-			const { type, data } = nip19.decode(nsec)
-			if (type !== 'nsec') throw new Error('Bad nsec')
-			sk = data
-		} else {
-			sk = await this.generateGoodKey()
-		}
-		const pubkey = getPublicKey(sk)
-		const npub = nip19.npubEncode(pubkey)
-
-		const localKey = await this.keysModule.generateLocalKey()
-		const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
-		// @ts-ignore
-		const dbKey: DbKey = { npub, name, enckey, localKey }
-		await dbi.addKey(dbKey)
-		this.enckeys.push(dbKey)
-		await this.startKey({ npub, sk })
-
-		// assign nip05 before adding the key
-		// FIXME set name to db and if this call to 'send' fails
-		// then retry later
-		if (!existingName && name && !name.includes('@')) {
-			console.log("adding key", npub, name)
-			await this.sendNameToServer(npub, name)
-		}
-
-		const sub = await this.swg.registration.pushManager.getSubscription()
-		if (sub) await this.sendSubscriptionToServer(npub, sub)
-
-		return this.keyInfo(dbKey)
-	}
-
-	private getPerm(req: DbPending): string {
-		const reqPerm = getReqPerm(req)
-		const appPerms = this.perms.filter(
-			(p) => p.npub === req.npub && p.appNpub === req.appNpub,
-		)
-
-		// exact match first
-		let perm = appPerms.find((p) => p.perm === reqPerm)
-		// non-exact next
-		if (!perm) perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
-
-		console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
-		return perm?.value || ''
-	}
-
-	private async allowPermitCallback({
-		backend,
-		npub,
-		id,
-		method,
-		remotePubkey,
-		params,
-	}: IAllowCallbackParams): Promise<boolean> {
-		// same reqs usually come on reconnects
-		if (this.doneReqIds.includes(id)) {
-			console.log('request already done', id)
-			// FIXME maybe repeat the reply, but without the Notification?
-			return false
-		}
-
-		const appNpub = nip19.npubEncode(remotePubkey)
-		const req: DbPending = {
-			id,
-			npub,
-			appNpub,
-			method,
-			params: JSON.stringify(params),
-			timestamp: Date.now(),
-		}
-
-		const self = this
-		return new Promise(async (ok) => {
-			// called when it's decided whether to allow this or not
-			const onAllow = async (
-				manual: boolean,
-				allow: boolean,
-				remember: boolean,
-				options?: any,
-			) => {
-				// confirm
-				console.log(
-					Date.now(),
-					allow ? 'allowed' : 'disallowed',
-					npub,
-					method,
-					options,
-					params,
-				)
-				if (manual) {
-					await dbi.confirmPending(id, allow)
-
-					if (!(method === 'connect' && !allow)) {
-						// only add app if it's not 'disallow connect'
-						if (!(await dbi.getApp(req.appNpub))) {
-							await dbi.addApp({
-								appNpub: req.appNpub,
-								npub: req.npub,
-								timestamp: Date.now(),
-								name: '',
-								icon: '',
-								url: '',
-							})
-
-							// reload
-							self.apps = await dbi.listApps()
-						}
-					}
-				} else {
-					// just send to db w/o waiting for it
-					dbi.addConfirmed({
-						...req,
-						allowed: allow,
-					})
-				}
-
-				// for notifications
-				self.accessBuffer.push(req)
-
-				// clear from pending
-				const index = self.confirmBuffer.findIndex(
-					(r) => r.req.id === id,
-				)
-				if (index >= 0) self.confirmBuffer.splice(index, 1)
-
-				if (remember) {
-					let newPerms = [getReqPerm(req)]
-					if (allow && options && options.perms) newPerms = options.perms
-
-					for (const p of newPerms)
-						await dbi.addPerm({
-							id: req.id,
-							npub: req.npub,
-							appNpub: req.appNpub,
-							perm: p,
-							value: allow ? '1' : '0',
-							timestamp: Date.now(),
-						})
-
-					this.perms = await dbi.listPerms()
-
-					const otherReqs = self.confirmBuffer.filter(
-						(r) => r.req.appNpub === req.appNpub,
-					)
-					console.log(
-						'updated perms',
-						this.perms,
-						'otherReqs',
-						otherReqs,
-					)
-					for (const r of otherReqs) {
-						const perm = this.getPerm(r.req)
-						if (perm) {
-							r.cb(perm === '1', false)
-						}
-					}
-				}
-
-				// notify UI that it was confirmed
-				// if (!PERF_TEST)
-				this.updateUI()
-
-				// return to let nip46 flow proceed
-				ok(allow)
-			}
-
-			// check perms
-			const perm = this.getPerm(req)
-			console.log(Date.now(), 'perm', req.id, perm)
-
-			// have perm?
-			if (perm) {
-				// reply immediately
-				onAllow(false, perm === '1', false)
-			} else {
-				// put pending req to db
-				await dbi.addPending(req)
-
-				// need manual confirmation
-				console.log('need confirm', req)
-
-				// put to a list of pending requests
-				this.confirmBuffer.push({
-					req,
-					cb: (allow, remember, options) =>
-						onAllow(true, allow, remember, options),
-				})
-
-				// OAuth flow
-				const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
-				const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
-				backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
-
-				// show notifs
-				this.notify()
-
-				// notify main thread to ask for user concent
-				// FIXME show a 'confirm' notification?
-				this.updateUI()
-			}
-		})
-	}
-
-	private async startKey({
-		npub,
-		sk,
-		backoff = 1000,
-	}: {
-		npub: string
-		sk: string
-		backoff?: number
-	}) {
-		const ndk = new NDK({
-			explicitRelayUrls: NIP46_RELAYS,
-		})
-
-		// init relay objects but dont wait until we connect
-		ndk.connect()
-
-		const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
-		const backend = new NDKNip46Backend(ndk, sk, () =>
-			Promise.resolve(true),
-		)
-		this.keys.push({ npub, backend, signer, ndk, backoff })
-
-		// new method
-		backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
-
-		// assign our own permission callback
-		for (const method in backend.handlers) {
-			backend.handlers[method] = new EventHandlingStrategyWrapper(
-				backend,
-				npub,
-				method,
-				backend.handlers[method],
-				this.allowPermitCallback.bind(this),
-			)
-		}
-
-		// start
-		backend.start()
-		console.log('started', npub)
-
-		// backoff reset on successfull connection
-		const self = this
-		const onConnect = () => {
-			// reset backoff
-			const key = self.keys.find((k) => k.npub === npub)
-			if (key) key.backoff = 0
-			console.log('reset backoff for', npub)
-		}
-
-		// reconnect handling
-		let reconnected = false
-		const onDisconnect = () => {
-			if (reconnected) return
-			if (ndk.pool.connectedRelays().length > 0) return
-			reconnected = true
-			console.log(new Date(), 'all relays are down for key', npub)
-
-			// run full restart after a pause
-			const bo = self.keys.find((k) => k.npub === npub)?.backoff || 1000
-			setTimeout(() => {
-				console.log(
-					new Date(),
-					'reconnect relays for key',
-					npub,
-					'backoff',
-					bo,
-				)
-				// @ts-ignore
-				for (const r of ndk.pool.relays.values()) r.disconnect()
-				// make sure it no longer activates
-				backend.handlers = {}
-
-				self.keys = self.keys.filter((k) => k.npub !== npub)
-				self.startKey({ npub, sk, backoff: Math.min(bo * 2, 60000) })
-			}, bo)
-		}
-
-		// @ts-ignore
-		for (const r of ndk.pool.relays.values()) {
-			r.on('connect', onConnect)
-			r.on('disconnect', onDisconnect)
-		}
-	}
-
-	public async unlock(npub: string) {
-		console.log('unlocking', npub)
-		if (!this.isLocked(npub))
-			throw new Error(`Key ${npub} already unlocked`)
-		const info = this.enckeys.find((k) => k.npub === npub)
-		if (!info) throw new Error(`Key ${npub} not found`)
-		const { type } = nip19.decode(npub)
-		if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
-		const sk = await this.keysModule.decryptKeyLocal({
-			enckey: info.enckey,
-			// @ts-ignore
-			localKey: info.localKey,
-		})
-		await this.startKey({ npub, sk })
-	}
-
-	private async generateKey(name: string) {
-		const k = await this.addKey({ name })
-		this.updateUI()
-		return k
-	}
-
-	private async importKey(name: string, nsec: string) {
-		const k = await this.addKey({ name, nsec })
-		this.updateUI()
-		return k
-	}
-
-	private async saveKey(npub: string, passphrase: string) {
-		const info = this.enckeys.find((k) => k.npub === npub)
-		if (!info) throw new Error(`Key ${npub} not found`)
-		const sk = await this.keysModule.decryptKeyLocal({
-			enckey: info.enckey,
-			// @ts-ignore
-			localKey: info.localKey,
-		})
-		const { enckey, pwh } = await this.keysModule.encryptKeyPass({
-			key: sk,
-			passphrase,
-		})
-		await this.sendKeyToServer(npub, enckey, pwh)
-	}
-
-	private async fetchKey(npub: string, passphrase: string, name: string) {
-		const { type, data: pubkey } = nip19.decode(npub)
-		if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
-		const { pwh } = await this.keysModule.generatePassKey(
-			pubkey,
-			passphrase,
-		)
-		const { data: enckey } = await this.fetchKeyFromServer(npub, pwh)
-
-		// key already exists?
-		const key = this.enckeys.find((k) => k.npub === npub)
-		if (key) return this.keyInfo(key)
-
-		// add new key
-		const nsec = await this.keysModule.decryptKeyPass({
-			pubkey,
-			enckey,
-			passphrase,
-		})
-		const k = await this.addKey({ name, nsec, existingName: true })
-		this.updateUI()
-		return k
-	}
-
-	private async confirm(
-		id: string,
-		allow: boolean,
-		remember: boolean,
-		options?: any,
-	) {
-		const req = this.confirmBuffer.find((r) => r.req.id === id)
-		if (!req) {
-			console.log('req ', id, 'not found')
-
-			await dbi.removePending(id)
-			this.updateUI()
-		} else {
-			console.log('confirming req', id, allow, remember, options)
-			req.cb(allow, remember, options)
-		}
-	}
-
-	private async deleteApp(appNpub: string) {
-		this.apps = this.apps.filter((a) => a.appNpub !== appNpub)
-		this.perms = this.perms.filter((p) => p.appNpub !== appNpub)
-		await dbi.removeApp(appNpub)
-		await dbi.removeAppPerms(appNpub)
-		this.updateUI()
-	}
-
-	private async deletePerm(id: string) {
-		this.perms = this.perms.filter((p) => p.id !== id)
-		await dbi.removePerm(id)
-		this.updateUI()
-	}
-
-	private async enablePush(): Promise<boolean> {
-		const options = {
-			userVisibleOnly: true,
-			applicationServerKey: WEB_PUSH_PUBKEY,
-		}
-
-		const pushSubscription =
-			await this.swg.registration.pushManager.subscribe(options)
-		console.log('push endpoint', JSON.stringify(pushSubscription))
-
-		if (!pushSubscription) {
-			console.log('failed to enable push subscription')
-			return false
-		}
-
-		// subscribe to all pubkeys
-		for (const k of this.keys) {
-			await this.sendSubscriptionToServer(k.npub, pushSubscription)
-		}
-		console.log('push enabled')
-
-		return true
-	}
-
-	public async onMessage(event: any) {
-		const { id, method, args } = event.data
-		try {
-			//console.log("UI message", id, method, args)
-			let result = undefined
-			if (method === 'generateKey') {
-				result = await this.generateKey(args[0])
-			} else if (method === 'importKey') {
-				result = await this.importKey(args[0], args[1])
-			} else if (method === 'saveKey') {
-				result = await this.saveKey(args[0], args[1])
-			} else if (method === 'fetchKey') {
-				result = await this.fetchKey(args[0], args[1], args[2])
-			} else if (method === 'confirm') {
-				result = await this.confirm(args[0], args[1], args[2], args[3])
-			} else if (method === 'deleteApp') {
-				result = await this.deleteApp(args[0])
-			} else if (method === 'deletePerm') {
-				result = await this.deletePerm(args[0])
-			} else if (method === 'enablePush') {
-				result = await this.enablePush()
-			} else {
-				console.log('unknown method from UI ', method)
-			}
-			event.source.postMessage({
-				id,
-				result,
-			})
-		} catch (e: any) {
-			console.log("backend error", e)
-			event.source.postMessage({
-				id,
-				error: e.toString(),
-			})
-		}
-	}
-
-	private async updateUI() {
-		const clients = await this.swg.clients.matchAll({
-			includeUncontrolled: true
-		})
-		console.log('updateUI clients', clients.length)
-		for (const client of clients) {
-			client.postMessage({})
-		}
-	}
-
-	public async onPush(event: any) {
-		console.log('push', { data: event.data })
-		// noop - we just need browser to launch this worker
-		// FIXME use event.waitUntil and and unblock after we
-		// show a notification
-	}
+
+		await dbi.addApp({
+      appNpub: appNpub,
+      npub: npub,
+      timestamp: Date.now(),
+      name: appName,
+      icon: appIcon,
+      url: appUrl,
+    })
+
+    // reload
+    this.apps = await dbi.listApps()
+
+    // write new perms confirmed by user
+    for (const p of perms) {
+      await dbi.addPerm({
+        id: Math.random().toString(36).substring(7),
+        npub: npub,
+        appNpub: appNpub,
+        perm: p,
+        value: '1',
+        timestamp: Date.now(),
+      })
+    }
+
+    // reload
+    this.perms = await dbi.listPerms()
+  }
+
+  private async allowPermitCallback({
+    backend,
+    npub,
+    id,
+    method,
+    remotePubkey,
+    params,
+  }: IAllowCallbackParams): Promise<boolean> {
+    // same reqs usually come on reconnects
+    if (this.doneReqIds.includes(id)) {
+      console.log('request already done', id)
+      // FIXME maybe repeat the reply, but without the Notification?
+      return false
+    }
+
+    const appNpub = nip19.npubEncode(remotePubkey)
+    const connected = !!this.apps.find((a) => a.appNpub === appNpub)
+    if (!connected && method !== 'connect') {
+      console.log('ignoring request before connect', method, id, appNpub, npub)
+      return false
+    }
+
+    const req: DbPending = {
+      id,
+      npub,
+      appNpub,
+      method,
+      params: JSON.stringify(params),
+      timestamp: Date.now(),
+    }
+
+    const self = this
+    return new Promise(async (ok) => {
+      // called when it's decided whether to allow this or not
+      const onAllow = async (manual: boolean, allow: boolean, remember: boolean, options?: any) => {
+        // confirm
+        console.log(Date.now(), allow ? 'allowed' : 'disallowed', npub, method, options, params)
+
+        if (manual) {
+          await dbi.confirmPending(id, allow)
+
+          // add app on 'allow connect'
+          if (method === 'connect' && allow) {
+            // if (!(await dbi.getApp(req.appNpub))) {
+            await dbi.addApp({
+              appNpub: req.appNpub,
+              npub: req.npub,
+              timestamp: Date.now(),
+              name: '',
+              icon: '',
+              url: '',
+            })
+
+            // reload
+            self.apps = await dbi.listApps()
+          }
+        } else {
+          // just send to db w/o waiting for it
+          dbi.addConfirmed({
+            ...req,
+            allowed: allow,
+          })
+        }
+
+        // for notifications
+        self.accessBuffer.push(req)
+
+        // clear from pending
+        const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
+        if (index >= 0) self.confirmBuffer.splice(index, 1)
+
+        if (remember) {
+          let newPerms = [getReqPerm(req)]
+          if (allow && options && options.perms) newPerms = options.perms
+
+          // write new perms confirmed by user
+          for (const p of newPerms) {
+            await dbi.addPerm({
+              id: req.id,
+              npub: req.npub,
+              appNpub: req.appNpub,
+              perm: p,
+              value: allow ? '1' : '0',
+              timestamp: Date.now(),
+            })
+          }
+
+          // reload
+          this.perms = await dbi.listPerms()
+
+          // confirm pending requests that might now have
+          // the proper perms
+          const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
+          console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
+          for (const r of otherReqs) {
+            let perm = this.getPerm(r.req)
+            if (perm) {
+              r.cb(perm === '1', false)
+            }
+          }
+        }
+
+        // notify UI that it was confirmed
+        // if (!PERF_TEST)
+        this.updateUI()
+
+        // return to let nip46 flow proceed
+        ok(allow)
+      }
+
+      // check perms
+      const perm = this.getPerm(req)
+      console.log(Date.now(), 'perm', req.id, perm)
+
+      // have perm?
+      if (perm) {
+        // reply immediately
+        onAllow(false, perm === '1', false)
+      } else {
+        // put pending req to db
+        await dbi.addPending(req)
+
+        // need manual confirmation
+        console.log('need confirm', req)
+
+        // put to a list of pending requests
+        this.confirmBuffer.push({
+          req,
+          cb: (allow, remember, options) => onAllow(true, allow, remember, options),
+        })
+
+        // OAuth flow
+        const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
+        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
+        console.log('sending authUrl', authUrl, 'for', req)
+        // NOTE: if you set 'Update on reload' in the Chrome SW console
+        // then this message will cause a new tab opened by the peer,
+        // which will cause SW (this code) to reload, to fetch
+        // the pending requests and to re-send this event,
+        // looping for 10 seconds (our request age threshold)
+        backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+
+        // show notifs
+        // this.notify()
+
+        // notify main thread to ask for user concent
+        this.updateUI()
+      }
+    })
+  }
+
+  private async startKey({ npub, sk, backoff = 1000 }: { npub: string; sk: string; backoff?: number }) {
+    const ndk = new NDK({
+      explicitRelayUrls: NIP46_RELAYS,
+    })
+
+    // init relay objects but dont wait until we connect
+    ndk.connect()
+
+    const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
+    const backend = new NDKNip46Backend(ndk, signer, () => Promise.resolve(true))
+    this.keys.push({ npub, backend, signer, ndk, backoff })
+
+    // new method
+    backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
+
+    // assign our own permission callback
+    for (const method in backend.handlers) {
+      backend.handlers[method] = new EventHandlingStrategyWrapper(
+        backend,
+        npub,
+        method,
+        backend.handlers[method],
+        this.allowPermitCallback.bind(this)
+      )
+    }
+
+    // start
+    backend.start()
+    console.log('started', npub)
+
+    // backoff reset on successfull connection
+    const self = this
+    const onConnect = () => {
+      // reset backoff
+      const key = self.keys.find((k) => k.npub === npub)
+      if (key) key.backoff = 0
+      console.log('reset backoff for', npub)
+    }
+
+    // reconnect handling
+    let reconnected = false
+    const onDisconnect = () => {
+      if (reconnected) return
+      if (ndk.pool.connectedRelays().length > 0) return
+      reconnected = true
+      console.log(new Date(), 'all relays are down for key', npub)
+
+      // run full restart after a pause
+      const bo = self.keys.find((k) => k.npub === npub)?.backoff || 1000
+      setTimeout(() => {
+        console.log(new Date(), 'reconnect relays for key', npub, 'backoff', bo)
+        // @ts-ignore
+        for (const r of ndk.pool.relays.values()) r.disconnect()
+        // make sure it no longer activates
+        backend.handlers = {}
+
+        self.keys = self.keys.filter((k) => k.npub !== npub)
+        self.startKey({ npub, sk, backoff: Math.min(bo * 2, 60000) })
+      }, bo)
+    }
+
+    // @ts-ignore
+    for (const r of ndk.pool.relays.values()) {
+      r.on('connect', onConnect)
+      r.on('disconnect', onDisconnect)
+    }
+  }
+
+  public async unlock(npub: string) {
+    console.log('unlocking', npub)
+    if (!this.isLocked(npub)) throw new Error(`Key ${npub} already unlocked`)
+    const info = this.enckeys.find((k) => k.npub === npub)
+    if (!info) throw new Error(`Key ${npub} not found`)
+    const { type } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey,
+    })
+    await this.startKey({ npub, sk })
+  }
+
+  private async generateKey(name: string) {
+    const k = await this.addKey({ name })
+    this.updateUI()
+    return k
+  }
+
+  private async redeemToken(npub: string, token: string) {
+    console.log('redeeming token', npub, token)
+    await this.sendTokenToServer(npub, token)
+  }
+
+  private async importKey(name: string, nsec: string) {
+    const k = await this.addKey({ name, nsec })
+    this.updateUI()
+    return k
+  }
+
+  private async saveKey(npub: string, passphrase: string) {
+    const info = this.enckeys.find((k) => k.npub === npub)
+    if (!info) throw new Error(`Key ${npub} not found`)
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey,
+    })
+    const { enckey, pwh } = await this.keysModule.encryptKeyPass({
+      key: sk,
+      passphrase,
+    })
+    await this.sendKeyToServer(npub, enckey, pwh)
+  }
+
+  private async fetchKey(npub: string, passphrase: string, nip05: string) {
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
+    const { pwh } = await this.keysModule.generatePassKey(pubkey, passphrase)
+    const { data: enckey } = await this.fetchKeyFromServer(npub, pwh)
+
+    // key already exists?
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (key) return this.keyInfo(key)
+
+    let name = ''
+    let existingName = true
+    // check name - user might have provided external nip05,
+    // or just his npub - we must fetch their name from our
+    // server, and if not exists - try to assign one
+    const npubName = await this.fetchNpubName(npub)
+    if (npubName) {
+      // already have name for this npub
+      console.log('existing npub name', npub, npubName)
+      name = npubName
+    } else if (nip05.includes('@')) {
+      // no name for them?
+      const [nip05name, domain] = nip05.split('@')
+      if (domain === DOMAIN) {
+        // wtf? how did we learn their npub if
+        // it's the name on our server but we can't fetch it?
+        console.log('existing name', nip05name)
+        name = nip05name
+      } else {
+        // try to take same name on our domain
+        existingName = false
+        name = nip05name
+        let takenName = await fetchNip05(`${name}@${DOMAIN}`)
+        if (takenName) {
+          // already taken? try name_domain as name
+          name = `${nip05name}_${domain}`
+          takenName = await fetchNip05(`${name}@${DOMAIN}`)
+        }
+        if (takenName) {
+          console.log('All names taken, leave without a name?')
+          name = ''
+        }
+      }
+    }
+
+    console.log('fetch', { name, existingName })
+
+    // add new key
+    const nsec = await this.keysModule.decryptKeyPass({
+      pubkey,
+      enckey,
+      passphrase,
+    })
+    const k = await this.addKey({ name, nsec, existingName })
+    this.updateUI()
+    return k
+  }
+
+  private async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
+    const req = this.confirmBuffer.find((r) => r.req.id === id)
+    if (!req) {
+      console.log('req ', id, 'not found')
+
+      await dbi.removePending(id)
+      this.updateUI()
+    } else {
+      console.log('confirming req', id, allow, remember, options)
+      req.cb(allow, remember, options)
+    }
+  }
+
+  private async deleteApp(appNpub: string) {
+    this.apps = this.apps.filter((a) => a.appNpub !== appNpub)
+    this.perms = this.perms.filter((p) => p.appNpub !== appNpub)
+    await dbi.removeApp(appNpub)
+    await dbi.removeAppPerms(appNpub)
+    this.updateUI()
+  }
+
+  private async deletePerm(id: string) {
+    this.perms = this.perms.filter((p) => p.id !== id)
+    await dbi.removePerm(id)
+    this.updateUI()
+  }
+
+  private async enablePush(): Promise<boolean> {
+    const options = {
+      userVisibleOnly: true,
+      applicationServerKey: WEB_PUSH_PUBKEY,
+    }
+
+    const pushSubscription = await this.swg.registration.pushManager.subscribe(options)
+    console.log('push endpoint', JSON.stringify(pushSubscription))
+
+    if (!pushSubscription) {
+      console.log('failed to enable push subscription')
+      return false
+    }
+
+    // subscribe to all pubkeys
+    for (const k of this.keys) {
+      await this.sendSubscriptionToServer(k.npub, pushSubscription)
+    }
+    console.log('push enabled')
+
+    return true
+  }
+
+  public async onMessage(event: any) {
+    const { id, method, args } = event.data
+    try {
+      //console.log("UI message", id, method, args)
+      let result = undefined
+      if (method === 'generateKey') {
+        result = await this.generateKey(args[0])
+      } else if (method === 'redeemToken') {
+        result = await this.redeemToken(args[0], args[1])
+      } else if (method === 'importKey') {
+        result = await this.importKey(args[0], args[1])
+      } else if (method === 'saveKey') {
+        result = await this.saveKey(args[0], args[1])
+      } else if (method === 'fetchKey') {
+        result = await this.fetchKey(args[0], args[1], args[2])
+      } else if (method === 'confirm') {
+        result = await this.confirm(args[0], args[1], args[2], args[3])
+      } else if (method === 'connectApp') {
+        result = await this.connectApp(args[0])
+      } else if (method === 'deleteApp') {
+        result = await this.deleteApp(args[0])
+      } else if (method === 'deletePerm') {
+        result = await this.deletePerm(args[0])
+      } else if (method === 'enablePush') {
+        result = await this.enablePush()
+      } else {
+        console.log('unknown method from UI ', method)
+      }
+      event.source.postMessage({
+        id,
+        result,
+      })
+    } catch (e: any) {
+      console.log('backend error', e)
+      event.source.postMessage({
+        id,
+        error: e.toString(),
+      })
+    }
+  }
+
+  private async updateUI() {
+    const clients = await this.swg.clients.matchAll({
+      includeUncontrolled: true,
+    })
+    console.log('updateUI clients', clients.length)
+    for (const client of clients) {
+      client.postMessage({})
+    }
+  }
+
+  public async onPush(event: any) {
+    console.log('push', { data: event.data })
+    // noop - we just need browser to launch this worker
+    // FIXME use event.waitUntil and and unblock after we
+    // show a notification
+  }
 }

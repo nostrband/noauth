@@ -1,11 +1,7 @@
-import {
-	DialogContentText,
-	DialogContentTextProps,
-	styled,
-} from '@mui/material'
+import { DialogContentText, DialogContentTextProps, styled } from '@mui/material'
 
-export const StyledDialogContentText = styled(
-	(props: DialogContentTextProps) => <DialogContentText {...props} />,
-)(({ theme }) => ({
-	color: theme.palette.primary.main,
-}))
+export const StyledDialogContentText = styled((props: DialogContentTextProps) => <DialogContentText {...props} />)(
+  ({ theme }) => ({
+    color: theme.palette.primary.main,
+  })
+)

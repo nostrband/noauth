@@ -10,15 +10,16 @@ export const MAX_POW = 19
 export const KIND_RPC = 24133
 
 export enum ACTION_TYPE {
-	BASIC = 'basic',
-	ADVANCED = 'advanced',
-	CUSTOM = 'custom',
+  BASIC = 'basic',
+  ADVANCED = 'advanced',
+  CUSTOM = 'custom',
 }
 
 export const ACTIONS: { [type: string]: string } = {
-	get_public_key: 'Get public key',
-	sign_event: 'Sign event',
-	connect: 'Connect',
-	nip04_encrypt: 'Encrypt message',
-	nip04_decrypt: 'Decrypt message',
+	basic: 'Basic permissions',
+  get_public_key: 'Get public key',
+  sign_event: 'Sign event',
+  connect: 'Connect',
+  nip04_encrypt: 'Encrypt message',
+  nip04_decrypt: 'Decrypt message',
 }

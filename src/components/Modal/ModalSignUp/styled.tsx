@@ -2,13 +2,13 @@ import { AppLogo } from '@/assets'
 import { Box, styled } from '@mui/material'
 
 export const StyledAppLogo = styled((props) => (
-	<Box {...props}>
-		<AppLogo />
-	</Box>
+  <Box {...props}>
+    <AppLogo />
+  </Box>
 ))({
-	background: '#00000054',
-	padding: '0.75rem',
-	borderRadius: '16px',
-	display: 'grid',
-	placeItems: 'center',
+  background: '#00000054',
+  padding: '0.75rem',
+  borderRadius: '16px',
+  display: 'grid',
+  placeItems: 'center',
 })

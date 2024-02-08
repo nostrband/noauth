@@ -11,57 +11,41 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ItemApp } from './ItemApp'
 
 type AppsProps = {
-	apps: DbApp[]
-	npub: string
+  apps: DbApp[]
+  npub: string
 }
 
-export const Apps: FC<AppsProps> = ({ apps = [], npub = '' }) => {
-	const notify = useEnqueueSnackbar()
+export const Apps: FC<AppsProps> = ({ apps = [] }) => {
+  const notify = useEnqueueSnackbar()
 
-	// eslint-disable-next-line
-	async function deletePerm(id: string) {
-		call(async () => {
-			await swicCall('deletePerm', id)
-			notify('Perm deleted!', 'success')
-		})
-	}
+  // eslint-disable-next-line
+  async function deletePerm(id: string) {
+    call(async () => {
+      await swicCall('deletePerm', id)
+      notify('Perm deleted!', 'success')
+    })
+  }
 
-	return (
-		<Box
-			flex={1}
-			marginBottom={'1rem'}
-			display={'flex'}
-			flexDirection={'column'}
-			overflow={'auto'}
-		>
-			<Stack
-				direction={'row'}
-				alignItems={'center'}
-				justifyContent={'space-between'}
-				marginBottom={'0.5rem'}
-			>
-				<SectionTitle>Connected apps</SectionTitle>
-				<AppLink title='Discover Apps' />
-			</Stack>
-			{!apps.length && (
-				<StyledEmptyAppsBox>
-					<Typography
-						className='message'
-						variant='h5'
-						fontWeight={600}
-						textAlign={'center'}
-					>
-						No connected apps
-					</Typography>
-					<Button>Discover Nostr Apps</Button>
-				</StyledEmptyAppsBox>
-			)}
+  return (
+    <Box flex={1} marginBottom={'1rem'} display={'flex'} flexDirection={'column'} overflow={'auto'}>
+      <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'} marginBottom={'0.5rem'}>
+        <SectionTitle>Connected apps</SectionTitle>
+        <AppLink title="Discover Apps" />
+      </Stack>
+      {!apps.length && (
+        <StyledEmptyAppsBox>
+          <Typography className="message" variant="h5" fontWeight={600} textAlign={'center'}>
+            No connected apps
+          </Typography>
+          <Button>Discover Nostr Apps</Button>
+        </StyledEmptyAppsBox>
+      )}
 
-			<Stack gap={'0.5rem'} overflow={'auto'} flex={1}>
-				{apps.map((a) => (
-					<ItemApp {...a} key={a.appNpub} />
-				))}
-			</Stack>
-		</Box>
-	)
+      <Stack gap={'0.5rem'} overflow={'auto'} flex={1}>
+        {apps.map((a) => (
+          <ItemApp {...a} key={a.appNpub} />
+        ))}
+      </Stack>
+    </Box>
+  )
 }
