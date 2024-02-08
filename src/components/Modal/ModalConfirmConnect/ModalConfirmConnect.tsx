@@ -35,6 +35,7 @@ export const ModalConfirmConnect = () => {
   const { name, url = '', icon = '' } = triggerApp || {}
 
 	let appUrl = url || searchParams.get('appUrl') || ''
+	console.log("referrer", window.document.referrer, appUrl)
 	if (!appUrl && window.document.referrer) {
 		try {
 			const u = new URL(window.document.referrer)
