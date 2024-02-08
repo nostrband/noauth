@@ -33,7 +33,15 @@ export const ModalConfirmConnect = () => {
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
-  const appUrl = url || searchParams.get('appUrl') || ''
+
+	let appUrl = url || searchParams.get('appUrl') || ''
+	if (!appUrl && window.document.referrer) {
+		try {
+			const u = new URL(window.document.referrer)
+			appUrl = u.origin
+		} catch {}
+	}
+
   const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
