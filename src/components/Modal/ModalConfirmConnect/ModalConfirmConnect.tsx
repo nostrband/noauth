@@ -35,7 +35,16 @@ export const ModalConfirmConnect = () => {
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
-  const appUrl = url || searchParams.get('appUrl') || ''
+
+  let appUrl = url || searchParams.get('appUrl') || ''
+  console.log('referrer', window.document.referrer, appUrl)
+  if (!appUrl && window.document.referrer) {
+    try {
+      const u = new URL(window.document.referrer)
+      appUrl = u.origin
+    } catch {}
+  }
+
   const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
@@ -133,6 +142,12 @@ export const ModalConfirmConnect = () => {
   return (
     <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
+        {!pendingReqId && (
+          <Typography variant="body1" color={'GrayText'}>
+            You will be asked to <b>enable notifications</b>, this is needed for a reliable communication with Nostr
+            apps.
+          </Typography>
+        )}
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
             variant="rounded"

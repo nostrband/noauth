@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { formatTimestampDate } from '@/utils/helpers/date'
 import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
 import { ACTION_TYPE } from '@/utils/consts'
 import { Permissions } from './components/Permissions/Permissions'
@@ -41,9 +41,10 @@ const AppPage = () => {
     return <Navigate to={`/key/${npub}`} />
   }
 
-  const { icon = '', name = '' } = currentApp || {}
-  const appName = name || getShortenNpub(appNpub)
-  const appAvatarTitle = getAppIconTitle(name, appNpub)
+  const { icon = '', name = '', url = '' } = currentApp || {}
+  const appDomain = getDomain(url)
+  const appName = name || appDomain || getShortenNpub(appNpub)
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
 
   const { timestamp } = connectPerm || {}
   const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
