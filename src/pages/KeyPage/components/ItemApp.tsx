@@ -3,13 +3,14 @@ import { Avatar, Stack, Typography } from '@mui/material'
 import { FC } from 'react'
 import { Link } from 'react-router-dom'
 // import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
-import { getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getShortenNpub } from '@/utils/helpers/helpers'
 import { StyledItemAppContainer } from './styled'
 
 type ItemAppProps = DbApp
 
 export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name }) => {
   const appName = name || getShortenNpub(appNpub)
+	const appAvatarTitle = getAppIconTitle(name, appNpub)
   return (
     <StyledItemAppContainer
       direction={'row'}
@@ -19,7 +20,14 @@ export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name }) => {
       component={Link}
       to={`/key/${npub}/app/${appNpub}`}
     >
-      <Avatar variant="square" sx={{ width: 56, height: 56 }} src={icon} alt={name} />
+      <Avatar 
+        variant="rounded" 
+        sx={{ width: 56, height: 56 }} 
+        src={icon} 
+        alt={name}
+      >
+        {appAvatarTitle}
+      </Avatar>
       <Stack>
         <Typography noWrap display={'block'} variant="body2">
           {appName}

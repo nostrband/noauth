@@ -1,6 +1,6 @@
 import { nip19 } from 'nostr-tools'
-import { ACTION_TYPE, NIP46_RELAYS } from '../consts'
-import { DbPending } from '@/modules/db'
+import { ACTIONS, ACTION_TYPE, NIP46_RELAYS } from '../consts'
+import { DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
 export async function call(cb: () => any) {
@@ -51,6 +51,25 @@ export function getSignReqKind(req: DbPending): number | undefined {
     return data.kind
   } catch {}
   return undefined
+}
+
+export function getReqActionName(req: DbPending) {
+	const action = ACTIONS[req.method]
+	if (req.method === 'sign_event') {
+		const kind = getSignReqKind(req)
+		if (kind !== undefined) return `${action} of kind ${kind}`
+	}
+	return action
+}
+
+export function getPermActionName(req: DbPerm) {
+	const method = req.perm.split(':')[0]
+	const action = ACTIONS[method]
+	if (method === 'sign_event') {
+		const kind = req.perm.split(':')[1]
+		if (kind !== undefined) return `${action} of kind ${kind}`
+	}
+	return action
 }
 
 export function getReqPerm(req: DbPending): string {

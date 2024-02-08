@@ -47,8 +47,7 @@ function App() {
       setApps({
         apps: apps.map((app) => ({
           ...app,
-          // MOCK IMAGE
-          icon: 'https://nostr.band/android-chrome-192x192.png',
+          //icon: 'https://nostr.band/android-chrome-192x192.png',
         })),
       })
     )

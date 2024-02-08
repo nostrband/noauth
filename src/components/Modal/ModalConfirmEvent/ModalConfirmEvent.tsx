@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getReqActionName, getShortenNpub, getSignReqKind } from '@/utils/helpers/helpers'
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -13,7 +13,6 @@ import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { swicCall } from '@/modules/swic'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { DbPending } from '@/modules/db'
-import { ACTIONS } from '@/utils/consts'
 import { IPendingsByAppNpub } from '@/pages/KeyPage/hooks/useTriggerConfirmModal'
 
 enum ACTION_TYPE {
@@ -101,15 +100,6 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     setPendingRequests(newPendingRequests)
   }
 
-  const getAction = (req: PendingRequest) => {
-    const action = ACTIONS[req.method]
-    if (req.method === 'sign_event') {
-      const kind = getSignReqKind(req)
-      if (kind !== undefined) return `${action} of kind ${kind}`
-    }
-    return action
-  }
-
   if (isPopup) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
@@ -154,7 +144,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
                   <ListItemIcon>
                     <Checkbox checked={req.checked} onChange={handleChangeCheckbox(req.id)} />
                   </ListItemIcon>
-                  <ListItemText>{getAction(req)}</ListItemText>
+                  <ListItemText>{getReqActionName(req)}</ListItemText>
                 </ListItem>
               )
             })}
