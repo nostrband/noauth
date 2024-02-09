@@ -84,7 +84,7 @@ export const ModalConfirmConnect = () => {
     if (selectedActionType === ACTION_TYPE.BASIC) perms = [ACTION_TYPE.BASIC]
 
     if (pendingReqId) {
-      const options = { perms }
+      const options = { perms, appUrl }
       await confirmPending(pendingReqId, true, true, options)
     } else {
       try {
