@@ -43,7 +43,7 @@ export const ModalAppDetails = () => {
     })
 
     // eslint-disable-next-line
-  }, [appNpub])
+  }, [appNpub, isModalOpened])
 
   useEffect(() => {
     return () => {
@@ -164,7 +164,7 @@ export const ModalAppDetails = () => {
           value={details.icon}
         />
 
-        <Button type="submit" fullWidth disabled={!isFormValid || isLoading}>
+        <Button varianttype="secondary" type="submit" fullWidth disabled={!isFormValid || isLoading}>
           Save changes {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
         </Button>
       </Stack>

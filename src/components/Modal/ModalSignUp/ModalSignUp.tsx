@@ -51,11 +51,11 @@ export const ModalSignUp = () => {
   const inputHelperText = getInputHelperText()
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (isLoading || !isAvailable) return undefined
 
     const name = enteredValue.trim()
     if (!name.length) return
-    e.preventDefault()
 
     try {
       setIsLoading(true)
@@ -89,9 +89,9 @@ export const ModalSignUp = () => {
           </Typography>
         </Stack>
         <Input
-          label="Enter a Username"
+          label="Username"
           fullWidth
-          placeholder="Username"
+          placeholder="Enter a Username"
           helperText={inputHelperText}
           endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
           onChange={handleInputChange}

@@ -41,9 +41,6 @@ export const StyledProfileContainer = styled((props: StackProps) => <Stack {...p
   },
   '& .username': {
     cursor: 'pointer',
-    '&:hover': {
-      textDecoration: 'underline',
-    },
   },
 }))
 

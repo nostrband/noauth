@@ -110,9 +110,10 @@ export const ModalImportKeys = () => {
           </Typography>
         </Stack>
         <Input
-          label="Username or nip05 or npub"
+          label="Username"
           fullWidth
-          placeholder="name or name@domain.com or npub1..."
+          placeholder="Enter a Username"
+          endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
           {...register('username')}
           error={!!errors.username}
           helperText={inputHelperText}

@@ -7,7 +7,7 @@ export type AppButtonProps = MuiButtonProps & {
 
 export const Button = forwardRef<HTMLButtonElement, AppButtonProps>(({ children, ...restProps }, ref) => {
   return (
-    <StyledButton classes={{ root: 'button' }} {...restProps} ref={ref}>
+    <StyledButton classes={{ root: 'button', disabled: 'disabled' }} {...restProps} ref={ref}>
       {children}
     </StyledButton>
   )
@@ -27,19 +27,22 @@ const StyledButton = styled(
         background: theme.palette.backgroundSecondary.default,
       },
       color: theme.palette.text.primary,
+      '&.disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+      },
     }
   }
   return {
     ...commonStyles,
-    '&.button:is(:hover, :active, &)': {
+    '&.button:is(:hover, :active, &, .disabled)': {
       background: theme.palette.primary.main,
     },
     color: theme.palette.text.secondary,
-    ':disabled': {
-      '&.button:is(:hover, :active, &)': {
-        background: theme.palette.backgroundSecondary.default,
-      },
-      color: theme.palette.backgroundSecondary.paper,
+    '&.disabled': {
+      color: theme.palette.text.secondary,
+      opacity: 0.5,
+      cursor: 'not-allowed',
     },
   }
 })
