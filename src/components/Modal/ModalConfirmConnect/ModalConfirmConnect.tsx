@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
+import { askNotificationPermission, call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -88,7 +88,9 @@ export const ModalConfirmConnect = () => {
       await confirmPending(pendingReqId, true, true, options)
     } else {
       try {
-        await swicCall('enablePush')
+        await askNotificationPermission()
+        const result = await swicCall('enablePush')
+        if (!result) throw new Error('Failed to activate the push subscription')
         console.log('enablePush done')
       } catch (e: any) {
         console.log('error', e)
