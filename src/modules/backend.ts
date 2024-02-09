@@ -661,7 +661,7 @@ export class NoauthBackend {
               timestamp: Date.now(),
               name: '',
               icon: '',
-              url: '',
+              url: options.appUrl || '',
             })
 
             // reload
