@@ -5,7 +5,7 @@ import { call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helper
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub, selectKeys } from '@/store'
+import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
@@ -25,6 +25,7 @@ export const ModalConfirmConnect = () => {
   const paramNpub = searchParams.get('npub') || ''
   const { npub = paramNpub } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
+  const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.BASIC)
 
@@ -62,7 +63,7 @@ export const ModalConfirmConnect = () => {
 
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
   const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-  const isPendingReqIdExists = pendingReqId.trim().length
+  const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
   if (isModalOpened && (!isNpubExists || !isAppNpubExists || !isPendingReqIdExists)) {
     closeModalAfterRequest()
     return null
