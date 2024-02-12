@@ -58,7 +58,7 @@ function App() {
     // rerender
     //		setRender((r) => r + 1)
 
-    if (!keys.length) handleOpen(MODAL_PARAMS_KEYS.INITIAL)
+    // if (!keys.length) handleOpen(MODAL_PARAMS_KEYS.INITIAL)
     // eslint-disable-next-line
   }, [dispatch])
 
