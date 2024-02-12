@@ -106,11 +106,11 @@ export const ModalImportKeys = () => {
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
           <StyledAppLogo />
           <Typography fontWeight={600} variant="h5">
-            Import keys
+            Import key
           </Typography>
         </Stack>
         <Input
-          label="Username"
+          label="Choose a username"
           fullWidth
           placeholder="Enter a Username"
           endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
@@ -131,16 +131,24 @@ export const ModalImportKeys = () => {
           }}
         />
         <Input
-          label="Enter a NSEC"
-          placeholder="Your NSEC"
+          label="Paste your private key"
+          placeholder="nsec1..."
           fullWidth
           {...register('nsec')}
           error={!!errors.nsec}
           {...inputProps}
+          helperText="Keys stay on your device."
+          helperTextProps={{
+            sx: {
+              '&.helper_text': {
+                color: theme.palette.textSecondaryDecorate.main,
+              },
+            },
+          }}
         />
 
         <Button type="submit" disabled={isLoading}>
-          Import nsec {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Import key {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
         </Button>
       </Stack>
     </Modal>

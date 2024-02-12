@@ -7,7 +7,7 @@ import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import { Modal } from '@/shared/Modal/Modal'
 import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
-import { MODAL_PARAMS_KEYS } from '@/types/modal'
+import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
 import { Stack, Typography } from '@mui/material'
 import { useRef } from 'react'
@@ -69,7 +69,10 @@ export const ModalConnectApp = () => {
           value={bunkerStr}
           endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
         />
-        <AppLink title="What is this?" onClick={() => handleOpen(MODAL_PARAMS_KEYS.EXPLANATION)} />
+        <AppLink
+          title="What is this?"
+          onClick={() => handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })}
+        />
         <Button fullWidth onClick={handleShareBunker}>
           Share it
         </Button>

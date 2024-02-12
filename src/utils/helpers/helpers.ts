@@ -80,7 +80,7 @@ export function isPackagePerm(perm: string, reqPerm: string) {
 
 export async function fetchNip05(value: string, origin?: string) {
   try {
-    const [username, domain] = value.split('@')
+    const [username, domain] = value.toLocaleLowerCase().split('@')
     if (!origin) origin = `https://${domain}`
     const response = await fetch(`${origin}/.well-known/nostr.json?name=${username}`)
     const getNpub: {

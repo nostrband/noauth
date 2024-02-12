@@ -56,7 +56,7 @@ const KeyPage = () => {
           title="Your login"
           value={username}
           copyValue={username}
-          explanationType={EXPLANATION_MODAL_KEYS.NPUB}
+          explanationType={EXPLANATION_MODAL_KEYS.LOGIN}
         />
         <UserValueSection
           title="Your NPUB"

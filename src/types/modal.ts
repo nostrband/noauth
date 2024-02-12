@@ -15,4 +15,5 @@ export enum MODAL_PARAMS_KEYS {
 export enum EXPLANATION_MODAL_KEYS {
   BUNKER = 'bunker',
   NPUB = 'npub',
+  LOGIN = 'login',
 }
