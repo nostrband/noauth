@@ -1,6 +1,5 @@
 import { Avatar, Stack, Toolbar, Typography } from '@mui/material'
-import { AppLogo } from '../../assets'
-import { StyledAppBar, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
+import { StyledAppBar, StyledAppLogo, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
 import { Menu } from './components/Menu'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
@@ -47,7 +46,7 @@ export const Header = () => {
 
           {!showProfile && (
             <StyledAppName>
-              <AppLogo />
+              <StyledAppLogo />
               <span>Nsec.app</span>
             </StyledAppName>
           )}

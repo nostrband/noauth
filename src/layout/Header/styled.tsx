@@ -1,3 +1,4 @@
+import { AppLogo } from '@/assets'
 import { AppBar, IconButton, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 import { Link } from 'react-router-dom'
 
@@ -47,3 +48,9 @@ export const StyledProfileContainer = styled((props: StackProps) => <Stack {...p
 export const StyledThemeButton = styled(IconButton)({
   margin: '0 0.5rem',
 })
+
+export const StyledAppLogo = styled(AppLogo)(({ theme }) => ({
+  '& path': {
+    fill: theme.palette.text.primary,
+  },
+}))
