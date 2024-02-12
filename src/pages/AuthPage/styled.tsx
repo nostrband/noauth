@@ -24,7 +24,7 @@ export const StyledAppLogo = styled((props) => (
     <AppLogo />
   </Box>
 ))({
-  background: '#00000054',
+  background: '#0d0d0d',
   padding: '0.75rem',
   borderRadius: '16px',
   display: 'grid',
