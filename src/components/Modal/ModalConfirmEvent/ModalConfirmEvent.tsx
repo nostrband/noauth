@@ -5,7 +5,7 @@ import { call, getAppIconTitle, getReqActionName, getShortenNpub } from '@/utils
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub } from '@/store'
+import { selectAppsByNpub, selectKeys } from '@/store'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { FC, useEffect, useMemo, useState } from 'react'
 import { StyledActionsListContainer, StyledButton, StyledToggleButtonsGroup } from './styled'
@@ -34,13 +34,14 @@ type ModalConfirmEventProps = {
 type PendingRequest = DbPending & { checked: boolean }
 
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs }) => {
+  const keys = useAppSelector(selectKeys)
+
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
   const [searchParams] = useSearchParams()
 
   const appNpub = searchParams.get('appNpub') || ''
   const isPopup = searchParams.get('popup') === 'true'
-
   const { npub = '' } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
@@ -53,10 +54,25 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     setPendingRequests(currentAppPendingReqs.map((pr) => ({ ...pr, checked: true })))
   }, [currentAppPendingReqs])
 
+  const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
+    onClose: (sp) => {
+      sp.delete('appNpub')
+      sp.delete('reqId')
+    },
+  })
+
+  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+
+  if (isModalOpened && (!isNpubExists || !isAppNpubExists)) {
+    closeModalAfterRequest()
+    return null
+  }
+
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, icon = '' } = triggerApp || {}
   const appName = name || getShortenNpub(appNpub)
-	const appAvatarTitle = getAppIconTitle(name, appNpub)
+  const appAvatarTitle = getAppIconTitle(name, appNpub)
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -64,21 +80,6 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   }
 
   const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
-
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
-    onClose: (sp) => {
-      sp.delete('appNpub')
-      sp.delete('reqId')
-      selectedPendingRequests.forEach(async (req) => await swicCall('confirm', req.id, false, false))
-    },
-  })
-
-  const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
-    onClose: (sp) => {
-      sp.delete('appNpub')
-      sp.delete('reqId')
-    },
-  })
 
   async function confirmPending(allow: boolean) {
     selectedPendingRequests.forEach((req) => {
@@ -109,9 +110,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   }
 
   return (
-    <Modal title='Permission request' open={isModalOpened} withCloseButton={false}
-			// withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
-		>
+    <Modal title="Permission request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
@@ -123,8 +122,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
             }}
             src={icon}
           >
-						{appAvatarTitle}
-					</Avatar>
+            {appAvatarTitle}
+          </Avatar>
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
@@ -153,11 +152,6 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
           <ActionToggleButton value={ACTION_TYPE.ALWAYS} title="Always" />
           <ActionToggleButton value={ACTION_TYPE.ONCE} title="Just once" />
-          {/* <ActionToggleButton
-						value={ACTION_TYPE.ALLOW_ALL}
-						title='Allow All Advanced Actions'
-						hasinfo
-					/> */}
         </StyledToggleButtonsGroup>
 
         <Stack direction={'row'} gap={'1rem'}>

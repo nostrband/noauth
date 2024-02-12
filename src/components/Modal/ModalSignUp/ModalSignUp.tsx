@@ -2,15 +2,15 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Stack, Typography, useTheme } from '@mui/material'
-import React, { ChangeEvent, useState } from 'react'
+import { CircularProgress, Stack, Typography, useTheme } from '@mui/material'
+import React, { ChangeEvent, useEffect, useState } from 'react'
 import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import { CheckmarkIcon } from '@/assets'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
-import { DOMAIN, NOAUTHD_URL } from '@/utils/consts'
+import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 
 export const ModalSignUp = () => {
@@ -25,6 +25,8 @@ export const ModalSignUp = () => {
   const [enteredValue, setEnteredValue] = useState('')
   const [isAvailable, setIsAvailable] = useState(false)
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
     setEnteredValue(e.target.value)
     const name = e.target.value.trim()
@@ -36,30 +38,46 @@ export const ModalSignUp = () => {
     }
   }
 
-  const inputHelperText = enteredValue ? (
-    isAvailable ? (
+  const getInputHelperText = () => {
+    if (!enteredValue) return "Don't worry, username can be changed later."
+    if (!isAvailable) return 'Already taken'
+    return (
       <>
         <CheckmarkIcon /> Available
       </>
-    ) : (
-      <>Already taken</>
     )
-  ) : (
-    "Don't worry, username can be changed later."
-  )
+  }
+
+  const inputHelperText = getInputHelperText()
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (isLoading || !isAvailable) return undefined
+
     const name = enteredValue.trim()
     if (!name.length) return
-    e.preventDefault()
+
     try {
+      setIsLoading(true)
       const k: any = await swicCall('generateKey', name)
       notify(`Account created for "${name}"`, 'success')
       navigate(`/key/${k.npub}`)
+      setIsLoading(false)
     } catch (error: any) {
-      notify(error.message, 'error')
+      notify(error?.message || 'Something went wrong!', 'error')
+      setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (isModalOpened) {
+        // modal closed
+        setIsLoading(false)
+        setIsAvailable(false)
+      }
+    }
+  }, [isModalOpened])
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
@@ -71,9 +89,9 @@ export const ModalSignUp = () => {
           </Typography>
         </Stack>
         <Input
-          label="Enter a Username"
+          label="Username"
           fullWidth
-          placeholder="Username"
+          placeholder="Enter a Username"
           helperText={inputHelperText}
           endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
           onChange={handleInputChange}
@@ -91,8 +109,8 @@ export const ModalSignUp = () => {
             },
           }}
         />
-        <Button fullWidth type="submit">
-          Create account
+        <Button fullWidth type="submit" disabled={isLoading}>
+          Create account {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
         </Button>
       </Stack>
     </Modal>

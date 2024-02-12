@@ -45,10 +45,7 @@ function App() {
     const apps = await dbi.listApps()
     dispatch(
       setApps({
-        apps: apps.map((app) => ({
-          ...app,
-          //icon: 'https://nostr.band/android-chrome-192x192.png',
-        })),
+        apps,
       })
     )
 

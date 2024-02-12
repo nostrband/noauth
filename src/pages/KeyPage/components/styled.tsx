@@ -1,9 +1,9 @@
-import { Input, InputProps } from '@/shared/Input/Input'
+import { Input, AppInputProps } from '@/shared/Input/Input'
 import { Stack, StackProps, styled } from '@mui/material'
 import { forwardRef } from 'react'
 
 export const StyledInput = styled(
-  forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => {
+  forwardRef<HTMLInputElement, AppInputProps>(({ className, ...props }, ref) => {
     return (
       <Input
         {...props}

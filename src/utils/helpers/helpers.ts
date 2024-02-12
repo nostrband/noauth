@@ -3,35 +3,21 @@ import { ACTIONS, ACTION_TYPE, NIP46_RELAYS } from '../consts'
 import { DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
-export async function call(cb: () => any, err?: (e: string) => void) {
+export async function call(cb: () => any) {
   try {
     return await cb()
-  } catch (e: any) {
+  } catch (e) {
     console.log(`Error: ${e}`)
-		err?.(e.toString());
   }
-}
-
-export const getDomain = (url: string) => {
-	try {
-		return new URL(url).hostname
-	} catch {
-		return ''
-	}
 }
 
 export const getShortenNpub = (npub = '') => {
   return npub.substring(0, 10) + '...' + npub.slice(-4)
 }
 
-export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
-	return name 
-		? name[0].toLocaleUpperCase()
-		: appNpub.substring(4, 7);
-}
-
-export const getProfileUsername = (profile: MetaEvent | null, npub: string) => {
-  return profile?.info?.name || profile?.info?.display_name || getShortenNpub(npub)
+export const getProfileUsername = (profile: MetaEvent | null) => {
+  if (!profile) return null
+  return profile?.info?.name || profile?.info?.display_name
 }
 
 export const getBunkerLink = (npub = '') => {
@@ -60,25 +46,6 @@ export function getSignReqKind(req: DbPending): number | undefined {
     return data.kind
   } catch {}
   return undefined
-}
-
-export function getReqActionName(req: DbPending) {
-	const action = ACTIONS[req.method]
-	if (req.method === 'sign_event') {
-		const kind = getSignReqKind(req)
-		if (kind !== undefined) return `${action} of kind ${kind}`
-	}
-	return action
-}
-
-export function getPermActionName(req: DbPerm) {
-	const method = req.perm.split(':')[0]
-	const action = ACTIONS[method]
-	if (method === 'sign_event') {
-		const kind = req.perm.split(':')[1]
-		if (kind !== undefined) return `${action} of kind ${kind}`
-	}
-	return action
 }
 
 export function getReqPerm(req: DbPending): string {
@@ -113,7 +80,7 @@ export function isPackagePerm(perm: string, reqPerm: string) {
 
 export async function fetchNip05(value: string, origin?: string) {
   try {
-    const [username, domain] = value.split('@')
+    const [username, domain] = value.toLocaleLowerCase().split('@')
     if (!origin) origin = `https://${domain}`
     const response = await fetch(`${origin}/.well-known/nostr.json?name=${username}`)
     const getNpub: {
@@ -128,4 +95,39 @@ export async function fetchNip05(value: string, origin?: string) {
     console.log('Failed to fetch nip05', value, 'error: ' + e)
     return ''
   }
+}
+
+export const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
+
+export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
+  return name ? name[0].toLocaleUpperCase() : appNpub.substring(4, 7)
+}
+
+export function getReqActionName(req: DbPending) {
+  const action = ACTIONS[req.method]
+  if (req.method === 'sign_event') {
+    const kind = getSignReqKind(req)
+    if (kind !== undefined) return `${action} of kind ${kind}`
+  }
+  return action
+}
+
+export function getPermActionName(req: DbPerm) {
+  const method = req.perm.split(':')[0]
+  const action = ACTIONS[method]
+  if (method === 'sign_event') {
+    const kind = req.perm.split(':')[1]
+    if (kind !== undefined) return `${action} of kind ${kind}`
+  }
+  return action
+}
+
+export const isEmptyString = (str = '') => {
+  return str.trim().length === 0
 }

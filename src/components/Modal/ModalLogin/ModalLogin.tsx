@@ -4,18 +4,23 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { swicCall } from '@/modules/swic'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { IconButton, Stack, Typography } from '@mui/material'
+import { CircularProgress, Stack, Typography } from '@mui/material'
 import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
+import { usePassword } from '@/hooks/usePassword'
+import { dbi } from '@/modules/db'
+
+const FORM_DEFAULT_VALUES = {
+  username: '',
+  password: '',
+}
 
 export const ModalLogin = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -23,8 +28,9 @@ export const ModalLogin = () => {
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.LOGIN)
 
   const notify = useEnqueueSnackbar()
-
   const navigate = useNavigate()
+  const { hidePassword, inputProps } = usePassword()
+  const [isLoading, setIsLoading] = useState(false)
 
   const {
     handleSubmit,
@@ -32,27 +38,25 @@ export const ModalLogin = () => {
     register,
     formState: { errors },
   } = useForm<FormInputType>({
-    defaultValues: {
-      username: '',
-      password: '',
-    },
+    defaultValues: FORM_DEFAULT_VALUES,
     resolver: yupResolver(schema),
     mode: 'onSubmit',
   })
 
-  const [isPasswordShown, setIsPasswordShown] = useState(false)
-
-  const handlePasswordTypeChange = () => setIsPasswordShown((prevState) => !prevState)
-
   const cleanUpStates = useCallback(() => {
-    setIsPasswordShown(false)
+    hidePassword()
     reset()
-  }, [reset])
+    setIsLoading(false)
+  }, [reset, hidePassword])
 
   const submitHandler = async (values: FormInputType) => {
+    if (isLoading) return undefined
+
     try {
+      setIsLoading(true)
       let npub = values.username
       let name = ''
+
       if (!npub.startsWith('npub1')) {
         name = npub
         if (!npub.includes('@')) {
@@ -72,11 +76,13 @@ export const ModalLogin = () => {
       console.log('fetch', npub, name)
       const k: any = await swicCall('fetchKey', npub, passphrase, name)
       notify(`Fetched ${k.npub}`, 'success')
+      dbi.addSynced(k.npub)
       cleanUpStates()
       navigate(`/key/${k.npub}`)
     } catch (error: any) {
       console.log('error', error)
       notify(error?.message || 'Something went wrong!', 'error')
+      setIsLoading(false)
     }
   }
 
@@ -110,16 +116,11 @@ export const ModalLogin = () => {
           fullWidth
           placeholder="Your password"
           {...register('password')}
-          endAdornment={
-            <IconButton size="small" onClick={handlePasswordTypeChange}>
-              {isPasswordShown ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
-            </IconButton>
-          }
-          type={isPasswordShown ? 'text' : 'password'}
+          {...inputProps}
           error={!!errors.password}
         />
-        <Button type="submit" fullWidth>
-          Add account
+        <Button type="submit" fullWidth disabled={isLoading}>
+          Add account {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
         </Button>
       </Stack>
     </Modal>

@@ -35,7 +35,7 @@ export const ModalInitial = () => {
 
         {showAdvancedContent && (
           <Fade in>
-            <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import keys</Button>
+            <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import key</Button>
           </Fade>
         )}
       </Stack>

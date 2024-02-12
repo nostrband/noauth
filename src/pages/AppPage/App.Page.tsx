@@ -1,9 +1,9 @@
 import { useParams } from 'react-router'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppByAppNpub, selectPermsByNpubAndAppNpub } from '@/store'
+import { selectAppByAppNpub, selectKeys, selectPermsByNpubAndAppNpub } from '@/store'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { formatTimestampDate } from '@/utils/helpers/date'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
@@ -18,31 +18,35 @@ import { IOSBackButton } from '@/shared/IOSBackButton/IOSBackButton'
 import { ModalActivities } from './components/Activities/ModalActivities'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
+import MoreIcon from '@mui/icons-material/MoreVertRounded'
+import { ModalAppDetails } from '@/components/Modal/ModalAppDetails/ModalAppDetails'
 
 const AppPage = () => {
+  const keys = useAppSelector(selectKeys)
+
   const { appNpub = '', npub = '' } = useParams()
+  const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
+  const perms = useAppSelector((state) => selectPermsByNpubAndAppNpub(state, npub, appNpub))
+
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
-
-  const perms = useAppSelector((state) => selectPermsByNpubAndAppNpub(state, npub, appNpub))
-  const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
-
   const { open, handleClose, handleShow } = useToggleConfirm()
   const { handleOpen: handleOpenModal } = useModalSearchParams()
 
   const connectPerm = perms.find((perm) => perm.perm === 'connect' || perm.perm === ACTION_TYPE.BASIC)
 
-  if (!currentApp) {
+  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+
+  if (!isNpubExists || !currentApp) {
     return <Navigate to={`/key/${npub}`} />
   }
 
   const { icon = '', name = '', url = '' } = currentApp || {}
   const appDomain = getDomain(url)
   const appName = name || appDomain || getShortenNpub(appNpub)
-	const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
 
   const { timestamp } = connectPerm || {}
-
   const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
 
   const handleDeleteApp = async () => {
@@ -55,18 +59,23 @@ const AppPage = () => {
     }
   }
 
+  const handleShowAppDetailsModal = () => handleOpenModal(MODAL_PARAMS_KEYS.APP_DETAILS)
+
   return (
     <>
       <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
         <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'}>
-          <StyledAppIcon src={icon}>
-            {appAvatarTitle}
-          </StyledAppIcon>
+          <StyledAppIcon src={icon}>{appAvatarTitle}</StyledAppIcon>
           <Box flex={'1'} overflow={'hidden'}>
-            <Typography variant="h4" noWrap>
-              {appName}
-            </Typography>
+            <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
+              <Typography variant="h4" noWrap flex={1}>
+                {appName}
+              </Typography>
+              <IconButton onClick={handleShowAppDetailsModal}>
+                <MoreIcon />
+              </IconButton>
+            </Stack>
             <Typography variant="body2" noWrap>
               {connectedOn}
             </Typography>
@@ -94,6 +103,7 @@ const AppPage = () => {
         onClose={handleClose}
       />
       <ModalActivities appNpub={appNpub} />
+      <ModalAppDetails />
     </>
   )
 }

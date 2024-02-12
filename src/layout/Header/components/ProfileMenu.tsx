@@ -9,11 +9,9 @@ import LoginIcon from '@mui/icons-material/Login'
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded'
-import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
+import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { setThemeMode } from '@/store/reducers/ui.slice'
-import DarkModeIcon from '@mui/icons-material/DarkMode'
-import LightModeIcon from '@mui/icons-material/LightMode'
+
 import { ListProfiles } from './ListProfiles'
 import { DbKey } from '@/modules/db'
 
@@ -23,10 +21,7 @@ export const ProfileMenu = () => {
 
   const keys = useAppSelector(selectKeys)
   const isNoKeys = !keys || keys.length === 0
-  const themeMode = useAppSelector((state) => state.ui.themeMode)
-  const isDarkMode = themeMode === 'dark'
 
-  const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
   const handleNavigateToAuth = () => {
@@ -39,16 +34,10 @@ export const ProfileMenu = () => {
     handleClose()
   }
 
-  const handleChangeMode = () => {
-    dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
-  }
-
   const handleNavigateToKeyInnerPage = (key: DbKey) => {
     navigate('/key/' + key.npub)
     handleClose()
   }
-
-  const themeIcon = isDarkMode ? <DarkModeIcon htmlColor="#fff" /> : <LightModeIcon htmlColor="#feb94a" />
 
   return (
     <>
@@ -71,7 +60,6 @@ export const ProfileMenu = () => {
           onClick={handleNavigateToAuth}
           title={isNoKeys ? 'Sign up' : 'Add account'}
         />
-        <MenuItem Icon={themeIcon} onClick={handleChangeMode} title="Change theme" />
       </Menu>
     </>
   )

@@ -5,7 +5,7 @@ import { askNotificationPermission, call, getAppIconTitle, getDomain, getShorten
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub } from '@/store'
+import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useState } from 'react'
@@ -14,6 +14,8 @@ import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 
 export const ModalConfirmConnect = () => {
+  const keys = useAppSelector(selectKeys)
+
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
@@ -23,6 +25,7 @@ export const ModalConfirmConnect = () => {
   const paramNpub = searchParams.get('npub') || ''
   const { npub = paramNpub } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
+  const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.BASIC)
 
@@ -34,32 +37,20 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
 
-	let appUrl = url || searchParams.get('appUrl') || ''
-	console.log("referrer", window.document.referrer, appUrl)
-	if (!appUrl && window.document.referrer) {
-		try {
-			const u = new URL(window.document.referrer)
-			appUrl = u.origin
-		} catch {}
-	}
+  let appUrl = url || searchParams.get('appUrl') || ''
+  // console.log('referrer', window.document.referrer, appUrl)
+  if (!appUrl && window.document.referrer) {
+    try {
+      const u = new URL(window.document.referrer)
+      appUrl = u.origin
+    } catch {}
+  }
 
   const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
-  const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
-    if (!value) return undefined
-    return setSelectedActionType(value)
-  }
-
-  // const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
-  //   onClose: async (sp) => {
-  //     sp.delete('appNpub')
-  //     sp.delete('reqId')
-  //     await swicCall('confirm', pendingReqId, false, false)
-  //   },
-  // })
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
       sp.delete('appNpub')
@@ -69,6 +60,19 @@ export const ModalConfirmConnect = () => {
       sp.delete('appUrl')
     },
   })
+
+  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+  const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
+  if (isModalOpened && (!isNpubExists || !isAppNpubExists || !isPendingReqIdExists)) {
+    closeModalAfterRequest()
+    return null
+  }
+
+  const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
+    if (!value) return undefined
+    return setSelectedActionType(value)
+  }
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     call(async () => {
@@ -139,17 +143,12 @@ export const ModalConfirmConnect = () => {
   }
 
   return (
-    <Modal
-      title="Connection request"
-      open={isModalOpened}
-      withCloseButton={false}
-      //  withCloseButton={!isPopup} onClose={!isPopup ? handleCloseModal : undefined}
-    >
+    <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
         {!pendingReqId && (
           <Typography variant="body1" color={'GrayText'}>
-            You will be asked to <b>enable notifications</b>, this
-						is needed for a reliable communication with Nostr apps.  
+            You will be asked to <b>enable notifications</b>, this is needed for a reliable communication with Nostr
+            apps.
           </Typography>
         )}
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
@@ -177,14 +176,7 @@ export const ModalConfirmConnect = () => {
             value={ACTION_TYPE.BASIC}
             title="Basic permissions"
             description="Read your public key, sign notes, reactions, zaps, etc"
-            // hasinfo
           />
-          {/* <ActionToggleButton
-						value={ACTION_TYPE.ADVANCED}
-						title='Advanced'
-						description='Use for trusted apps only'
-						hasinfo
-					/> */}
           <ActionToggleButton
             value={ACTION_TYPE.CUSTOM}
             title="On demand"
@@ -196,7 +188,6 @@ export const ModalConfirmConnect = () => {
             Disallow
           </StyledButton>
           <StyledButton fullWidth onClick={allow}>
-            {/* Allow {selectedActionType} actions */}
             Connect
           </StyledButton>
         </Stack>

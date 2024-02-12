@@ -1,52 +1,58 @@
 import { Avatar, Stack, Toolbar, Typography } from '@mui/material'
 import { AppLogo } from '../../assets'
-import { StyledAppBar, StyledAppName } from './styled'
+import { StyledAppBar, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
 import { Menu } from './components/Menu'
-import { useParams } from 'react-router-dom'
-import { useCallback, useEffect, useState } from 'react'
-import { MetaEvent } from '@/types/meta-event'
-import { fetchProfile } from '@/modules/nostr'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
-import { getShortenNpub } from '@/utils/helpers/helpers'
+import { useProfile } from '@/hooks/useProfile'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
+import { setThemeMode } from '@/store/reducers/ui.slice'
 
 export const Header = () => {
+  const themeMode = useAppSelector((state) => state.ui.themeMode)
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+
   const { npub = '' } = useParams<{ npub: string }>()
-  const [profile, setProfile] = useState<MetaEvent | null>(null)
+  const { userName, userAvatar, avatarTitle } = useProfile(npub)
+  const showProfile = Boolean(npub)
 
-  const load = useCallback(async () => {
-    if (!npub) return setProfile(null)
+  const handleNavigate = () => {
+    navigate(`/key/${npub}`)
+  }
 
-    try {
-      const response = await fetchProfile(npub)
-      setProfile(response as any)
-    } catch (e) {
-      return setProfile(null)
-    }
-  }, [npub])
+  const isDarkMode = themeMode === 'dark'
+  const themeIcon = isDarkMode ? <DarkModeIcon htmlColor="#fff" /> : <LightModeIcon htmlColor="#000" />
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  const showProfile = Boolean(npub || profile)
-  const userName = profile?.info?.name || getShortenNpub(npub)
-  const userAvatar = profile?.info?.picture || ''
+  const handleChangeMode = () => {
+    dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))
+  }
 
   return (
     <StyledAppBar position="fixed">
       <Toolbar sx={{ padding: '12px' }}>
         <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
-          {showProfile ? (
-            <Stack gap={'1rem'} direction={'row'} alignItems={'center'} flex={1}>
-              <Avatar src={userAvatar} alt={userName} />
-              <Typography fontWeight={600}>{userName}</Typography>
-            </Stack>
-          ) : (
+          {showProfile && (
+            <StyledProfileContainer>
+              <Avatar src={userAvatar} alt={userName} onClick={handleNavigate} className="avatar">
+                {avatarTitle}
+              </Avatar>
+              <Typography fontWeight={600} onClick={handleNavigate} className="username">
+                {userName}
+              </Typography>
+            </StyledProfileContainer>
+          )}
+
+          {!showProfile && (
             <StyledAppName>
               <AppLogo />
               <span>Nsec.app</span>
             </StyledAppName>
           )}
+
+          <StyledThemeButton onClick={handleChangeMode}>{themeIcon}</StyledThemeButton>
 
           {showProfile ? <ProfileMenu /> : <Menu />}
         </Stack>
