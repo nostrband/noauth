@@ -1,12 +1,12 @@
-import { forwardRef, useRef } from 'react'
-import { Input, InputProps } from '../Input/Input'
+import { useRef } from 'react'
+import { Input, AppInputProps } from '../Input/Input'
 
 export type DebounceProps = {
   handleDebounce: (value: string) => void
   debounceTimeout: number
 }
 
-export const DebounceInput = (props: InputProps & DebounceProps) => {
+export const DebounceInput = (props: AppInputProps & DebounceProps) => {
   const { handleDebounce, debounceTimeout, ...rest } = props
 
   const timerRef = useRef<number>()

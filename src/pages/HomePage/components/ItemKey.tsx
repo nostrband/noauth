@@ -1,26 +1,26 @@
 import { FC } from 'react'
 import { DbKey } from '../../../modules/db'
 import { Avatar, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
-import { getShortenNpub } from '../../../utils/helpers/helpers'
 import { useNavigate } from 'react-router-dom'
+import { useProfile } from '@/hooks/useProfile'
 
 type ItemKeyProps = DbKey
 
 export const ItemKey: FC<ItemKeyProps> = (props) => {
-  const { npub, profile } = props
+  const { npub } = props
   const navigate = useNavigate()
+  const { userName, userAvatar, avatarTitle } = useProfile(npub)
 
   const handleNavigate = () => {
     navigate('/key/' + npub)
   }
-  const { name = '', picture = '' } = profile?.info || {}
-  const userName = name || getShortenNpub(npub)
-  const userAvatar = picture || ''
 
   return (
     <StyledKeyContainer onClick={handleNavigate}>
       <Stack direction={'row'} alignItems={'center'} gap="1rem">
-        <Avatar src={userAvatar} alt={userName} />
+        <Avatar src={userAvatar} alt={userName}>
+          {avatarTitle}
+        </Avatar>
         <StyledText variant="body1">{userName}</StyledText>
       </Stack>
     </StyledKeyContainer>

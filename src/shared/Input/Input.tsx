@@ -10,14 +10,14 @@ import {
   styled,
 } from '@mui/material'
 
-export type InputProps = InputBaseProps & {
+export type AppInputProps = InputBaseProps & {
   helperText?: string | ReactNode
   helperTextProps?: FormHelperTextProps
   containerProps?: BoxProps
   label?: string
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
+export const Input = forwardRef<HTMLInputElement, AppInputProps>(
   ({ helperText, containerProps, helperTextProps, label, ...props }, ref) => {
     return (
       <StyledInputContainer {...containerProps}>
@@ -26,7 +26,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </FormLabel>
         ) : null}
-        <InputBase className="input" {...props} classes={{ error: 'error' }} inputRef={ref} />
+        <InputBase autoComplete="off" className="input" {...props} classes={{ error: 'error' }} ref={ref} />
         {helperText ? (
           <FormHelperText {...helperTextProps} className="helper_text">
             {helperText}

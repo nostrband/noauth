@@ -26,18 +26,22 @@ export const Apps: FC<AppsProps> = ({ apps = [] }) => {
     })
   }
 
+  const openAppStore = () => {
+    window.open('https://nostrapp.link', '_blank')
+  }
+
   return (
     <Box flex={1} marginBottom={'1rem'} display={'flex'} flexDirection={'column'} overflow={'auto'}>
       <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'} marginBottom={'0.5rem'}>
         <SectionTitle>Connected apps</SectionTitle>
-        <AppLink title="Discover Apps" />
+        <AppLink title="Discover Apps" onClick={openAppStore} />
       </Stack>
       {!apps.length && (
         <StyledEmptyAppsBox>
           <Typography className="message" variant="h5" fontWeight={600} textAlign={'center'}>
             No connected apps
           </Typography>
-          <Button>Discover Nostr Apps</Button>
+          <Button onClick={openAppStore}>Discover Nostr Apps</Button>
         </StyledEmptyAppsBox>
       )}
 
