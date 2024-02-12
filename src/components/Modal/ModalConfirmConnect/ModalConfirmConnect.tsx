@@ -38,7 +38,7 @@ export const ModalConfirmConnect = () => {
   const { name, url = '', icon = '' } = triggerApp || {}
 
   let appUrl = url || searchParams.get('appUrl') || ''
-  // console.log('referrer', window.document.referrer, appUrl)
+  console.log('referrer', window.document.referrer, appUrl)
   if (!appUrl && window.document.referrer) {
     try {
       const u = new URL(window.document.referrer)
@@ -62,9 +62,11 @@ export const ModalConfirmConnect = () => {
   })
 
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
-  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+  // App doesn't exist yet!
+  // const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
   const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
-  if (isModalOpened && (!isNpubExists || !isAppNpubExists || (pendingReqId && !isPendingReqIdExists))) {
+  console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
+  if (!isPopup && isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
     closeModalAfterRequest()
     return null
   }
