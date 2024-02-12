@@ -64,7 +64,7 @@ export const ModalConfirmConnect = () => {
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
   const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
   const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
-  if (isModalOpened && (!isNpubExists || !isAppNpubExists || !isPendingReqIdExists)) {
+  if (isModalOpened && (!isNpubExists || !isAppNpubExists || (pendingReqId && !isPendingReqIdExists))) {
     closeModalAfterRequest()
     return null
   }
