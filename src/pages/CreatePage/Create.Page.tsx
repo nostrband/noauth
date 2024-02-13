@@ -8,6 +8,7 @@ import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/Moda
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { useState } from 'react'
+import { getReferrerAppUrl } from '@/utils/helpers/helpers'
 
 const CreatePage = () => {
   const notify = useEnqueueSnackbar()
@@ -32,13 +33,7 @@ const CreatePage = () => {
     try {
       const key: any = await swicCall('generateKey', name)
 
-      let appUrl = ''
-      if (window.document.referrer) {
-        try {
-          const u = new URL(window.document.referrer)
-          appUrl = u.origin
-        } catch {}
-      }
+      const appUrl = getReferrerAppUrl();
 
       console.log('Created', key.npub, 'app', appUrl)
       setCreated(true)

@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools'
-import { ACTIONS, ACTION_TYPE, NIP46_RELAYS } from '../consts'
+import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS } from '../consts'
 import { DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
@@ -103,6 +103,17 @@ export const getDomain = (url: string) => {
   } catch {
     return ''
   }
+}
+
+export const getReferrerAppUrl = () => {
+  console.log('referrer', window.document.referrer)
+  if (!window.document.referrer) return ''
+  try {
+    const u = new URL(window.document.referrer.toLocaleLowerCase())
+    if (u.hostname != DOMAIN && !u.hostname.endsWith("."+DOMAIN))
+      return u.origin
+  } catch {}
+  return ''
 }
 
 export const getAppIconTitle = (name: string | undefined, appNpub: string) => {

@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { askNotificationPermission, call, getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
+import { askNotificationPermission, call, getAppIconTitle, getDomain, getReferrerAppUrl, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -37,15 +37,7 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
 
-  let appUrl = url || searchParams.get('appUrl') || ''
-  console.log('referrer', window.document.referrer, appUrl)
-  if (!appUrl && window.document.referrer) {
-    try {
-      const u = new URL(window.document.referrer)
-      appUrl = u.origin
-    } catch {}
-  }
-
+  const appUrl = url || searchParams.get('appUrl') || getReferrerAppUrl();
   const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
