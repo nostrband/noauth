@@ -17,6 +17,7 @@ import { useDebounce } from 'use-debounce'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
+import { getPublicKey, nip19 } from 'nostr-tools'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -42,35 +43,71 @@ export const ModalImportKeys = () => {
     mode: 'onSubmit',
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [isAvailable, setIsAvailable] = useState(false)
+  const [nameNpub, setNameNpub] = useState('')
+  const [isTakenByNsec, setIsTakenByNsec] = useState(false)
+  const [isBadNsec, setIsBadNsec] = useState(false)
   const enteredUsername = watch('username')
+  const enteredNsec = watch('nsec')
   const [debouncedUsername] = useDebounce(enteredUsername, 100)
+  const [debouncedNsec] = useDebounce(enteredNsec, 100)
 
   const checkIsUsernameAvailable = useCallback(async () => {
     if (!debouncedUsername.trim().length) return undefined
     const npubNip05 = await fetchNip05(`${debouncedUsername}@${DOMAIN}`)
-
-    setIsAvailable(!npubNip05)
+    setNameNpub(npubNip05 || '')
   }, [debouncedUsername])
 
   useEffect(() => {
     checkIsUsernameAvailable()
   }, [checkIsUsernameAvailable])
 
+  const checkNsecUsername = useCallback(async () => {
+    if (!debouncedNsec.trim().length) {
+      setIsTakenByNsec(false)
+      setIsBadNsec(false)
+      return
+    }
+    try {
+      const { type, data } = nip19.decode(debouncedNsec)
+      const ok = type === 'nsec';
+      setIsBadNsec(!ok)
+      if (ok) {
+        const npub = nip19.npubEncode(
+          // @ts-ignore
+          getPublicKey(data))
+        setIsTakenByNsec(!!nameNpub && nameNpub === npub)
+      } else {
+        setIsTakenByNsec(false)
+      }
+    } catch {
+      setIsBadNsec(true)
+      setIsTakenByNsec(false)
+      return
+    }
+}, [debouncedNsec])
+
+  useEffect(() => {
+    checkNsecUsername()
+  }, [checkNsecUsername])
+
   const cleanUpStates = useCallback(() => {
     hidePassword()
     reset()
     setIsLoading(false)
-    setIsAvailable(false)
+    setNameNpub('')
+    setIsTakenByNsec(false)
+    setIsBadNsec(false)
   }, [reset, hidePassword])
 
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
 
   const submitHandler = async (values: FormInputType) => {
-    if (isLoading || !isAvailable) return undefined
+    if (isLoading) return undefined
     try {
       const { nsec, username } = values
+      if (!nsec || !username) throw new Error("Enter username and nsec")
+      if (nameNpub && !isTakenByNsec) throw new Error("Name taken")
       setIsLoading(true)
       const k: any = await swicCall('importKey', username, nsec)
       notify('Key imported!', 'success')
@@ -88,9 +125,11 @@ export const ModalImportKeys = () => {
     }
   }, [isModalOpened, cleanUpStates])
 
-  const getInputHelperText = () => {
+  const getNameHelperText = () => {
     if (!enteredUsername) return "Don't worry, username can be changed later."
-    if (!isAvailable) return 'Already taken'
+    if (isTakenByNsec) return 'Name matches your key'
+    if (isBadNsec) return 'Invalid nsec'
+    if (nameNpub) return 'Already taken'
     return (
       <>
         <CheckmarkIcon /> Available
@@ -98,7 +137,13 @@ export const ModalImportKeys = () => {
     )
   }
 
-  const inputHelperText = getInputHelperText()
+  const getNsecHelperText = () => {
+    if (isBadNsec) return 'Invalid nsec'
+    return 'Keys stay on your device.'
+  }
+
+  const nameHelperText = getNameHelperText()
+  const nsecHelperText = getNsecHelperText()
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
@@ -116,14 +161,14 @@ export const ModalImportKeys = () => {
           endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
           {...register('username')}
           error={!!errors.username}
-          helperText={inputHelperText}
+          helperText={nameHelperText}
           helperTextProps={{
             sx: {
               '&.helper_text': {
                 color:
-                  enteredUsername && isAvailable
+                  enteredUsername && (isTakenByNsec || !nameNpub)
                     ? theme.palette.success.main
-                    : enteredUsername && !isAvailable
+                    : enteredUsername && nameNpub
                       ? theme.palette.error.main
                       : theme.palette.textSecondaryDecorate.main,
               },
@@ -137,11 +182,13 @@ export const ModalImportKeys = () => {
           {...register('nsec')}
           error={!!errors.nsec}
           {...inputProps}
-          helperText="Keys stay on your device."
+          helperText={nsecHelperText}
           helperTextProps={{
             sx: {
               '&.helper_text': {
-                color: theme.palette.textSecondaryDecorate.main,
+                color: isBadNsec
+                  ? theme.palette.error.main
+                  : theme.palette.textSecondaryDecorate.main,
               },
             },
           }}
