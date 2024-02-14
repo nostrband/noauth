@@ -31,13 +31,14 @@ export const ModalInitial = () => {
       <Stack paddingTop={'0.5rem'} gap={'1rem'}>
         <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.SIGN_UP)}>Sign up</Button>
         <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.LOGIN)}>Login</Button>
-        <AppLink title="Advanced" alignSelf={'center'} onClick={handleShowAdvanced} />
+        <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import key</Button>
+        {/* <AppLink title="Advanced" alignSelf={'center'} onClick={handleShowAdvanced} />
 
         {showAdvancedContent && (
           <Fade in>
             <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import key</Button>
           </Fade>
-        )}
+        )} */}
       </Stack>
     </Modal>
   )

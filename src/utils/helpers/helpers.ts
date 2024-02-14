@@ -1,6 +1,6 @@
 import { nip19 } from 'nostr-tools'
 import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS } from '../consts'
-import { DbPending, DbPerm } from '@/modules/db'
+import { DbHistory, DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
 export async function call(cb: () => any) {
@@ -120,7 +120,7 @@ export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
   return name ? name[0].toLocaleUpperCase() : appNpub.substring(4, 7)
 }
 
-export function getReqActionName(req: DbPending) {
+export function getReqActionName(req: DbPending | DbHistory) {
   const action = ACTIONS[req.method]
   if (req.method === 'sign_event') {
     const kind = getSignReqKind(req)
