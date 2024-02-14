@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools'
-import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS } from '../consts'
+import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS, NOAUTHD_URL } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
@@ -94,6 +94,21 @@ export async function fetchNip05(value: string, origin?: string) {
   } catch (e) {
     console.log('Failed to fetch nip05', value, 'error: ' + e)
     return ''
+  }
+}
+
+export async function fetchNpubNames(npub: string) {
+  try {
+    const url = `${NOAUTHD_URL}/name?npub=${npub}`
+    const response = await fetch(url)
+    const names: {
+      names: string[]
+    } = await response.json()
+
+    return names.names
+  } catch (e) {
+    console.log('Failed to fetch names for', npub, 'error: ' + e)
+    return []
   }
 }
 

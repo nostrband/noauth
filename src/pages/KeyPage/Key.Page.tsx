@@ -1,5 +1,5 @@
 import { useAppSelector } from '../../store/hooks/redux'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Stack } from '@mui/material'
 import { StyledIconButton } from './styled'
 import { SettingsIcon, ShareIcon } from '@/assets'
@@ -23,6 +23,7 @@ import { useCallback } from 'react'
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
   const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
+  const [searchParams] = useSearchParams()
 
   const isSynced = useLiveQuery(checkNpubSyncQuerier(npub), [npub], false)
   const { handleOpen } = useModalSearchParams()
@@ -41,6 +42,14 @@ const KeyPage = () => {
   const { prepareEventPendings } = useTriggerConfirmModal(npub, pending, perms)
 
   const isKeyExists = npub.trim().length && key
+  const isPopup = searchParams.get('popup') === 'true'
+  console.log({ isKeyExists, isPopup })
+  if (isPopup && !isKeyExists) {
+    searchParams.set('login', 'true')
+    searchParams.set('npub', npub)
+    const url = `/home?${searchParams.toString()}`
+    return <Navigate to={url} />
+  }
   if (!isKeyExists) return <Navigate to={`/home`} />
 
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)

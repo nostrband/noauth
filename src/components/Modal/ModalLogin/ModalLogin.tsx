@@ -8,12 +8,12 @@ import { CircularProgress, Stack, Typography } from '@mui/material'
 import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, fetchNpubNames } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
 import { dbi } from '@/modules/db'
 
@@ -36,6 +36,7 @@ export const ModalLogin = () => {
     handleSubmit,
     reset,
     register,
+    setValue,
     formState: { errors },
   } = useForm<FormInputType>({
     defaultValues: FORM_DEFAULT_VALUES,
@@ -78,13 +79,34 @@ export const ModalLogin = () => {
       notify(`Fetched ${k.npub}`, 'success')
       dbi.addSynced(k.npub)
       cleanUpStates()
-      navigate(`/key/${k.npub}`)
+      setTimeout(() => {
+        // give frontend time to read the new key first
+        navigate(`/key/${k.npub}`)
+      }, 300)
     } catch (error: any) {
       console.log('error', error)
       notify(error?.message || 'Something went wrong!', 'error')
       setIsLoading(false)
     }
   }
+
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    if (isModalOpened) {
+      const isPopup = searchParams.get('popup') === 'true'
+      const npub = searchParams.get('npub') || ''
+      const appNpub = searchParams.get('appNpub') || ''
+      if (isPopup && isModalOpened) {
+        swicCall('fetchPendingRequests', npub, appNpub)
+
+        fetchNpubNames(npub).then(names => {
+          if (names.length) {
+            setValue('username', `${names[0]}@${DOMAIN}`)
+          }
+        })
+      }
+    }
+  }, [searchParams, isModalOpened, setValue])
 
   useEffect(() => {
     return () => {

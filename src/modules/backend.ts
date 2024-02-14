@@ -46,6 +46,12 @@ interface IAllowCallbackParams {
   params?: any
 }
 
+class Nip46Backend extends NDKNip46Backend {
+  public async processEvent(event: NDKEvent) {
+    this.handleIncomingEvent(event)
+  }
+}
+
 class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
   private privkey: string
   private nip04 = new Nip04()
@@ -137,10 +143,16 @@ export class NoauthBackend {
   private confirmBuffer: Pending[] = []
   private accessBuffer: DbPending[] = []
   private notifCallback: (() => void) | null = null
+  private pendingNpubEvents = new Map<string, NDKEvent[]>()
+  private ndk = new NDK({
+    explicitRelayUrls: NIP46_RELAYS,
+    enableOutboxModel: false
+  })
 
   public constructor(swg: ServiceWorkerGlobalScope) {
     this.swg = swg
     this.keysModule = new Keys(swg.crypto.subtle)
+    this.ndk.connect()
 
     const self = this
     swg.addEventListener('activate', (event) => {
@@ -568,22 +580,21 @@ export class NoauthBackend {
   }
 
   private async connectApp({
-		npub,
-		appNpub,
-		appUrl,
-		perms,
-		appName = '',
-		appIcon = ''
-	}: { 
-		npub: string, 
-		appNpub: string, 
-		appUrl: string,
-		appName?: string,
-		appIcon?: string, 
-		perms: string[] 
-	}) {
-
-		await dbi.addApp({
+    npub,
+    appNpub,
+    appUrl,
+    perms,
+    appName = '',
+    appIcon = '',
+  }: {
+    npub: string
+    appNpub: string
+    appUrl: string
+    appName?: string
+    appIcon?: string
+    perms: string[]
+  }) {
+    await dbi.addApp({
       appNpub: appNpub,
       npub: npub,
       timestamp: Date.now(),
@@ -772,7 +783,7 @@ export class NoauthBackend {
     ndk.connect()
 
     const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
-    const backend = new NDKNip46Backend(ndk, signer, () => Promise.resolve(true))
+    const backend = new Nip46Backend(ndk, signer, () => Promise.resolve(true))
     this.keys.push({ npub, backend, signer, ndk, backoff })
 
     // new method
@@ -829,6 +840,27 @@ export class NoauthBackend {
       r.on('connect', onConnect)
       r.on('disconnect', onDisconnect)
     }
+
+    const pendingEvents = this.pendingNpubEvents.get(npub)
+    if (pendingEvents) {
+      this.pendingNpubEvents.delete(npub)
+      for (const e of pendingEvents) {
+        backend.processEvent(e)
+      }
+    }
+  }
+
+  private async fetchPendingRequests(npub: string, appNpub: string) {
+    const { data: pubkey } = nip19.decode(npub)
+    const { data: appPubkey } = nip19.decode(appNpub)
+
+    const events = await this.ndk.fetchEvents({
+      kinds: [KIND_RPC],
+      "#p": [pubkey as string],
+      authors: [appPubkey as string]
+    });
+    console.log("fetched pending for", npub, events.size)
+    this.pendingNpubEvents.set(npub, [...events.values()]);
   }
 
   public async unlock(npub: string) {
@@ -1011,6 +1043,8 @@ export class NoauthBackend {
         result = await this.deletePerm(args[0])
       } else if (method === 'enablePush') {
         result = await this.enablePush()
+      } else if (method === 'fetchPendingRequests') {
+        result = await this.fetchPendingRequests(args[0], args[1])
       } else {
         console.log('unknown method from UI ', method)
       }
