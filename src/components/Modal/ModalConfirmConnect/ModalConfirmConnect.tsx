@@ -57,7 +57,7 @@ export const ModalConfirmConnect = () => {
   // App doesn't exist yet!
   // const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
   const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
-  console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
+  // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
   if (!isPopup && isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
     closeModalAfterRequest()
     return null
