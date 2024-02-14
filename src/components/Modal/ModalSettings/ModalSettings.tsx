@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Box, CircularProgress, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { StyledButton, StyledSettingContainer, StyledSynchedText } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { CheckmarkIcon } from '@/assets'
@@ -16,6 +16,7 @@ import { usePassword } from '@/hooks/usePassword'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -141,7 +142,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             </Typography>
           )}
           <StyledButton type="submit" fullWidth disabled={!isChecked}>
-            Sync {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+            Sync {isLoading && <LoadingSpinner mode="secondary" />}
           </StyledButton>
         </StyledSettingContainer>
       </Stack>

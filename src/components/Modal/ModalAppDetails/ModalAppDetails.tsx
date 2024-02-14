@@ -3,7 +3,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Autocomplete, CircularProgress, Stack, Typography } from '@mui/material'
+import { Autocomplete, Stack, Typography } from '@mui/material'
 import { StyledInput } from './styled'
 import { FormEvent, useEffect, useState } from 'react'
 import { isEmptyString } from '@/utils/helpers/helpers'
@@ -13,6 +13,7 @@ import { selectApps } from '@/store'
 import { dbi } from '@/modules/db'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { setApps } from '@/store/reducers/content.slice'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 export const ModalAppDetails = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -118,7 +119,7 @@ export const ModalAppDetails = () => {
     }
   }
 
-  const isFormValid = !isEmptyString(url) && !isEmptyString(name) && !isEmptyString(icon)
+  const isFormValid = !isEmptyString(url) && !isEmptyString(name)
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
@@ -165,7 +166,7 @@ export const ModalAppDetails = () => {
         />
 
         <Button varianttype="secondary" type="submit" fullWidth disabled={!isFormValid || isLoading}>
-          Save changes {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Save changes {isLoading && <LoadingSpinner />}
         </Button>
       </Stack>
     </Modal>

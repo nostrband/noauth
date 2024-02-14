@@ -5,7 +5,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { CircularProgress, Stack, Typography, useTheme } from '@mui/material'
+import { Stack, Typography, useTheme } from '@mui/material'
 import { StyledAppLogo } from './styled'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -18,6 +18,7 @@ import { fetchNip05 } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -195,7 +196,7 @@ export const ModalImportKeys = () => {
         />
 
         <Button type="submit" disabled={isLoading}>
-          Import key {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Import key {isLoading && <LoadingSpinner />}
         </Button>
       </Stack>
     </Modal>

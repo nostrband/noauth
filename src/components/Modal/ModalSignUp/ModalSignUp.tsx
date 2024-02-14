@@ -2,7 +2,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { CircularProgress, Stack, Typography, useTheme } from '@mui/material'
+import { Stack, Typography, useTheme } from '@mui/material'
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
@@ -12,6 +12,7 @@ import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 export const ModalSignUp = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -110,7 +111,7 @@ export const ModalSignUp = () => {
           }}
         />
         <Button fullWidth type="submit" disabled={isLoading}>
-          Create account {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Create account {isLoading && <LoadingSpinner />}
         </Button>
       </Stack>
     </Modal>

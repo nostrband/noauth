@@ -4,7 +4,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { swicCall } from '@/modules/swic'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { CircularProgress, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
@@ -16,6 +16,7 @@ import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
 import { dbi } from '@/modules/db'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -120,7 +121,7 @@ export const ModalLogin = () => {
           error={!!errors.password}
         />
         <Button type="submit" fullWidth disabled={isLoading}>
-          Add account {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Add account {isLoading && <LoadingSpinner />}
         </Button>
       </Stack>
     </Modal>
