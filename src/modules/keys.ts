@@ -21,20 +21,36 @@ const ALGO = 'aes-256-cbc'
 const IV_SIZE = 16
 
 // valid passwords are a limited ASCII only, see notes below
-const ASCII_REGEX = /^[A-Za-z0-9!@#$%^&*()]{4,}$/
+const ASCII_REGEX = /^[A-Za-z0-9!@#$%^&*()\-_]{6,}$/
 
 const ALGO_LOCAL = 'AES-CBC'
 const KEY_SIZE_LOCAL = 256
+
+export function isValidPassphase(passphrase: string): boolean {
+  return ASCII_REGEX.test(passphrase)
+}
+
+export function isWeakPassphase(passphrase: string): boolean {
+  const BIG_LETTER_REGEX = /[A-Z]+/
+  const SMALL_LETTER_REGEX = /[a-z]+/
+  const NUMBER_REGEX = /[0-9]+/
+  const PUNCT_REGEX = /[!@#$%^&*()\-_]+/
+  const big = BIG_LETTER_REGEX.test(passphrase) ? 1 : 0
+  const small = SMALL_LETTER_REGEX.test(passphrase) ? 1 : 0
+  const number = NUMBER_REGEX.test(passphrase) ? 1 : 0
+  const punct = PUNCT_REGEX.test(passphrase) ? 1 : 0
+  const base = big * 26 + small * 26 + number * 10 + punct * 12
+  const compl = Math.pow(base, passphrase.length)
+  const thresh = Math.pow(11, 14)
+  // console.log({ big, small, number, punct, base, compl, thresh });
+  return compl < thresh; 
+}
 
 export class Keys {
   subtle: any
 
   constructor(cryptoSubtle: any) {
     this.subtle = cryptoSubtle
-  }
-
-  public isValidPassphase(passphrase: string): boolean {
-    return ASCII_REGEX.test(passphrase)
   }
 
   public async generatePassKey(pubkey: string, passphrase: string): Promise<{ passkey: Buffer; pwh: string }> {
@@ -45,7 +61,7 @@ export class Keys {
     // We could use string.normalize() to make sure all JS implementations
     // are compatible, but since we're looking to make this thing a standard
     // then the simplest way is to exclude unicode and only work with ASCII
-    if (!this.isValidPassphase(passphrase)) throw new Error('Password must be 4+ ASCII chars')
+    if (!isValidPassphase(passphrase)) throw new Error('Password must be 4+ ASCII chars')
 
     return new Promise((ok, fail) => {
       // NOTE: we should use Argon2 or scrypt later, for now

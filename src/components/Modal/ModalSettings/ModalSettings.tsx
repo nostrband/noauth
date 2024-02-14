@@ -16,6 +16,7 @@ import { dbi } from '@/modules/db'
 import { usePassword } from '@/hooks/usePassword'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
+import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -58,8 +59,9 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   }
 
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setIsPasswordInvalid(false)
-    setEnteredPassword(e.target.value)
+    const password = e.target.value
+    setIsPasswordInvalid(!!password && !isValidPassphase(password))
+    setEnteredPassword(password)
   }
 
   const onClose = () => {
@@ -76,7 +78,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     e.preventDefault()
     setIsPasswordInvalid(false)
 
-    if (enteredPassword.trim().length < 6) {
+    if (!isValidPassphase(enteredPassword)) {
       return setIsPasswordInvalid(true)
     }
     try {
@@ -114,18 +116,30 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             {...inputProps}
             onChange={handlePasswordChange}
             value={enteredPassword}
-            helperText={isPasswordInvalid ? 'Invalid password' : ''}
+            // helperText={isPasswordInvalid ? 'Invalid password' : ''}
             placeholder="Enter a password"
-            helperTextProps={{
-              sx: {
-                '&.helper_text': {
-                  color: 'red',
-                },
-              },
-            }}
+            // helperTextProps={{
+            //   sx: {
+            //     '&.helper_text': {
+            //       color: 'red',
+            //     },
+            //   },
+            // }}
             disabled={!isChecked}
           />
-          {isSynced ? (
+          {isPasswordInvalid ? (
+            <Typography variant="body2" color={'red'}>
+              Password must include 6+ English letters, numbers or punctuation marks.
+            </Typography>
+          ) : !!enteredPassword && isWeakPassphase(enteredPassword) ? (
+            <Typography variant="body2" color={'orange'}>
+              Weak password
+            </Typography>
+          ) : !!enteredPassword && !isPasswordInvalid ? (
+            <Typography variant="body2" color={'green'}>
+              Good password
+            </Typography>
+          ) : isSynced ? (
             <Typography variant="body2" color={'GrayText'}>
               To change your password, type a new one and sync.
             </Typography>
@@ -139,7 +153,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             Sync {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
           </StyledButton>
         </StyledSettingContainer>
-        <Button onClick={onClose}>Done</Button>
+        {/* <Button onClick={onClose}>Done</Button> */}
       </Stack>
     </Modal>
   )
