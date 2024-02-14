@@ -61,10 +61,23 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     },
   })
 
+  // FIXME: when opened directly to this modal using authUrl,
+  // we might not have pending requests visible yet bcs we haven't
+  // loaded them yet, which means this modal will be closed with
+  // the login below. It's fine if only one app has sent pending 
+  // requests atm, bcs the modal would re-appear as soon as we load 
+  // the requests. But if there are several pending reqs from other
+  // apps then popup might show a different one! Which is very
+  // contrary to what user expects. So:
+  // - if isPopup - dont close the modal with logic below
+  // - show some 'loading' indicator until we've got some requests 
+  // for the specified appNpub
+  // FIXME is the same logic valid for Connect modal?
+
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
   const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-
-  if (isModalOpened && (!isNpubExists || !isAppNpubExists)) {
+  // console.log("confirm event", { confirmEventReqs, isModalOpened, isNpubExists, isAppNpubExists });
+  if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
     closeModalAfterRequest()
     return null
   }

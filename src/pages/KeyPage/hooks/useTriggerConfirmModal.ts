@@ -3,6 +3,7 @@ import { DbPending, DbPerm } from '@/modules/db'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { ACTION_TYPE } from '@/utils/consts'
 import { useCallback, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 export type IPendingsByAppNpub = {
   [appNpub: string]: {
@@ -17,6 +18,9 @@ type IShownConfirmModals = {
 
 export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms: DbPerm[]) => {
   const { handleOpen, getModalOpened } = useModalSearchParams()
+
+  const [searchParams] = useSearchParams()
+  const isPopup = searchParams.get('popup') === 'true'
 
   const isConfirmConnectModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
   const isConfirmEventModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
@@ -66,6 +70,7 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
         search: {
           appNpub: req.appNpub,
           reqId: req.id,
+          popup: isPopup ? 'true' : ''
         },
       })
       break
@@ -86,6 +91,7 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
         search: {
           appNpub,
+          popup: isPopup ? 'true' : ''
         },
       })
       break

@@ -743,9 +743,9 @@ export class NoauthBackend {
         })
 
         // OAuth flow
-        const confirmMethod = method === 'connect' ? 'confirm-connect' : 'confirm-event'
+        const isConnect = method === 'connect'
+        const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
         const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
-//        const authUrl = `${self.swg.location.origin}/key/${npub}?popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
         // NOTE: if you set 'Update on reload' in the Chrome SW console
         // then this message will cause a new tab opened by the peer,
