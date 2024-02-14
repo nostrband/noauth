@@ -110,8 +110,7 @@ export const getReferrerAppUrl = () => {
   if (!window.document.referrer) return ''
   try {
     const u = new URL(window.document.referrer.toLocaleLowerCase())
-    if (u.hostname != DOMAIN && !u.hostname.endsWith("."+DOMAIN))
-      return u.origin
+    if (u.hostname !== DOMAIN && !u.hostname.endsWith('.' + DOMAIN)) return u.origin
   } catch {}
   return ''
 }

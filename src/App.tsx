@@ -5,8 +5,6 @@ import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
 import { fetchProfile, ndk } from './modules/nostr'
-import { useModalSearchParams } from './hooks/useModalSearchParams'
-import { MODAL_PARAMS_KEYS } from './types/modal'
 import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
 import { ModalImportKeys } from './components/Modal/ModalImportKeys/ModalImportKeys'
 import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
@@ -14,7 +12,6 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 
 function App() {
   const [render, setRender] = useState(0)
-  const { handleOpen } = useModalSearchParams()
   const dispatch = useAppDispatch()
 
   const [isConnected, setIsConnected] = useState(false)

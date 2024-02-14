@@ -1,5 +1,4 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { Button } from '@/shared/Button/Button'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, CircularProgress, Stack, Typography } from '@mui/material'
@@ -116,15 +115,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             {...inputProps}
             onChange={handlePasswordChange}
             value={enteredPassword}
-            // helperText={isPasswordInvalid ? 'Invalid password' : ''}
             placeholder="Enter a password"
-            // helperTextProps={{
-            //   sx: {
-            //     '&.helper_text': {
-            //       color: 'red',
-            //     },
-            //   },
-            // }}
             disabled={!isChecked}
           />
           {isPasswordInvalid ? (
@@ -153,7 +144,6 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             Sync {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
           </StyledButton>
         </StyledSettingContainer>
-        {/* <Button onClick={onClose}>Done</Button> */}
       </Stack>
     </Modal>
   )

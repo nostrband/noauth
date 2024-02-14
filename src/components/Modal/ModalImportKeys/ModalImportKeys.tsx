@@ -69,12 +69,13 @@ export const ModalImportKeys = () => {
     }
     try {
       const { type, data } = nip19.decode(debouncedNsec)
-      const ok = type === 'nsec';
+      const ok = type === 'nsec'
       setIsBadNsec(!ok)
       if (ok) {
         const npub = nip19.npubEncode(
           // @ts-ignore
-          getPublicKey(data))
+          getPublicKey(data)
+        )
         setIsTakenByNsec(!!nameNpub && nameNpub === npub)
       } else {
         setIsTakenByNsec(false)
@@ -84,7 +85,8 @@ export const ModalImportKeys = () => {
       setIsTakenByNsec(false)
       return
     }
-}, [debouncedNsec])
+    // eslint-disable-next-line
+  }, [debouncedNsec])
 
   useEffect(() => {
     checkNsecUsername()
@@ -106,8 +108,8 @@ export const ModalImportKeys = () => {
     if (isLoading) return undefined
     try {
       const { nsec, username } = values
-      if (!nsec || !username) throw new Error("Enter username and nsec")
-      if (nameNpub && !isTakenByNsec) throw new Error("Name taken")
+      if (!nsec || !username) throw new Error('Enter username and nsec')
+      if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
       const k: any = await swicCall('importKey', username, nsec)
       notify('Key imported!', 'success')
@@ -186,9 +188,7 @@ export const ModalImportKeys = () => {
           helperTextProps={{
             sx: {
               '&.helper_text': {
-                color: isBadNsec
-                  ? theme.palette.error.main
-                  : theme.palette.textSecondaryDecorate.main,
+                color: isBadNsec ? theme.palette.error.main : theme.palette.textSecondaryDecorate.main,
               },
             },
           }}
