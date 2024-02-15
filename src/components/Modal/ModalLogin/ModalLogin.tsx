@@ -31,6 +31,8 @@ export const ModalLogin = () => {
   const navigate = useNavigate()
   const { hidePassword, inputProps } = usePassword()
   const [isLoading, setIsLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const isPopup = searchParams.get('popup') === 'true'
 
   const {
     handleSubmit,
@@ -81,7 +83,7 @@ export const ModalLogin = () => {
       cleanUpStates()
       setTimeout(() => {
         // give frontend time to read the new key first
-        navigate(`/key/${k.npub}`)
+        navigate(`/key/${k.npub}${isPopup ? '?popup=true' : ''}`)
       }, 300)
     } catch (error: any) {
       console.log('error', error)
@@ -90,10 +92,8 @@ export const ModalLogin = () => {
     }
   }
 
-  const [searchParams] = useSearchParams()
   useEffect(() => {
     if (isModalOpened) {
-      const isPopup = searchParams.get('popup') === 'true'
       const npub = searchParams.get('npub') || ''
       const appNpub = searchParams.get('appNpub') || ''
       if (isPopup && isModalOpened) {
