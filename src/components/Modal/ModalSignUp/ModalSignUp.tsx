@@ -61,8 +61,11 @@ export const ModalSignUp = () => {
       setIsLoading(true)
       const k: any = await swicCall('generateKey', name)
       notify(`Account created for "${name}"`, 'success')
-      navigate(`/key/${k.npub}`)
       setIsLoading(false)
+      setTimeout(() => {
+        // give frontend time to read the new key first
+        navigate(`/key/${k.npub}`)
+      }, 300)
     } catch (error: any) {
       notify(error?.message || 'Something went wrong!', 'error')
       setIsLoading(false)
