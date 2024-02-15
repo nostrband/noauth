@@ -9,6 +9,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { useState } from 'react'
 import { getReferrerAppUrl } from '@/utils/helpers/helpers'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 const CreatePage = () => {
   const notify = useEnqueueSnackbar()
@@ -16,6 +17,8 @@ const CreatePage = () => {
   const [created, setCreated] = useState(false)
 
   const [searchParams] = useSearchParams()
+
+  const [isLoading, setIsLoading] = useState(false)
 
   const name = searchParams.get('name') || ''
   const token = searchParams.get('token') || ''
@@ -31,12 +34,14 @@ const CreatePage = () => {
 
   const handleClickAddAccount = async () => {
     try {
+      setIsLoading(true)
       const key: any = await swicCall('generateKey', name)
 
-      const appUrl = getReferrerAppUrl();
+      const appUrl = getReferrerAppUrl()
 
       console.log('Created', key.npub, 'app', appUrl)
       setCreated(true)
+      setIsLoading(false)
 
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
         search: {
@@ -53,6 +58,7 @@ const CreatePage = () => {
       })
     } catch (error: any) {
       notify(error.message || error.toString(), 'error')
+      setIsLoading(false)
     }
   }
 
@@ -88,7 +94,9 @@ const CreatePage = () => {
               <Typography textAlign={'left'} variant="h6" paddingTop="0.5em">
                 Chosen name: <b>{nip05}</b>
               </Typography>
-              <GetStartedButton onClick={handleClickAddAccount}>Create account</GetStartedButton>
+              <GetStartedButton onClick={handleClickAddAccount}>
+                Create account {isLoading && <LoadingSpinner />}
+              </GetStartedButton>
 
               <Typography textAlign={'left'} variant="h5" paddingTop="1em">
                 What you need to know:
