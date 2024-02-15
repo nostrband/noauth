@@ -28,20 +28,20 @@ const StyledButton = styled(
       },
       color: theme.palette.text.primary,
       '&.disabled': {
-        opacity: 0.5,
+        background: `${theme.palette.backgroundSecondary.default}50`,
         cursor: 'not-allowed',
       },
     }
   }
   return {
     ...commonStyles,
-    '&.button:is(:hover, :active, &, .disabled)': {
+    '&.button:is(:hover, :active, &)': {
       background: theme.palette.primary.main,
     },
     color: theme.palette.text.secondary,
     '&.disabled': {
       color: theme.palette.text.secondary,
-      opacity: 0.5,
+      background: `${theme.palette.primary.main}50`,
       cursor: 'not-allowed',
     },
   }

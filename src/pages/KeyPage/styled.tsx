@@ -48,6 +48,7 @@ export const StyledEmptyAppsBox = styled(Box)(({ theme }) => {
       placeItems: 'center',
       color: theme.palette.text.primary,
       opacity: '0.6',
+      maxHeight: '100%',
     },
   }
 })

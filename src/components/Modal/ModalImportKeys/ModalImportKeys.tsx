@@ -5,7 +5,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { CircularProgress, Stack, Typography, useTheme } from '@mui/material'
+import { Stack, Typography, useTheme } from '@mui/material'
 import { StyledAppLogo } from './styled'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -18,6 +18,7 @@ import { fetchNip05 } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -69,12 +70,13 @@ export const ModalImportKeys = () => {
     }
     try {
       const { type, data } = nip19.decode(debouncedNsec)
-      const ok = type === 'nsec';
+      const ok = type === 'nsec'
       setIsBadNsec(!ok)
       if (ok) {
         const npub = nip19.npubEncode(
           // @ts-ignore
-          getPublicKey(data))
+          getPublicKey(data)
+        )
         setIsTakenByNsec(!!nameNpub && nameNpub === npub)
       } else {
         setIsTakenByNsec(false)
@@ -84,7 +86,8 @@ export const ModalImportKeys = () => {
       setIsTakenByNsec(false)
       return
     }
-}, [debouncedNsec])
+    // eslint-disable-next-line
+  }, [debouncedNsec])
 
   useEffect(() => {
     checkNsecUsername()
@@ -106,8 +109,8 @@ export const ModalImportKeys = () => {
     if (isLoading) return undefined
     try {
       const { nsec, username } = values
-      if (!nsec || !username) throw new Error("Enter username and nsec")
-      if (nameNpub && !isTakenByNsec) throw new Error("Name taken")
+      if (!nsec || !username) throw new Error('Enter username and nsec')
+      if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
       const k: any = await swicCall('importKey', username, nsec)
       notify('Key imported!', 'success')
@@ -186,16 +189,14 @@ export const ModalImportKeys = () => {
           helperTextProps={{
             sx: {
               '&.helper_text': {
-                color: isBadNsec
-                  ? theme.palette.error.main
-                  : theme.palette.textSecondaryDecorate.main,
+                color: isBadNsec ? theme.palette.error.main : theme.palette.textSecondaryDecorate.main,
               },
             },
           }}
         />
 
         <Button type="submit" disabled={isLoading}>
-          Import key {isLoading && <CircularProgress sx={{ marginLeft: '0.5rem' }} size={'1rem'} />}
+          Import key {isLoading && <LoadingSpinner />}
         </Button>
       </Stack>
     </Modal>

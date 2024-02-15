@@ -23,7 +23,7 @@ export const Header = () => {
   }
 
   const isDarkMode = themeMode === 'dark'
-  const themeIcon = isDarkMode ? <DarkModeIcon htmlColor="#fff" /> : <LightModeIcon htmlColor="#000" />
+  const themeIcon = isDarkMode ? <LightModeIcon htmlColor="#fff" /> : <DarkModeIcon htmlColor="#000" />
 
   const handleChangeMode = () => {
     dispatch(setThemeMode({ mode: isDarkMode ? 'light' : 'dark' }))

@@ -70,12 +70,19 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
         search: {
           appNpub: req.appNpub,
           reqId: req.id,
-          popup: isPopup ? 'true' : ''
+          popup: isPopup ? 'true' : '',
         },
       })
       break
     }
-  }, [connectPendings, filteredPendingReqs.length, handleOpen, isConfirmEventModalOpened, isConfirmConnectModalOpened])
+  }, [
+    connectPendings,
+    filteredPendingReqs.length,
+    handleOpen,
+    isConfirmEventModalOpened,
+    isConfirmConnectModalOpened,
+    isPopup,
+  ])
 
   const handleOpenConfirmEventModal = useCallback(() => {
     if (!filteredPendingReqs.length || connectPendings.length) return undefined
@@ -91,12 +98,12 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
         search: {
           appNpub,
-          popup: isPopup ? 'true' : ''
+          popup: isPopup ? 'true' : '',
         },
       })
       break
     }
-  }, [connectPendings.length, filteredPendingReqs.length, handleOpen, prepareEventPendings])
+  }, [connectPendings.length, filteredPendingReqs.length, handleOpen, prepareEventPendings, isPopup])
 
   useEffect(() => {
     handleOpenConfirmEventModal()
