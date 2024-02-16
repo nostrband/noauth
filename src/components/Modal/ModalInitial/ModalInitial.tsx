@@ -9,7 +9,6 @@ import { Stack } from '@mui/material'
 export const ModalInitial = () => {
   const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.INITIAL)
-
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.INITIAL)
 
   // const [showAdvancedContent, setShowAdvancedContent] = useState(false)
@@ -32,13 +31,6 @@ export const ModalInitial = () => {
         <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.SIGN_UP)}>Sign up</Button>
         <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.LOGIN)}>Login</Button>
         <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import key</Button>
-        {/* <AppLink title="Advanced" alignSelf={'center'} onClick={handleShowAdvanced} />
-
-        {showAdvancedContent && (
-          <Fade in>
-            <Button onClick={() => handleOpen(MODAL_PARAMS_KEYS.IMPORT_KEYS)}>Import key</Button>
-          </Fade>
-        )} */}
       </Stack>
     </Modal>
   )
