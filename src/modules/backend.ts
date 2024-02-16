@@ -192,7 +192,7 @@ class Nip46Backend extends NDKNip46Backend {
 //   }
 // }
 
-// FIXME why  do we need it? Just to print 
+// FIXME why  do we need it? Just to print
 // class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
 //   readonly backend: NDKNip46Backend
 //   readonly method: string
@@ -525,13 +525,11 @@ export class NoauthBackend {
     })
   }
 
-  private async sendTransferNameToServer(
-    npub: string, name: string, newNpub: string
-  ) {
+  private async sendTransferNameToServer(npub: string, name: string, newNpub: string) {
     const body = JSON.stringify({
       npub,
       name,
-      newNpub
+      newNpub,
     })
 
     const method = 'PUT'
@@ -803,7 +801,7 @@ export class NoauthBackend {
             return // noop
           case DECISION.ALLOW:
           case DECISION.DISALLOW:
-            // fall through
+          // fall through
         }
 
         const allow = decision === DECISION.ALLOW
@@ -1154,8 +1152,8 @@ export class NoauthBackend {
   }
 
   private async editName(npub: string, name: string) {
-    const key = this.enckeys.find(k => k.npub == npub)
-    if (!key) throw new Error("Npub not found");
+    const key = this.enckeys.find((k) => k.npub == npub)
+    if (!key) throw new Error('Npub not found')
     if (key.name) {
       await this.sendDeleteNameToServer(npub, key.name)
     }
@@ -1168,10 +1166,10 @@ export class NoauthBackend {
   }
 
   private async transferName(npub: string, name: string, newNpub: string) {
-    const key = this.enckeys.find(k => k.npub == npub)
-    if (!key) throw new Error("Npub not found")
-    if (!name) throw new Error("Empty name")
-    if (key.name !== name) throw new Error("Name changed, please reload")
+    const key = this.enckeys.find((k) => k.npub == npub)
+    if (!key) throw new Error('Npub not found')
+    if (!name) throw new Error('Empty name')
+    if (key.name !== name) throw new Error('Name changed, please reload')
     await this.sendTransferNameToServer(npub, key.name, newNpub)
     await dbi.editName(npub, '')
     key.name = ''

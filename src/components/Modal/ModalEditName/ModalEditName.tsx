@@ -20,7 +20,7 @@ export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)
   const notify = useEnqueueSnackbar()
 
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const name = searchParams.get('name') || ''
   const npub = searchParams.get('npub') || ''
 
@@ -28,16 +28,24 @@ export const ModalEditName = () => {
 
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EDIT_NAME)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EDIT_NAME)
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EDIT_NAME, {
+    onClose: (search) => {
+      search.delete('name')
+      search.delete('npub')
+    },
+  })
 
   const [enteredName, setEnteredName] = useState('')
   const [debouncedName] = useDebounce(enteredName, 300)
   const isNameEqual = debouncedName === name
 
+  const [receiverNpub, setReceiverNpub] = useState('')
+
   const [isAvailable, setIsAvailable] = useState(true)
   const [isChecking, setIsChecking] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isTransferLoading, setIsTransferLoading] = useState(false)
 
   const checkIsUsernameAvailable = useCallback(async () => {
     if (!debouncedName.trim().length) return undefined
@@ -66,6 +74,8 @@ export const ModalEditName = () => {
 
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => setEnteredName(e.target.value)
 
+  const handleReceiverNpubChange = (e: ChangeEvent<HTMLInputElement>) => setReceiverNpub(e.target.value)
+
   const getInputHelperText = () => {
     if (!debouncedName.trim().length || isNameEqual) return ''
     if (isChecking) return 'Loading...'
@@ -90,17 +100,34 @@ export const ModalEditName = () => {
     return null
   }
 
-  const isEditButtonDisabled = isNameEqual || isChecking || isLoading || !enteredName.trim().length
+  const isEditButtonDisabled = isNameEqual || !isAvailable || isChecking || isLoading || !enteredName.trim().length
+  const isTransferButtonDisabled = !enteredName.trim().length || !receiverNpub.trim().length || isTransferLoading
 
   const handleEditName = async () => {
+    if (isEditButtonDisabled) return
     try {
       setIsLoading(true)
-      await swicCall('editName', npub, debouncedName)
+      await swicCall('editName', npub, enteredName)
       notify('Username successfully editted!', 'success')
-      setEnteredName(debouncedName)
       setIsLoading(false)
-    } catch (error) {
+      searchParams.set('name', enteredName)
+      setSearchParams(searchParams)
+    } catch (error: any) {
       setIsLoading(false)
+      notify(error?.message || 'Failed to edit username!', 'error')
+    }
+  }
+
+  const handleTransferName = async () => {
+    if (isTransferButtonDisabled) return
+    try {
+      setIsTransferLoading(true)
+      await swicCall('transferName', npub, enteredName, receiverNpub)
+      notify('Npub successfully transfered!', 'success')
+      setIsTransferLoading(false)
+    } catch (error: any) {
+      setIsTransferLoading(false)
+      notify(error?.message || 'Failed to transfer npub!', 'error')
     }
   }
 
@@ -129,8 +156,16 @@ export const ModalEditName = () => {
           </Button>
         </Stack>
         <Stack gap={'1rem'}>
-          <Input label="Receiver npub" fullWidth placeholder="npub1..." />
-          <Button fullWidth>Transfer name</Button>
+          <Input
+            label="Receiver npub"
+            fullWidth
+            placeholder="npub1..."
+            onChange={handleReceiverNpubChange}
+            value={receiverNpub}
+          />
+          <Button fullWidth onClick={handleTransferName} disabled={isTransferButtonDisabled}>
+            Transfer name
+          </Button>
         </Stack>
       </Stack>
     </Modal>
