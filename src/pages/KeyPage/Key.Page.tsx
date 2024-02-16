@@ -47,7 +47,7 @@ const KeyPage = () => {
 
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
-  console.log({ isKeyExists, isPopup })
+  // console.log({ isKeyExists, isPopup })
 
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
