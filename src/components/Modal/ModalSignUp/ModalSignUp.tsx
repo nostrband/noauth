@@ -113,9 +113,14 @@ export const ModalSignUp = () => {
             },
           }}
         />
-        <Button fullWidth type="submit" disabled={isLoading}>
-          Create account {isLoading && <LoadingSpinner />}
-        </Button>
+        <Stack gap={'0.5rem'}>
+          <Button fullWidth type="submit" disabled={isLoading}>
+            Create account {isLoading && <LoadingSpinner />}
+          </Button>
+          <Typography padding={'0 0.5rem'} noWrap variant="body2" color={'GrayText'}>
+            New keys will be generated for you
+          </Typography>
+        </Stack>
       </Stack>
     </Modal>
   )

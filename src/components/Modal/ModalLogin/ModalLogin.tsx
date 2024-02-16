@@ -100,7 +100,7 @@ export const ModalLogin = () => {
       if (isPopup && isModalOpened) {
         swicCall('fetchPendingRequests', npub, appNpub)
 
-        fetchNpubNames(npub).then(names => {
+        fetchNpubNames(npub).then((names) => {
           if (names.length) {
             setValue('username', `${names[0]}@${DOMAIN}`)
           }
@@ -141,10 +141,17 @@ export const ModalLogin = () => {
           {...register('password')}
           {...inputProps}
           error={!!errors.password}
+          helperText={'Password you set in Cloud Sync settings'}
         />
-        <Button type="submit" fullWidth disabled={isLoading}>
-          Add account {isLoading && <LoadingSpinner />}
-        </Button>
+
+        <Stack gap={'0.5rem'}>
+          <Button type="submit" fullWidth disabled={isLoading}>
+            Add account {isLoading && <LoadingSpinner />}
+          </Button>
+          <Typography padding={'0 0.5rem'} noWrap variant="body2" color={'GrayText'}>
+            Import your keys from another nsec.app instance
+          </Typography>
+        </Stack>
       </Stack>
     </Modal>
   )

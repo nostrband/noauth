@@ -56,7 +56,7 @@ const StyledInputContainer = styled((props: BoxProps) => <Box {...props} />)(({ 
       },
     },
     '& > .helper_text': {
-      margin: '0.5rem 1rem 0',
+      margin: '0.5rem 0.5rem 0',
       color: theme.palette.text.primary,
     },
     '& > .label': {
