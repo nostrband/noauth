@@ -123,6 +123,7 @@ export const ModalConfirmConnect = () => {
       const options = { perms, appUrl }
       await confirmPending(pendingReqId, true, true, options)
     } else {
+
       try {
         await askNotificationPermission()
         const result = await swicCall('enablePush')
@@ -131,7 +132,7 @@ export const ModalConfirmConnect = () => {
       } catch (e: any) {
         console.log('error', e)
         notify('Please enable Notifications in website settings!', 'error')
-        return
+        // keep going
       }
 
       try {
