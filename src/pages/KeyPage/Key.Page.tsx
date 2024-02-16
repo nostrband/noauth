@@ -18,14 +18,18 @@ import { useTriggerConfirmModal } from './hooks/useTriggerConfirmModal'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { checkNpubSyncQuerier } from './utils'
 import { DOMAIN } from '@/utils/consts'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
   const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
   const [searchParams] = useSearchParams()
 
-  const isSynced = useLiveQuery(checkNpubSyncQuerier(npub), [npub], false)
+  const [isCheckingSync, setIsChecking] = useState(true)
+  const handleStopChecking = () => setIsChecking(false)
+
+  const isSynced = useLiveQuery(checkNpubSyncQuerier(npub, handleStopChecking), [npub], false)
+
   const { handleOpen } = useModalSearchParams()
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
@@ -44,12 +48,14 @@ const KeyPage = () => {
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
   console.log({ isKeyExists, isPopup })
+
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
     searchParams.set('npub', npub)
     const url = `/home?${searchParams.toString()}`
     return <Navigate to={url} />
   }
+
   if (!isKeyExists) return <Navigate to={`/home`} />
 
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
@@ -80,7 +86,11 @@ const KeyPage = () => {
             Connect app
           </StyledIconButton>
 
-          <StyledIconButton bgcolor_variant="secondary" onClick={handleOpenSettingsModal} withBadge={!isSynced}>
+          <StyledIconButton
+            bgcolor_variant="secondary"
+            onClick={handleOpenSettingsModal}
+            withBadge={!isCheckingSync && !isSynced}
+          >
             <SettingsIcon />
             Settings
           </StyledIconButton>
