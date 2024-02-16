@@ -419,6 +419,43 @@ export class NoauthBackend {
     throw new Error('Too many requests, retry later')
   }
 
+  private async sendDeleteNameToServer(npub: string, name: string) {
+    const body = JSON.stringify({
+      npub,
+      name,
+    })
+
+    const method = 'DELETE'
+    const url = `${NOAUTHD_URL}/name`
+
+    return this.sendPostAuthd({
+      npub,
+      url,
+      method,
+      body,
+    })
+  }
+
+  private async sendTransferNameToServer(
+    npub: string, name: string, newNpub: string
+  ) {
+    const body = JSON.stringify({
+      npub,
+      name,
+      newNpub
+    })
+
+    const method = 'PUT'
+    const url = `${NOAUTHD_URL}/name`
+
+    return this.sendPostAuthd({
+      npub,
+      url,
+      method,
+      body,
+    })
+  }
+
   private async sendTokenToServer(npub: string, token: string) {
     const body = JSON.stringify({
       npub,
@@ -995,6 +1032,31 @@ export class NoauthBackend {
     this.updateUI()
   }
 
+  private async editName(npub: string, name: string) {
+    const key = this.enckeys.find(k => k.npub == npub)
+    if (!key) throw new Error("Npub not found");
+    if (key.name) {
+      await this.sendDeleteNameToServer(npub, key.name)
+    }
+    if (name) {
+      await this.sendNameToServer(npub, name)
+    }
+    await dbi.editName(npub, name)
+    key.name = name
+    this.updateUI()
+  }
+
+  private async transferName(npub: string, name: string, newNpub: string) {
+    const key = this.enckeys.find(k => k.npub == npub)
+    if (!key) throw new Error("Npub not found")
+    if (!name) throw new Error("Empty name")
+    if (key.name !== name) throw new Error("Name changed, please reload")
+    await this.sendTransferNameToServer(npub, key.name, newNpub)
+    await dbi.editName(npub, '')
+    key.name = ''
+    this.updateUI()
+  }
+
   private async enablePush(): Promise<boolean> {
     const options = {
       userVisibleOnly: true,
@@ -1041,6 +1103,10 @@ export class NoauthBackend {
         result = await this.deleteApp(args[0])
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
+      } else if (method === 'editName') {
+        result = await this.editName(args[0], args[1])
+      } else if (method === 'transferName') {
+        result = await this.transferName(args[0], args[1], args[2])
       } else if (method === 'enablePush') {
         result = await this.enablePush()
       } else if (method === 'fetchPendingRequests') {
