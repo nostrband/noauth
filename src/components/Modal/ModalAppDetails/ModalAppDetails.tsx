@@ -68,6 +68,7 @@ export const ModalAppDetails = () => {
     if (isEmptyString(url)) return
 
     try {
+
       const u = new URL(url)
 
       if (isEmptyString(name)) setDetails((prev) => ({ ...prev, name: u.hostname }))
@@ -119,7 +120,7 @@ export const ModalAppDetails = () => {
     }
   }
 
-  const isFormValid = !isEmptyString(url) && !isEmptyString(name)
+  const isFormValid = !isEmptyString(name)
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
@@ -130,6 +131,13 @@ export const ModalAppDetails = () => {
           </Typography>
         </Stack>
 
+        <Input
+          label="Name"
+          fullWidth
+          placeholder="Enter app name"
+          onChange={handleInputChange('name')}
+          value={details.name}
+        />
         <Autocomplete
           options={[]}
           freeSolo
@@ -149,13 +157,6 @@ export const ModalAppDetails = () => {
               />
             )
           }}
-        />
-        <Input
-          label="Name"
-          fullWidth
-          placeholder="Enter app name"
-          onChange={handleInputChange('name')}
-          value={details.name}
         />
         <Input
           label="Icon"
