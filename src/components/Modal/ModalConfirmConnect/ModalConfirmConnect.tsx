@@ -61,12 +61,23 @@ export const ModalConfirmConnect = () => {
     },
   })
 
+  // NOTE: when opened directly to this modal using authUrl,
+  // we might not have pending requests visible yet bcs we haven't
+  // loaded them yet, which means this modal will be closed with
+  // the logic below. So now if it's popup then we wait for SW
+  // and then wait a little more to give it time to fetch
+  // pending reqs from db. Same logic implemented in confirm-event.
+
+  // FIXME move to a separate hook and reuse?
+
   useEffect(() => {
     if (isModalOpened) {
       if (isPopup) {
+        console.log("waiting for sw")
         // wait for SW to start
         swicWaitStarted().then(() => {
           // give it some time to load the pending reqs etc
+          console.log("waiting for sw done")
           setTimeout(() => setIsLoaded(true), 500)
         })
       } else {
@@ -75,7 +86,7 @@ export const ModalConfirmConnect = () => {
     } else {
       setIsLoaded(false)
     }
-  }, [isModalOpened])
+  }, [isModalOpened, isPopup])
 
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
@@ -88,8 +99,6 @@ export const ModalConfirmConnect = () => {
       else closeModalAfterRequest()
       return null
     }
-    // reset
-    setIsLoaded(false)
   }
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
@@ -208,7 +217,7 @@ export const ModalConfirmConnect = () => {
         </StyledToggleButtonsGroup>
         <Stack direction={'row'} gap={'1rem'}>
           <StyledButton onClick={disallow} varianttype="secondary">
-            Disallow
+            Ignore
           </StyledButton>
           <StyledButton fullWidth onClick={allow}>
             Connect

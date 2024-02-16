@@ -31,7 +31,7 @@ export const useModalSearchParams = () => {
     const enumKey = getEnumParam(modal)
     searchParams.delete(enumKey)
     extraOptions?.onClose && extraOptions?.onClose(searchParams)
-    console.log({ searchParams })
+    // console.log({ searchParams })
     setSearchParams(searchParams, { replace: !!extraOptions?.replace })
   }
 
