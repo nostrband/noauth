@@ -65,7 +65,7 @@ function App() {
 
   useEffect(() => {
     ndk.connect().then(() => {
-      console.log('NDK connected', { ndk })
+      console.log('NDK connected')
       setIsConnected(true)
     })
     // eslint-disable-next-line

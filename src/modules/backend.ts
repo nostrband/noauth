@@ -7,6 +7,9 @@ import NDK, {
   NDKNip46Backend,
   NDKPrivateKeySigner,
   NDKSigner,
+  NDKSubscription,
+  NDKSubscriptionCacheUsage,
+  NDKUser,
 } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN } from '../utils/consts'
 import { Nip04 } from './nip04'
@@ -28,6 +31,7 @@ interface Key {
   backoff: number
   signer: NDKSigner
   backend: NDKNip46Backend
+  watcher: Watcher
 }
 
 interface Pending {
@@ -44,6 +48,46 @@ interface IAllowCallbackParams {
   remotePubkey: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params?: any
+}
+
+class Watcher {
+  private ndk: NDK
+  private signer: NDKSigner
+  private onReply: (id: string) => void
+  private sub?: NDKSubscription
+
+  constructor(ndk: NDK, signer: NDKSigner, onReply: (id: string) => void) {
+    this.ndk = ndk
+    this.signer = signer
+    this.onReply = onReply
+  }
+
+  async start() {
+    this.sub = this.ndk.subscribe({
+      kinds: [KIND_RPC],
+      authors: [(await this.signer.user()).pubkey],
+      since: Math.floor((Date.now() / 1000) - 10),
+    }, {
+      closeOnEose: false,
+      cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY
+    })
+    this.sub.on('event', async (e: NDKEvent) => {
+      const peer = e.tags.find(t => t.length >= 2 && t[0] === "p")
+      console.log("watcher got event", { e, peer })
+      if (!peer) return
+      const decryptedContent = await this.signer.decrypt(
+        new NDKUser({ pubkey: peer[1] }), e.content);
+      const parsedContent = JSON.parse(decryptedContent);
+      const { id, method, params, result, error } = parsedContent;
+      console.log("watcher got", { peer, id, method, params, result, error })
+      if (method || result === 'auth_url') return
+      this.onReply(id)
+    })
+  }
+
+  stop() {
+    this.sub!.stop()
+  }
 }
 
 class Nip46Backend extends NDKNip46Backend {
@@ -784,7 +828,11 @@ export class NoauthBackend {
 
     const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
     const backend = new Nip46Backend(ndk, signer, () => Promise.resolve(true))
-    this.keys.push({ npub, backend, signer, ndk, backoff })
+    const watcher = new Watcher(ndk, signer, (id) => {
+      // drop pending request
+      dbi.removePending(id).then(() => this.updateUI())
+    })
+    this.keys.push({ npub, backend, signer, ndk, backoff, watcher })
 
     // new method
     backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
@@ -802,6 +850,7 @@ export class NoauthBackend {
 
     // start
     backend.start()
+    watcher.start()
     console.log('started', npub)
 
     // backoff reset on successfull connection
@@ -825,10 +874,12 @@ export class NoauthBackend {
       const bo = self.keys.find((k) => k.npub === npub)?.backoff || 1000
       setTimeout(() => {
         console.log(new Date(), 'reconnect relays for key', npub, 'backoff', bo)
-        // @ts-ignore
         for (const r of ndk.pool.relays.values()) r.disconnect()
         // make sure it no longer activates
         backend.handlers = {}
+
+        // stop watching
+        watcher.stop()
 
         self.keys = self.keys.filter((k) => k.npub !== npub)
         self.startKey({ npub, sk, backoff: Math.min(bo * 2, 60000) })

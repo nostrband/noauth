@@ -1,13 +1,29 @@
+// import { useEffect } from 'react'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Button } from '@/shared/Button/Button'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack } from '@mui/material'
+// import { AppLink } from '@/shared/AppLink/AppLink'
 
 export const ModalInitial = () => {
   const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.INITIAL)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.INITIAL)
+
+  // const [showAdvancedContent, setShowAdvancedContent] = useState(false)
+
+  // const handleShowAdvanced = () => {
+  //   setShowAdvancedContent(true)
+  // }
+
+  // useEffect(() => {
+  //   return () => {
+  //     if (isModalOpened) {
+  //       setShowAdvancedContent(false)
+  //     }
+  //   }
+  // }, [isModalOpened])
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>

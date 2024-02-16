@@ -121,7 +121,7 @@ export const getDomain = (url: string) => {
 }
 
 export const getReferrerAppUrl = () => {
-  console.log('referrer', window.document.referrer)
+  // console.log('referrer', window.document.referrer)
   if (!window.document.referrer) return ''
   try {
     const u = new URL(window.document.referrer.toLocaleLowerCase())
