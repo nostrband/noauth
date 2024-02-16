@@ -6,7 +6,6 @@ import { formatTimestampDate } from '@/utils/helpers/date'
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded'
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded'
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
-import { ACTIONS } from '@/utils/consts'
 import { getReqActionName } from '@/utils/helpers/helpers'
 
 type ItemActivityProps = DbHistory
