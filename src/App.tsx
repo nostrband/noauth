@@ -18,7 +18,7 @@ function App() {
 
   const load = useCallback(async () => {
     const keys: DbKey[] = await dbi.listKeys()
-    console.log(keys, 'keys')
+    // console.log(keys, 'keys')
 
     dispatch(setKeys({ keys }))
     const loadProfiles = async () => {
