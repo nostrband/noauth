@@ -107,8 +107,7 @@ export const ModalLogin = () => {
         })
       }
     }
-    // eslint-disable-next-line
-  }, [searchParams, isModalOpened, setValue])
+  }, [searchParams, isModalOpened, isPopup, setValue])
 
   useEffect(() => {
     return () => {

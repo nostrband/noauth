@@ -43,8 +43,10 @@ const AppPage = () => {
 
   const { icon = '', name = '', url = '' } = currentApp || {}
   const appDomain = getDomain(url)
-  const appName = name || appDomain || getShortenNpub(appNpub)
+  const shortAppNpub = getShortenNpub(appNpub)
+  const appName = name || appDomain || shortAppNpub
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const isAppNameExists = !!name
 
   const { timestamp } = connectPerm || {}
   const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
@@ -65,13 +67,20 @@ const AppPage = () => {
     <>
       <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
-        <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'}>
+        <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'} alignItems={'center'}>
           <StyledAppIcon src={icon}>{appAvatarTitle}</StyledAppIcon>
           <Box flex={'1'} overflow={'hidden'}>
-            <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-              <Typography variant="h4" noWrap flex={1}>
-                {appName}
-              </Typography>
+            <Stack direction={'row'} alignItems={'flex-start'} gap={'0.5rem'} marginBottom={'0.5rem'}>
+              <Box display={'flex'} flexDirection={'column'} flex={1}>
+                <Typography variant="h4" noWrap>
+                  {appName}
+                </Typography>
+                {isAppNameExists && (
+                  <Typography noWrap display={'block'} variant="body1" color={'GrayText'}>
+                    {shortAppNpub}
+                  </Typography>
+                )}
+              </Box>
               <IconButton onClick={handleShowAppDetailsModal}>
                 <MoreIcon />
               </IconButton>

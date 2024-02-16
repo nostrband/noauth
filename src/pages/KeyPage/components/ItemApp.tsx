@@ -9,9 +9,12 @@ type ItemAppProps = DbApp
 
 export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) => {
   const appDomain = getDomain(url)
-  const appName = name || appDomain || getShortenNpub(appNpub)
+  const shortAppNpub = getShortenNpub(appNpub)
+  const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
-	const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const isAppNameExists = !!name
+
   return (
     <StyledItemAppContainer
       direction={'row'}
@@ -21,18 +24,18 @@ export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) =>
       component={Link}
       to={`/key/${npub}/app/${appNpub}`}
     >
-      <Avatar 
-        variant="rounded" 
-        sx={{ width: 56, height: 56 }} 
-        src={appIcon} 
-        alt={appName}
-      >
+      <Avatar variant="rounded" sx={{ width: 56, height: 56 }} src={appIcon} alt={appName}>
         {appAvatarTitle}
       </Avatar>
       <Stack>
-        <Typography noWrap display={'block'} variant="body2">
+        <Typography noWrap display={'block'} variant="body1">
           {appName}
         </Typography>
+        {isAppNameExists && (
+          <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
+            {shortAppNpub}
+          </Typography>
+        )}
         <Typography noWrap display={'block'} variant="caption" color={'GrayText'}>
           Basic actions
         </Typography>

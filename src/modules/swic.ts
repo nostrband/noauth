@@ -5,7 +5,7 @@ export let swr: ServiceWorkerRegistration | null = null
 const reqs = new Map<number, { ok: (r: any) => void; rej: (r: any) => void }>()
 let nextReqId = 1
 let onRender: (() => void) | null = null
-const queue: (() => Promise<void>)[] = []
+const queue: (() => Promise<void> | void)[] = []
 
 export async function swicRegister() {
   serviceWorkerRegistration.register({
@@ -35,6 +35,13 @@ export async function swicRegister() {
     onMessage((event as MessageEvent).data)
   })
 }
+
+export function swicWaitStarted() {
+  return new Promise<void>(ok => {
+    if (swr && swr.active) ok()
+    else queue.push(ok)
+  })
+} 
 
 function onMessage(data: any) {
   const { id, result, error } = data
