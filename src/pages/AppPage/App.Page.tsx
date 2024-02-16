@@ -46,7 +46,7 @@ const AppPage = () => {
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-  const isAppNameExists = !!name
+  const isAppNameExists = !!name || !!appDomain
 
   const { timestamp } = connectPerm || {}
   const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
