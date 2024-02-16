@@ -10,7 +10,7 @@ import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { FC, useEffect, useMemo, useState } from 'react'
 import { StyledActionsListContainer, StyledButton, StyledToggleButtonsGroup } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { swicCall } from '@/modules/swic'
+import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { DbPending } from '@/modules/db'
 import { IPendingsByAppNpub } from '@/pages/KeyPage/hooks/useTriggerConfirmModal'
@@ -47,6 +47,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.ALWAYS)
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([])
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const currentAppPendingReqs = useMemo(() => confirmEventReqs[appNpub]?.pending || [], [confirmEventReqs, appNpub])
 
@@ -61,10 +62,26 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     },
   })
 
+  useEffect(() => {
+    if (isModalOpened) {
+      if (isPopup) {
+        // wait for SW to start
+        swicWaitStarted().then(() => {
+          // give it some time to load the pending reqs etc
+          setTimeout(() => setIsLoaded(true), 500)
+        })
+      } else {
+        setIsLoaded(true)
+      }
+    } else {
+      setIsLoaded(false)
+    }
+  }, [isModalOpened])
+
   // FIXME: when opened directly to this modal using authUrl,
   // we might not have pending requests visible yet bcs we haven't
   // loaded them yet, which means this modal will be closed with
-  // the login below. It's fine if only one app has sent pending 
+  // the logic below. It's fine if only one app has sent pending 
   // requests atm, bcs the modal would re-appear as soon as we load 
   // the requests. But if there are several pending reqs from other
   // apps then popup might show a different one! Which is very
@@ -74,12 +91,17 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   // for the specified appNpub
   // FIXME is the same logic valid for Connect modal?
 
-  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
-  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-  // console.log("confirm event", { confirmEventReqs, isModalOpened, isNpubExists, isAppNpubExists });
-  if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
-    closeModalAfterRequest()
-    return null
+  if (isLoaded) {
+    const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+    const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+    // console.log("confirm event", { confirmEventReqs, isModalOpened, isNpubExists, isAppNpubExists });
+    if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
+      if (isPopup) window.close()
+      else closeModalAfterRequest()
+      return null
+    }
+    // reset
+    setIsLoaded(false)
   }
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)

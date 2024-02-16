@@ -1,15 +1,22 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { askNotificationPermission, call, getAppIconTitle, getDomain, getReferrerAppUrl, getShortenNpub } from '@/utils/helpers/helpers'
+import {
+  askNotificationPermission,
+  call,
+  getAppIconTitle,
+  getDomain,
+  getReferrerAppUrl,
+  getShortenNpub,
+} from '@/utils/helpers/helpers'
 import { Avatar, Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
 import { StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
-import { useState } from 'react'
-import { swicCall } from '@/modules/swic'
+import { useEffect, useState } from 'react'
+import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 
@@ -28,6 +35,7 @@ export const ModalConfirmConnect = () => {
   const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.BASIC)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const appNpub = searchParams.get('appNpub') || ''
   const pendingReqId = searchParams.get('reqId') || ''
@@ -37,7 +45,7 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
 
-  const appUrl = url || searchParams.get('appUrl') || getReferrerAppUrl();
+  const appUrl = url || searchParams.get('appUrl') || getReferrerAppUrl()
   const appDomain = getDomain(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
@@ -53,14 +61,35 @@ export const ModalConfirmConnect = () => {
     },
   })
 
-  const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
-  // App doesn't exist yet!
-  // const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-  const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
-  // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
-  if (!isPopup && isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
-    closeModalAfterRequest()
-    return null
+  useEffect(() => {
+    if (isModalOpened) {
+      if (isPopup) {
+        // wait for SW to start
+        swicWaitStarted().then(() => {
+          // give it some time to load the pending reqs etc
+          setTimeout(() => setIsLoaded(true), 500)
+        })
+      } else {
+        setIsLoaded(true)
+      }
+    } else {
+      setIsLoaded(false)
+    }
+  }, [isModalOpened])
+
+  if (isLoaded) {
+    const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+    // NOTE: app doesn't exist yet!
+    // const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+    const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
+    // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
+    if (isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
+      if (isPopup) window.close()
+      else closeModalAfterRequest()
+      return null
+    }
+    // reset
+    setIsLoaded(false)
   }
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {

@@ -107,7 +107,7 @@ export const ModalLogin = () => {
         })
       }
     }
-  }, [searchParams, isModalOpened, setValue])
+  }, [searchParams, isModalOpened, isPopup, setValue])
 
   useEffect(() => {
     return () => {
