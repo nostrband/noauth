@@ -13,7 +13,7 @@ export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) =>
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-  const isAppNameExists = !!name
+  const isAppNameExists = !!name || !!appDomain
 
   return (
     <StyledItemAppContainer
