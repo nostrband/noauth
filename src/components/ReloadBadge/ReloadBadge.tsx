@@ -16,7 +16,7 @@ const ReloadBadgeContent: FC = () => {
       <StyledAlert>
         <Stack direction={'row'} className="content">
           <Typography flex={1} className="title">
-            New version available, please reload the page!
+            New version available!
           </Typography>
           <StyledReloadButton onClick={handleReload}>Reload</StyledReloadButton>
         </Stack>
