@@ -13,14 +13,8 @@ export const Warning: FC<WarningProps> = ({ hint, message, icon, ...restProps })
     <StyledContainer {...restProps}>
       {icon && <IconContainer>{icon}</IconContainer>}
       <Stack flex={1} direction={'column'} gap={'0.2rem'}>
-        <Typography noWrap>
-          {message}
-        </Typography>
-        {hint && (
-          <Typography>
-            {hint}
-          </Typography>
-        )}
+        <Typography noWrap>{message}</Typography>
+        {hint && <Typography>{hint}</Typography>}
       </Stack>
     </StyledContainer>
   )
