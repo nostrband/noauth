@@ -63,13 +63,7 @@ const KeyPage = () => {
 
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
-  const handleOpenEditNameModal = () =>
-    handleOpen(MODAL_PARAMS_KEYS.EDIT_NAME, {
-      search: {
-        name: key.name || '',
-        npub,
-      },
-    })
+  const handleOpenEditNameModal = () => handleOpen(MODAL_PARAMS_KEYS.EDIT_NAME)
 
   return (
     <>
@@ -82,7 +76,7 @@ const KeyPage = () => {
           value={username}
           endAdornment={
             <Box display={'flex'} alignItems={'center'} gap={'0.25rem'}>
-              <IconButton onClick={handleOpenEditNameModal}>
+              <IconButton onClick={handleOpenEditNameModal} color={username ? 'default' : 'error'}>
                 <MoreHorizRoundedIcon />
               </IconButton>
               <InputCopyButton value={username} />

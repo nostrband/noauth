@@ -13,27 +13,24 @@ import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 import { Stack, Typography, useTheme } from '@mui/material'
 import { ChangeEvent, Fragment, useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
+import { StyledSettingContainer } from './styled'
+import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 
 export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)
   const notify = useEnqueueSnackbar()
+  const { npub = '' } = useParams<{ npub: string }>()
 
-  const [searchParams, setSearchParams] = useSearchParams()
-  const name = searchParams.get('name') || ''
-  const npub = searchParams.get('npub') || ''
+  const key = keys.find((k) => k.npub === npub)
+  const name = key?.name || ''
 
   const { palette } = useTheme()
 
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EDIT_NAME)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EDIT_NAME, {
-    onClose: (search) => {
-      search.delete('name')
-      search.delete('npub')
-    },
-  })
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EDIT_NAME)
 
   const [enteredName, setEnteredName] = useState('')
   const [debouncedName] = useDebounce(enteredName, 300)
@@ -52,7 +49,7 @@ export const ModalEditName = () => {
     try {
       setIsChecking(true)
       const npubNip05 = await fetchNip05(`${debouncedName}@${DOMAIN}`)
-      setIsAvailable(!npubNip05)
+      setIsAvailable(!npubNip05 || npubNip05 === npub)
       setIsChecking(false)
     } catch (error) {
       setIsAvailable(true)
@@ -67,7 +64,10 @@ export const ModalEditName = () => {
   useEffect(() => {
     setEnteredName(name)
     return () => {
-      if (isModalOpened) setEnteredName('')
+      if (isModalOpened) {
+        setEnteredName('')
+        setReceiverNpub('')
+      }
     }
     // eslint-disable-next-line
   }, [isModalOpened])
@@ -101,17 +101,15 @@ export const ModalEditName = () => {
   }
 
   const isEditButtonDisabled = isNameEqual || !isAvailable || isChecking || isLoading || !enteredName.trim().length
-  const isTransferButtonDisabled = !enteredName.trim().length || !receiverNpub.trim().length || isTransferLoading
+  const isTransferButtonDisabled = !name.length || !receiverNpub.trim().length || isTransferLoading
 
   const handleEditName = async () => {
     if (isEditButtonDisabled) return
     try {
       setIsLoading(true)
       await swicCall('editName', npub, enteredName)
-      notify('Username successfully editted!', 'success')
+      notify('Username updated!', 'success')
       setIsLoading(false)
-      searchParams.set('name', enteredName)
-      setSearchParams(searchParams)
     } catch (error: any) {
       setIsLoading(false)
       notify(error?.message || 'Failed to edit username!', 'error')
@@ -123,20 +121,22 @@ export const ModalEditName = () => {
     try {
       setIsTransferLoading(true)
       await swicCall('transferName', npub, enteredName, receiverNpub)
-      notify('Npub successfully transfered!', 'success')
+      notify('Username transferred!', 'success')
       setIsTransferLoading(false)
+      setEnteredName('')
     } catch (error: any) {
       setIsTransferLoading(false)
-      notify(error?.message || 'Failed to transfer npub!', 'error')
+      notify(error?.message || 'Failed to transfer username!', 'error')
     }
   }
 
   return (
-    <Modal open={isModalOpened} title="Edit username" onClose={handleCloseModal}>
+    <Modal open={isModalOpened} title="Username Settings" onClose={handleCloseModal}>
       <Stack gap={'1rem'}>
-        <Stack gap={'1rem'}>
+        <StyledSettingContainer>
+          <SectionTitle>Change name</SectionTitle>
           <Input
-            label="Username"
+            label="User name"
             fullWidth
             placeholder="Enter a Username"
             endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
@@ -152,10 +152,11 @@ export const ModalEditName = () => {
             }}
           />
           <Button fullWidth disabled={isEditButtonDisabled} onClick={handleEditName}>
-            Edit name {isLoading && <LoadingSpinner />}
+            Save name {isLoading && <LoadingSpinner />}
           </Button>
-        </Stack>
-        <Stack gap={'1rem'}>
+        </StyledSettingContainer>
+        <StyledSettingContainer>
+          <SectionTitle>Transfer name</SectionTitle>
           <Input
             label="Receiver npub"
             fullWidth
@@ -166,7 +167,7 @@ export const ModalEditName = () => {
           <Button fullWidth onClick={handleTransferName} disabled={isTransferButtonDisabled}>
             Transfer name
           </Button>
-        </Stack>
+        </StyledSettingContainer>
       </Stack>
     </Modal>
   )
