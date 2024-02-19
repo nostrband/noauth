@@ -5,7 +5,6 @@ import { swicCall } from '@/modules/swic'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography } from '@mui/material'
-import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -119,12 +118,14 @@ export const ModalLogin = () => {
   }, [isModalOpened, cleanUpStates])
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal}>
-      <Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
-        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
-          <StyledAppLogo />
+    <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
+      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+        <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
           <Typography fontWeight={600} variant="h5">
             Login
+          </Typography>
+          <Typography noWrap variant="body2" color={'GrayText'}>
+            Sync keys from the cloud to this device
           </Typography>
         </Stack>
         <Input
@@ -148,9 +149,6 @@ export const ModalLogin = () => {
           <Button type="submit" fullWidth disabled={isLoading}>
             Add account {isLoading && <LoadingSpinner />}
           </Button>
-          <Typography padding={'0 0.5rem'} noWrap variant="body2" color={'GrayText'}>
-            Import your keys from another nsec.app instance
-          </Typography>
         </Stack>
       </Stack>
     </Modal>
