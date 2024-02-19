@@ -28,6 +28,7 @@ enum DECISION {
 export interface KeyInfo {
   npub: string
   nip05?: string
+  name?: string
   locked: boolean
 }
 
@@ -366,7 +367,7 @@ export class NoauthBackend {
     if (r.status !== 200 && r.status !== 201) {
       console.log('Fetch error', url, method, r.status)
       const body = await r.json()
-      throw new Error('Failed to fetch ' + url, { cause: body })
+      throw new Error('Failed to fetch ' + url, { cause: { body, status: r.status } })
     }
 
     return await r.json()
@@ -501,7 +502,7 @@ export class NoauthBackend {
         })
       } catch (e: any) {
         console.log('error', e.cause)
-        if (e.cause && e.cause.minPow > pow) pow = e.cause.minPow
+        if (e.cause && e.cause.body && e.cause.body.minPow > pow) pow = e.cause.body.minPow
         else throw e
       }
     }
@@ -637,6 +638,7 @@ export class NoauthBackend {
     return {
       npub: k.npub,
       nip05: k.nip05,
+      name: k.name,
       locked: this.isLocked(k.npub),
     }
   }
@@ -677,11 +679,16 @@ export class NoauthBackend {
     await this.startKey({ npub, sk })
 
     // assign nip05 before adding the key
-    // FIXME set name to db and if this call to 'send' fails
-    // then retry later
     if (!existingName && name && !name.includes('@')) {
       console.log('adding key', npub, name)
-      await this.sendNameToServer(npub, name)
+      try {
+        await this.sendNameToServer(npub, name)
+      } catch (e) {
+        console.log('create name failed', e)
+        // clear it
+        await dbi.editName(npub, '')
+        dbKey.name = ''
+      }
     }
 
     const sub = await this.swg.registration.pushManager.getSubscription()
@@ -1155,7 +1162,12 @@ export class NoauthBackend {
     const key = this.enckeys.find((k) => k.npub == npub)
     if (!key) throw new Error('Npub not found')
     if (key.name) {
-      await this.sendDeleteNameToServer(npub, key.name)
+      try {
+        await this.sendDeleteNameToServer(npub, key.name)
+      } catch (e: any) {
+        if (e.cause && e.cause.status !== 404) throw e
+        console.log("Deleted name didn't exist")
+      }
     }
     if (name) {
       await this.sendNameToServer(npub, name)

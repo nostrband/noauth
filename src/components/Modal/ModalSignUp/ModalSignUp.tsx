@@ -60,7 +60,10 @@ export const ModalSignUp = () => {
     try {
       setIsLoading(true)
       const k: any = await swicCall('generateKey', name)
-      notify(`Account created for "${name}"`, 'success')
+      if (k.name)
+        notify(`Account created for "${k.name}"`, 'success')
+      else
+        notify(`Failed to assign name "${name}", try again`, 'error')
       setIsLoading(false)
       setTimeout(() => {
         // give frontend time to read the new key first
