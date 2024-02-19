@@ -172,7 +172,9 @@ export const ModalConfirmConnect = () => {
   if (isPopup) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        disallow()
+        // FIXME it should be 'ignore once',
+        // not 'disallow & remember' - this is too strict
+        // disallow()
       }
     })
   }
