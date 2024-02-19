@@ -1,6 +1,7 @@
+import { useCallback, useState } from 'react'
 import { useAppSelector } from '../../store/hooks/redux'
-import { Navigate, useParams } from 'react-router-dom'
-import { Stack } from '@mui/material'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Box, IconButton, Stack } from '@mui/material'
 import { StyledIconButton } from './styled'
 import { SettingsIcon, ShareIcon } from '@/assets'
 import { Apps } from './components/Apps'
@@ -18,13 +19,20 @@ import { useTriggerConfirmModal } from './hooks/useTriggerConfirmModal'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { checkNpubSyncQuerier } from './utils'
 import { DOMAIN } from '@/utils/consts'
-import { useCallback } from 'react'
+import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
+import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
+import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
   const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
+  const [searchParams] = useSearchParams()
 
-  const isSynced = useLiveQuery(checkNpubSyncQuerier(npub), [npub], false)
+  const [isCheckingSync, setIsChecking] = useState(true)
+  const handleStopChecking = () => setIsChecking(false)
+
+  const isSynced = useLiveQuery(checkNpubSyncQuerier(npub, handleStopChecking), [npub], false)
+
   const { handleOpen } = useModalSearchParams()
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
@@ -41,10 +49,21 @@ const KeyPage = () => {
   const { prepareEventPendings } = useTriggerConfirmModal(npub, pending, perms)
 
   const isKeyExists = npub.trim().length && key
+  const isPopup = searchParams.get('popup') === 'true'
+  // console.log({ isKeyExists, isPopup })
+
+  if (isPopup && !isKeyExists) {
+    searchParams.set('login', 'true')
+    searchParams.set('npub', npub)
+    const url = `/home?${searchParams.toString()}`
+    return <Navigate to={url} />
+  }
+
   if (!isKeyExists) return <Navigate to={`/home`} />
 
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
+  const handleOpenEditNameModal = () => handleOpen(MODAL_PARAMS_KEYS.EDIT_NAME)
 
   return (
     <>
@@ -55,13 +74,20 @@ const KeyPage = () => {
         <UserValueSection
           title="Your login"
           value={username}
-          copyValue={username}
+          endAdornment={
+            <Box display={'flex'} alignItems={'center'} gap={'0.25rem'}>
+              <IconButton onClick={handleOpenEditNameModal} color={username ? 'default' : 'error'}>
+                <MoreHorizRoundedIcon />
+              </IconButton>
+              <InputCopyButton value={username} />
+            </Box>
+          }
           explanationType={EXPLANATION_MODAL_KEYS.LOGIN}
         />
         <UserValueSection
           title="Your NPUB"
           value={npub}
-          copyValue={npub}
+          endAdornment={<InputCopyButton value={npub} />}
           explanationType={EXPLANATION_MODAL_KEYS.NPUB}
         />
 
@@ -71,7 +97,11 @@ const KeyPage = () => {
             Connect app
           </StyledIconButton>
 
-          <StyledIconButton bgcolor_variant="secondary" onClick={handleOpenSettingsModal} withBadge={!isSynced}>
+          <StyledIconButton
+            bgcolor_variant="secondary"
+            onClick={handleOpenSettingsModal}
+            withBadge={!isCheckingSync && !isSynced}
+          >
             <SettingsIcon />
             Settings
           </StyledIconButton>
@@ -79,11 +109,13 @@ const KeyPage = () => {
 
         <Apps apps={filteredApps} npub={npub} />
       </Stack>
+
       <ModalConnectApp />
       <ModalSettings isSynced={isSynced} />
       <ModalExplanation />
       <ModalConfirmConnect />
       <ModalConfirmEvent confirmEventReqs={prepareEventPendings} />
+      <ModalEditName />
     </>
   )
 }

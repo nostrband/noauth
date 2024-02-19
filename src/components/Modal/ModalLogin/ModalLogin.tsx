@@ -5,15 +5,14 @@ import { swicCall } from '@/modules/swic'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography } from '@mui/material'
-import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, fetchNpubNames } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
 import { dbi } from '@/modules/db'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -32,11 +31,14 @@ export const ModalLogin = () => {
   const navigate = useNavigate()
   const { hidePassword, inputProps } = usePassword()
   const [isLoading, setIsLoading] = useState(false)
+  const [searchParams] = useSearchParams()
+  const isPopup = searchParams.get('popup') === 'true'
 
   const {
     handleSubmit,
     reset,
     register,
+    setValue,
     formState: { errors },
   } = useForm<FormInputType>({
     defaultValues: FORM_DEFAULT_VALUES,
@@ -79,13 +81,32 @@ export const ModalLogin = () => {
       notify(`Fetched ${k.npub}`, 'success')
       dbi.addSynced(k.npub)
       cleanUpStates()
-      navigate(`/key/${k.npub}`)
+      setTimeout(() => {
+        // give frontend time to read the new key first
+        navigate(`/key/${k.npub}${isPopup ? '?popup=true' : ''}`)
+      }, 300)
     } catch (error: any) {
       console.log('error', error)
       notify(error?.message || 'Something went wrong!', 'error')
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (isModalOpened) {
+      const npub = searchParams.get('npub') || ''
+      const appNpub = searchParams.get('appNpub') || ''
+      if (isPopup && isModalOpened) {
+        swicCall('fetchPendingRequests', npub, appNpub)
+
+        fetchNpubNames(npub).then((names) => {
+          if (names.length) {
+            setValue('username', `${names[0]}@${DOMAIN}`)
+          }
+        })
+      }
+    }
+  }, [searchParams, isModalOpened, isPopup, setValue])
 
   useEffect(() => {
     return () => {
@@ -97,12 +118,14 @@ export const ModalLogin = () => {
   }, [isModalOpened, cleanUpStates])
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal}>
-      <Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
-        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
-          <StyledAppLogo />
+    <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
+      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+        <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
           <Typography fontWeight={600} variant="h5">
             Login
+          </Typography>
+          <Typography noWrap variant="body2" color={'GrayText'}>
+            Sync keys from the cloud to this device
           </Typography>
         </Stack>
         <Input
@@ -119,10 +142,14 @@ export const ModalLogin = () => {
           {...register('password')}
           {...inputProps}
           error={!!errors.password}
+          helperText={'Password you set in Cloud Sync settings'}
         />
-        <Button type="submit" fullWidth disabled={isLoading}>
-          Add account {isLoading && <LoadingSpinner />}
-        </Button>
+
+        <Stack gap={'0.5rem'}>
+          <Button type="submit" fullWidth disabled={isLoading}>
+            Add account {isLoading && <LoadingSpinner />}
+          </Button>
+        </Stack>
       </Stack>
     </Modal>
   )

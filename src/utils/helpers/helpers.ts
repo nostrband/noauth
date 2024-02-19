@@ -1,6 +1,6 @@
 import { nip19 } from 'nostr-tools'
-import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS } from '../consts'
-import { DbPending, DbPerm } from '@/modules/db'
+import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS, NOAUTHD_URL } from '../consts'
+import { DbHistory, DbPending, DbPerm } from '@/modules/db'
 import { MetaEvent } from '@/types/meta-event'
 
 export async function call(cb: () => any) {
@@ -97,6 +97,21 @@ export async function fetchNip05(value: string, origin?: string) {
   }
 }
 
+export async function fetchNpubNames(npub: string) {
+  try {
+    const url = `${NOAUTHD_URL}/name?npub=${npub}`
+    const response = await fetch(url)
+    const names: {
+      names: string[]
+    } = await response.json()
+
+    return names.names
+  } catch (e) {
+    console.log('Failed to fetch names for', npub, 'error: ' + e)
+    return []
+  }
+}
+
 export const getDomain = (url: string) => {
   try {
     return new URL(url).hostname
@@ -106,7 +121,7 @@ export const getDomain = (url: string) => {
 }
 
 export const getReferrerAppUrl = () => {
-  console.log('referrer', window.document.referrer)
+  // console.log('referrer', window.document.referrer)
   if (!window.document.referrer) return ''
   try {
     const u = new URL(window.document.referrer.toLocaleLowerCase())
@@ -119,7 +134,7 @@ export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
   return name ? name[0].toLocaleUpperCase() : appNpub.substring(4, 7)
 }
 
-export function getReqActionName(req: DbPending) {
+export function getReqActionName(req: DbPending | DbHistory) {
   const action = ACTIONS[req.method]
   if (req.method === 'sign_event') {
     const kind = getSignReqKind(req)

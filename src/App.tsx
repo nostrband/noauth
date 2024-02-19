@@ -18,7 +18,7 @@ function App() {
 
   const load = useCallback(async () => {
     const keys: DbKey[] = await dbi.listKeys()
-    console.log(keys, 'keys')
+    // console.log(keys, 'keys')
 
     dispatch(setKeys({ keys }))
     const loadProfiles = async () => {
@@ -65,7 +65,7 @@ function App() {
 
   useEffect(() => {
     ndk.connect().then(() => {
-      console.log('NDK connected', { ndk })
+      console.log('NDK connected')
       setIsConnected(true)
     })
     // eslint-disable-next-line

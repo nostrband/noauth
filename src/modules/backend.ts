@@ -1,24 +1,34 @@
-import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
+import { Event, generatePrivateKey, getPublicKey, nip19, verifySignature } from 'nostr-tools'
 import { DbApp, dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, {
-  IEventHandlingStrategy,
   NDKEvent,
   NDKNip46Backend,
   NDKPrivateKeySigner,
   NDKSigner,
+  NDKSubscription,
+  NDKSubscriptionCacheUsage,
+  NDKUser,
 } from '@nostr-dev-kit/ndk'
 import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN } from '../utils/consts'
-import { Nip04 } from './nip04'
+// import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
 
+enum DECISION {
+  ASK = '',
+  ALLOW = 'allow',
+  DISALLOW = 'disallow',
+  IGNORE = 'ignore',
+}
+
 export interface KeyInfo {
   npub: string
   nip05?: string
+  name?: string
   locked: boolean
 }
 
@@ -28,11 +38,12 @@ interface Key {
   backoff: number
   signer: NDKSigner
   backend: NDKNip46Backend
+  watcher: Watcher
 }
 
 interface Pending {
   req: DbPending
-  cb: (allow: boolean, remember: boolean, options?: any) => void
+  cb: (allow: DECISION, remember: boolean, options?: any) => void
   notified?: boolean
 }
 
@@ -46,85 +57,170 @@ interface IAllowCallbackParams {
   params?: any
 }
 
-class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
-  private privkey: string
-  private nip04 = new Nip04()
+class Watcher {
+  private ndk: NDK
+  private signer: NDKSigner
+  private onReply: (id: string) => void
+  private sub?: NDKSubscription
 
-  constructor(privkey: string) {
-    this.privkey = privkey
+  constructor(ndk: NDK, signer: NDKSigner, onReply: (id: string) => void) {
+    this.ndk = ndk
+    this.signer = signer
+    this.onReply = onReply
   }
 
-  private async getKey(backend: NDKNip46Backend, id: string, remotePubkey: string, recipientPubkey: string) {
-    if (
-      !(await backend.pubkeyAllowed({
-        id,
-        pubkey: remotePubkey,
-        // @ts-ignore
-        method: 'get_nip04_key',
-        params: recipientPubkey,
-      }))
-    ) {
-      backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
-      return undefined
+  async start() {
+    this.sub = this.ndk.subscribe(
+      {
+        kinds: [KIND_RPC],
+        authors: [(await this.signer.user()).pubkey],
+        since: Math.floor(Date.now() / 1000 - 10),
+      },
+      {
+        closeOnEose: false,
+        cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
+      }
+    )
+    this.sub.on('event', async (e: NDKEvent) => {
+      const peer = e.tags.find((t) => t.length >= 2 && t[0] === 'p')
+      console.log('watcher got event', { e, peer })
+      if (!peer) return
+      const decryptedContent = await this.signer.decrypt(new NDKUser({ pubkey: peer[1] }), e.content)
+      const parsedContent = JSON.parse(decryptedContent)
+      const { id, method, params, result, error } = parsedContent
+      console.log('watcher got', { peer, id, method, params, result, error })
+      if (method || result === 'auth_url') return
+      this.onReply(id)
+    })
+  }
+
+  stop() {
+    this.sub!.stop()
+  }
+}
+
+class Nip46Backend extends NDKNip46Backend {
+  private allowCb: (params: IAllowCallbackParams) => Promise<DECISION>
+  private npub: string = ''
+
+  public constructor(ndk: NDK, signer: NDKSigner, allowCb: (params: IAllowCallbackParams) => Promise<DECISION>) {
+    super(ndk, signer, () => Promise.resolve(true))
+    this.allowCb = allowCb
+    signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
+  }
+
+  public async processEvent(event: NDKEvent) {
+    this.handleIncomingEvent(event)
+  }
+
+  protected async handleIncomingEvent(event: NDKEvent) {
+    const { id, method, params } = (await this.rpc.parseEvent(event)) as any
+    const remotePubkey = event.pubkey
+    let response: string | undefined
+
+    this.debug('incoming event', { id, method, params })
+
+    // validate signature explicitly
+    if (!verifySignature(event.rawEvent() as Event)) {
+      this.debug('invalid signature', event.rawEvent())
+      return
     }
 
-    return Buffer.from(this.nip04.createKey(this.privkey, recipientPubkey)).toString('hex')
-  }
-
-  async handle(backend: NDKNip46Backend, id: string, remotePubkey: string, params: string[]) {
-    const [recipientPubkey] = params
-    return await this.getKey(backend, id, remotePubkey, recipientPubkey)
-  }
-}
-
-class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
-  readonly backend: NDKNip46Backend
-  readonly npub: string
-  readonly method: string
-  private body: IEventHandlingStrategy
-  private allowCb: (params: IAllowCallbackParams) => Promise<boolean>
-
-  constructor(
-    backend: NDKNip46Backend,
-    npub: string,
-    method: string,
-    body: IEventHandlingStrategy,
-    allowCb: (params: IAllowCallbackParams) => Promise<boolean>
-  ) {
-    this.backend = backend
-    this.npub = npub
-    this.method = method
-    this.body = body
-    this.allowCb = allowCb
-  }
-
-  async handle(
-    backend: NDKNip46Backend,
-    id: string,
-    remotePubkey: string,
-    params: string[]
-  ): Promise<string | undefined> {
-    console.log(Date.now(), 'handle', {
-      method: this.method,
-      id,
-      remotePubkey,
-      params,
-    })
-    const allow = await this.allowCb({
-      backend: this.backend,
+    const decision = await this.allowCb({
+      backend: this,
       npub: this.npub,
       id,
-      method: this.method,
+      method,
       remotePubkey,
       params,
     })
-    if (!allow) return undefined
-    return this.body.handle(backend, id, remotePubkey, params).then((r) => {
-      console.log(Date.now(), 'req', id, 'method', this.method, 'result', r)
-      return r
-    })
+    console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params })
+    if (decision === DECISION.IGNORE) return
+
+    const allow = decision === DECISION.ALLOW
+    const strategy = this.handlers[method]
+    if (allow) {
+      if (strategy) {
+        try {
+          response = await strategy.handle(this, id, remotePubkey, params)
+          console.log(Date.now(), 'req', id, 'method', method, 'result', response)
+        } catch (e: any) {
+          this.debug('error handling event', e, { id, method, params })
+          this.rpc.sendResponse(id, remotePubkey, 'error', undefined, e.message)
+        }
+      } else {
+        this.debug('unsupported method', { method, params })
+      }
+    }
+
+    if (response) {
+      this.debug(`sending response to ${remotePubkey}`, response)
+      this.rpc.sendResponse(id, remotePubkey, response)
+    } else {
+      this.rpc.sendResponse(id, remotePubkey, 'error', undefined, 'Not authorized')
+    }
   }
 }
+
+// class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
+//   private privkey: string
+//   private nip04 = new Nip04()
+
+//   constructor(privkey: string) {
+//     this.privkey = privkey
+//   }
+
+//   private async getKey(backend: NDKNip46Backend, id: string, remotePubkey: string, recipientPubkey: string) {
+//     if (
+//       !(await backend.pubkeyAllowed({
+//         id,
+//         pubkey: remotePubkey,
+//         // @ts-ignore
+//         method: 'get_nip04_key',
+//         params: recipientPubkey,
+//       }))
+//     ) {
+//       backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
+//       return undefined
+//     }
+
+//     return Buffer.from(this.nip04.createKey(this.privkey, recipientPubkey)).toString('hex')
+//   }
+
+//   async handle(backend: NDKNip46Backend, id: string, remotePubkey: string, params: string[]) {
+//     const [recipientPubkey] = params
+//     return await this.getKey(backend, id, remotePubkey, recipientPubkey)
+//   }
+// }
+
+// FIXME why  do we need it? Just to print
+// class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
+//   readonly backend: NDKNip46Backend
+//   readonly method: string
+//   private body: IEventHandlingStrategy
+
+//   constructor(
+//     backend: NDKNip46Backend,
+//     method: string,
+//     body: IEventHandlingStrategy
+//   ) {
+//     this.backend = backend
+//     this.method = method
+//     this.body = body
+//   }
+
+//   async handle(
+//     backend: NDKNip46Backend,
+//     id: string,
+//     remotePubkey: string,
+//     params: string[]
+//   ): Promise<string | undefined> {
+//     return this.body.handle(backend, id, remotePubkey, params).then((r) => {
+//       console.log(Date.now(), 'req', id, 'method', this.method, 'result', r)
+//       return r
+//     })
+//   }
+// }
 
 export class NoauthBackend {
   readonly swg: ServiceWorkerGlobalScope
@@ -137,10 +233,16 @@ export class NoauthBackend {
   private confirmBuffer: Pending[] = []
   private accessBuffer: DbPending[] = []
   private notifCallback: (() => void) | null = null
+  private pendingNpubEvents = new Map<string, NDKEvent[]>()
+  private ndk = new NDK({
+    explicitRelayUrls: NIP46_RELAYS,
+    enableOutboxModel: false,
+  })
 
   public constructor(swg: ServiceWorkerGlobalScope) {
     this.swg = swg
     this.keysModule = new Keys(swg.crypto.subtle)
+    this.ndk.connect()
 
     const self = this
     swg.addEventListener('activate', (event) => {
@@ -260,7 +362,7 @@ export class NoauthBackend {
     if (r.status !== 200 && r.status !== 201) {
       console.log('Fetch error', url, method, r.status)
       const body = await r.json()
-      throw new Error('Failed to fetch ' + url, { cause: body })
+      throw new Error('Failed to fetch ' + url, { cause: { body, status: r.status } })
     }
 
     return await r.json()
@@ -395,7 +497,7 @@ export class NoauthBackend {
         })
       } catch (e: any) {
         console.log('error', e.cause)
-        if (e.cause && e.cause.minPow > pow) pow = e.cause.minPow
+        if (e.cause && e.cause.body && e.cause.body.minPow > pow) pow = e.cause.body.minPow
         else throw e
       }
     }
@@ -419,13 +521,11 @@ export class NoauthBackend {
     })
   }
 
-  private async sendTransferNameToServer(
-    npub: string, name: string, newNpub: string
-  ) {
+  private async sendTransferNameToServer(npub: string, name: string, newNpub: string) {
     const body = JSON.stringify({
       npub,
       name,
-      newNpub
+      newNpub,
     })
 
     const method = 'PUT'
@@ -533,6 +633,7 @@ export class NoauthBackend {
     return {
       npub: k.npub,
       nip05: k.nip05,
+      name: k.name,
       locked: this.isLocked(k.npub),
     }
   }
@@ -573,11 +674,16 @@ export class NoauthBackend {
     await this.startKey({ npub, sk })
 
     // assign nip05 before adding the key
-    // FIXME set name to db and if this call to 'send' fails
-    // then retry later
     if (!existingName && name && !name.includes('@')) {
       console.log('adding key', npub, name)
-      await this.sendNameToServer(npub, name)
+      try {
+        await this.sendNameToServer(npub, name)
+      } catch (e) {
+        console.log('create name failed', e)
+        // clear it
+        await dbi.editName(npub, '')
+        dbKey.name = ''
+      }
     }
 
     const sub = await this.swg.registration.pushManager.getSubscription()
@@ -586,7 +692,7 @@ export class NoauthBackend {
     return this.keyInfo(dbKey)
   }
 
-  private getPerm(req: DbPending): string {
+  private getDecision(req: DbPending): DECISION {
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
 
@@ -595,27 +701,36 @@ export class NoauthBackend {
     // non-exact next
     if (!perm) perm = appPerms.find((p) => isPackagePerm(p.perm, reqPerm))
 
-    console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
-    return perm?.value || ''
+    if (perm) {
+      console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
+      return perm.value === '1' ? DECISION.ALLOW : DECISION.DISALLOW
+    }
+
+    const conn = appPerms.find((p) => p.perm === 'connect')
+    if (conn && conn.value === '0') {
+      console.log('req', req, 'perm', reqPerm, 'ignore by connect disallow')
+      return DECISION.IGNORE
+    }
+
+    return DECISION.ASK
   }
 
   private async connectApp({
-		npub,
-		appNpub,
-		appUrl,
-		perms,
-		appName = '',
-		appIcon = ''
-	}: { 
-		npub: string, 
-		appNpub: string, 
-		appUrl: string,
-		appName?: string,
-		appIcon?: string, 
-		perms: string[] 
-	}) {
-
-		await dbi.addApp({
+    npub,
+    appNpub,
+    appUrl,
+    perms,
+    appName = '',
+    appIcon = '',
+  }: {
+    npub: string
+    appNpub: string
+    appUrl: string
+    appName?: string
+    appIcon?: string
+    perms: string[]
+  }) {
+    await dbi.addApp({
       appNpub: appNpub,
       npub: npub,
       timestamp: Date.now(),
@@ -650,19 +765,19 @@ export class NoauthBackend {
     method,
     remotePubkey,
     params,
-  }: IAllowCallbackParams): Promise<boolean> {
+  }: IAllowCallbackParams): Promise<DECISION> {
     // same reqs usually come on reconnects
     if (this.doneReqIds.includes(id)) {
       console.log('request already done', id)
       // FIXME maybe repeat the reply, but without the Notification?
-      return false
+      return DECISION.IGNORE
     }
 
     const appNpub = nip19.npubEncode(remotePubkey)
     const connected = !!this.apps.find((a) => a.appNpub === appNpub)
     if (!connected && method !== 'connect') {
       console.log('ignoring request before connect', method, id, appNpub, npub)
-      return false
+      return DECISION.IGNORE
     }
 
     const req: DbPending = {
@@ -677,9 +792,21 @@ export class NoauthBackend {
     const self = this
     return new Promise(async (ok) => {
       // called when it's decided whether to allow this or not
-      const onAllow = async (manual: boolean, allow: boolean, remember: boolean, options?: any) => {
+      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any) => {
         // confirm
-        console.log(Date.now(), allow ? 'allowed' : 'disallowed', npub, method, options, params)
+        console.log(Date.now(), decision, npub, method, options, params)
+
+        switch (decision) {
+          case DECISION.ASK:
+            throw new Error('Make a decision!')
+          case DECISION.IGNORE:
+            return // noop
+          case DECISION.ALLOW:
+          case DECISION.DISALLOW:
+          // fall through
+        }
+
+        const allow = decision === DECISION.ALLOW
 
         if (manual) {
           await dbi.confirmPending(id, allow)
@@ -732,35 +859,40 @@ export class NoauthBackend {
 
           // reload
           this.perms = await dbi.listPerms()
-
-          // confirm pending requests that might now have
-          // the proper perms
-          const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
-          console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
-          for (const r of otherReqs) {
-            let perm = this.getPerm(r.req)
-            if (perm) {
-              r.cb(perm === '1', false)
-            }
-          }
         }
+
+        // release this promise to send reply
+        // to this req
+        ok(decision)
 
         // notify UI that it was confirmed
         // if (!PERF_TEST)
         this.updateUI()
 
-        // return to let nip46 flow proceed
-        ok(allow)
+        // after replying to this req check pending
+        // reqs maybe they can be replied right away
+        if (remember) {
+          // confirm pending requests that might now have
+          // the proper perms
+          const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
+          console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
+          for (const r of otherReqs) {
+            const dec = this.getDecision(r.req)
+            if (dec !== DECISION.ASK) {
+              r.cb(dec, false)
+            }
+          }
+        }
       }
 
       // check perms
-      const perm = this.getPerm(req)
-      console.log(Date.now(), 'perm', req.id, perm)
+      const dec = this.getDecision(req)
+      console.log(Date.now(), 'decision', req.id, dec)
 
       // have perm?
-      if (perm) {
+      if (dec !== DECISION.ASK) {
         // reply immediately
-        onAllow(false, perm === '1', false)
+        onAllow(false, dec, false)
       } else {
         // put pending req to db
         await dbi.addPending(req)
@@ -771,7 +903,7 @@ export class NoauthBackend {
         // put to a list of pending requests
         this.confirmBuffer.push({
           req,
-          cb: (allow, remember, options) => onAllow(true, allow, remember, options),
+          cb: (decision, remember, options) => onAllow(true, decision, remember, options),
         })
 
         // OAuth flow
@@ -804,25 +936,28 @@ export class NoauthBackend {
     ndk.connect()
 
     const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
-    const backend = new NDKNip46Backend(ndk, signer, () => Promise.resolve(true))
-    this.keys.push({ npub, backend, signer, ndk, backoff })
+    const backend = new Nip46Backend(ndk, signer, this.allowPermitCallback.bind(this)) // , () => Promise.resolve(true)
+    const watcher = new Watcher(ndk, signer, (id) => {
+      // drop pending request
+      dbi.removePending(id).then(() => this.updateUI())
+    })
+    this.keys.push({ npub, backend, signer, ndk, backoff, watcher })
 
     // new method
-    backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
+    // backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
 
-    // assign our own permission callback
-    for (const method in backend.handlers) {
-      backend.handlers[method] = new EventHandlingStrategyWrapper(
-        backend,
-        npub,
-        method,
-        backend.handlers[method],
-        this.allowPermitCallback.bind(this)
-      )
-    }
+    // // assign our own permission callback
+    // for (const method in backend.handlers) {
+    //   backend.handlers[method] = new EventHandlingStrategyWrapper(
+    //     backend,
+    //     method,
+    //     backend.handlers[method]
+    //   )
+    // }
 
     // start
     backend.start()
+    watcher.start()
     console.log('started', npub)
 
     // backoff reset on successfull connection
@@ -846,10 +981,12 @@ export class NoauthBackend {
       const bo = self.keys.find((k) => k.npub === npub)?.backoff || 1000
       setTimeout(() => {
         console.log(new Date(), 'reconnect relays for key', npub, 'backoff', bo)
-        // @ts-ignore
         for (const r of ndk.pool.relays.values()) r.disconnect()
         // make sure it no longer activates
         backend.handlers = {}
+
+        // stop watching
+        watcher.stop()
 
         self.keys = self.keys.filter((k) => k.npub !== npub)
         self.startKey({ npub, sk, backoff: Math.min(bo * 2, 60000) })
@@ -861,6 +998,27 @@ export class NoauthBackend {
       r.on('connect', onConnect)
       r.on('disconnect', onDisconnect)
     }
+
+    const pendingEvents = this.pendingNpubEvents.get(npub)
+    if (pendingEvents) {
+      this.pendingNpubEvents.delete(npub)
+      for (const e of pendingEvents) {
+        backend.processEvent(e)
+      }
+    }
+  }
+
+  private async fetchPendingRequests(npub: string, appNpub: string) {
+    const { data: pubkey } = nip19.decode(npub)
+    const { data: appPubkey } = nip19.decode(appNpub)
+
+    const events = await this.ndk.fetchEvents({
+      kinds: [KIND_RPC],
+      '#p': [pubkey as string],
+      authors: [appPubkey as string],
+    })
+    console.log('fetched pending for', npub, events.size)
+    this.pendingNpubEvents.set(npub, [...events.values()])
   }
 
   public async unlock(npub: string) {
@@ -977,7 +1135,7 @@ export class NoauthBackend {
       this.updateUI()
     } else {
       console.log('confirming req', id, allow, remember, options)
-      req.cb(allow, remember, options)
+      req.cb(allow ? DECISION.ALLOW : DECISION.DISALLOW, remember, options)
     }
   }
 
@@ -996,10 +1154,15 @@ export class NoauthBackend {
   }
 
   private async editName(npub: string, name: string) {
-    const key = this.enckeys.find(k => k.npub === npub)
-    if (!key) throw new Error("Npub not found");
+    const key = this.enckeys.find((k) => k.npub == npub)
+    if (!key) throw new Error('Npub not found')
     if (key.name) {
-      await this.sendDeleteNameToServer(npub, key.name)
+      try {
+        await this.sendDeleteNameToServer(npub, key.name)
+      } catch (e: any) {
+        if (e.cause && e.cause.status !== 404) throw e
+        console.log("Deleted name didn't exist")
+      }
     }
     if (name) {
       await this.sendNameToServer(npub, name)
@@ -1072,6 +1235,8 @@ export class NoauthBackend {
         result = await this.transferName(args[0], args[1], args[2])
       } else if (method === 'enablePush') {
         result = await this.enablePush()
+      } else if (method === 'fetchPendingRequests') {
+        result = await this.fetchPendingRequests(args[0], args[1])
       } else {
         console.log('unknown method from UI ', method)
       }

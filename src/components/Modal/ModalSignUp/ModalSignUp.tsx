@@ -4,7 +4,6 @@ import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography, useTheme } from '@mui/material'
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import { StyledAppLogo } from './styled'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import { CheckmarkIcon } from '@/assets'
@@ -61,9 +60,15 @@ export const ModalSignUp = () => {
     try {
       setIsLoading(true)
       const k: any = await swicCall('generateKey', name)
-      notify(`Account created for "${name}"`, 'success')
-      navigate(`/key/${k.npub}`)
+      if (k.name)
+        notify(`Account created for "${k.name}"`, 'success')
+      else
+        notify(`Failed to assign name "${name}", try again`, 'error')
       setIsLoading(false)
+      setTimeout(() => {
+        // give frontend time to read the new key first
+        navigate(`/key/${k.npub}`)
+      }, 300)
     } catch (error: any) {
       notify(error?.message || 'Something went wrong!', 'error')
       setIsLoading(false)
@@ -81,12 +86,14 @@ export const ModalSignUp = () => {
   }, [isModalOpened])
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal}>
+    <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
       <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit}>
-        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
-          <StyledAppLogo />
+        <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
           <Typography fontWeight={600} variant="h5">
             Sign up
+          </Typography>
+          <Typography noWrap variant="body2" color={'GrayText'}>
+            Generate new Nostr keys
           </Typography>
         </Stack>
         <Input
@@ -110,9 +117,11 @@ export const ModalSignUp = () => {
             },
           }}
         />
-        <Button fullWidth type="submit" disabled={isLoading}>
-          Create account {isLoading && <LoadingSpinner />}
-        </Button>
+        <Stack gap={'0.5rem'}>
+          <Button fullWidth type="submit" disabled={isLoading}>
+            Create account {isLoading && <LoadingSpinner />}
+          </Button>
+        </Stack>
       </Stack>
     </Modal>
   )
