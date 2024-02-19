@@ -100,7 +100,7 @@ export const ModalLogin = () => {
       if (isPopup && isModalOpened) {
         swicCall('fetchPendingRequests', npub, appNpub)
 
-        fetchNpubNames(npub).then(names => {
+        fetchNpubNames(npub).then((names) => {
           if (names.length) {
             setValue('username', `${names[0]}@${DOMAIN}`)
           }
