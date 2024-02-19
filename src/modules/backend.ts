@@ -693,7 +693,7 @@ export class NoauthBackend {
   }
 
   private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
-    if (!(req.method in backend.handlers)) return DECISION.IGNORE;
+    if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
@@ -913,12 +913,22 @@ export class NoauthBackend {
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
         const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
-        // NOTE: if you set 'Update on reload' in the Chrome SW console
-        // then this message will cause a new tab opened by the peer,
-        // which will cause SW (this code) to reload, to fetch
-        // the pending requests and to re-send this event,
-        // looping for 10 seconds (our request age threshold)
-        backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+
+        // NOTE: don't send auth_url immediately, wait some time
+        // to make sure other bunkers aren't replying
+        setTimeout(() => {
+          // request still there? (not dropped by the watcher)
+          if (self.confirmBuffer.find((r) => r.req.id === id)) {
+            // NOTE: if you set 'Update on reload' in the Chrome SW console
+            // then this message will cause a new tab opened by the peer,
+            // which will cause SW (this code) to reload, to fetch
+            // the pending requests and to re-send this event,
+            // looping for 10 seconds (our request age threshold)
+            backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+          } else {
+            console.log("skip sending auth_url")
+          }
+        }, 500)
 
         // show notifs
         // this.notify()
@@ -941,6 +951,8 @@ export class NoauthBackend {
     const backend = new Nip46Backend(ndk, signer, this.allowPermitCallback.bind(this)) // , () => Promise.resolve(true)
     const watcher = new Watcher(ndk, signer, (id) => {
       // drop pending request
+      const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
+      if (index >= 0) self.confirmBuffer.splice(index, 1)
       dbi.removePending(id).then(() => this.updateUI())
     })
     this.keys.push({ npub, backend, signer, ndk, backoff, watcher })
@@ -1156,7 +1168,7 @@ export class NoauthBackend {
   }
 
   private async editName(npub: string, name: string) {
-    const key = this.enckeys.find((k) => k.npub == npub)
+    const key = this.enckeys.find((k) => k.npub === npub)
     if (!key) throw new Error('Npub not found')
     if (key.name) {
       try {
@@ -1175,10 +1187,10 @@ export class NoauthBackend {
   }
 
   private async transferName(npub: string, name: string, newNpub: string) {
-    const key = this.enckeys.find(k => k.npub === npub)
-    if (!key) throw new Error("Npub not found")
-    if (!name) throw new Error("Empty name")
-    if (key.name !== name) throw new Error("Name changed, please reload")
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+    if (!name) throw new Error('Empty name')
+    if (key.name !== name) throw new Error('Name changed, please reload')
     await this.sendTransferNameToServer(npub, key.name, newNpub)
     await dbi.editName(npub, '')
     key.name = ''
