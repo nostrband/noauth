@@ -10,6 +10,7 @@ export enum MODAL_PARAMS_KEYS {
   CONFIRM_EVENT = 'confirm-event',
   ACTIVITY = 'activity',
   APP_DETAILS = 'app-details',
+  EDIT_NAME = 'edit-name',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

@@ -39,9 +39,9 @@ const StyledButton = styled(
       background: theme.palette.primary.main,
     },
     color: theme.palette.text.secondary,
-    '&.disabled': {
+    '&.button.disabled': {
       color: theme.palette.text.secondary,
-      background: `${theme.palette.primary.main}50`,
+      background: `${theme.palette.primary.main}75`,
       cursor: 'not-allowed',
     },
   }

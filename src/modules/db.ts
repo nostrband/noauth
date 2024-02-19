@@ -89,6 +89,16 @@ export const dbi = {
       return []
     }
   },
+  editName: async (npub: string, name: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        name,
+      })
+    } catch (error) {
+      console.log(`db editName error: ${error}`)
+      return
+    }
+  },
   getApp: async (appNpub: string) => {
     try {
       return await db.apps.get(appNpub)
