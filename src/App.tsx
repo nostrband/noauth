@@ -9,16 +9,17 @@ import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
 import { ModalImportKeys } from './components/Modal/ModalImportKeys/ModalImportKeys'
 import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
 import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
+import { useSearchParams } from 'react-router-dom'
 
 function App() {
   const [render, setRender] = useState(0)
   const dispatch = useAppDispatch()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [isConnected, setIsConnected] = useState(false)
 
   const load = useCallback(async () => {
     const keys: DbKey[] = await dbi.listKeys()
-    // console.log(keys, 'keys')
 
     dispatch(setKeys({ keys }))
     const loadProfiles = async () => {
@@ -55,7 +56,6 @@ function App() {
     // rerender
     //		setRender((r) => r + 1)
 
-    // if (!keys.length) handleOpen(MODAL_PARAMS_KEYS.INITIAL)
     // eslint-disable-next-line
   }, [dispatch])
 
@@ -80,12 +80,14 @@ function App() {
   // subscribe to service worker updates
   swicOnReload(() => {
     console.log('reload')
-    // FIXME show 'Please reload' badge at page top
+    searchParams.set('reload', 'true')
+    setSearchParams(searchParams)
   })
 
   return (
     <>
       <AppRoutes />
+
       <ModalInitial />
       <ModalImportKeys />
       <ModalSignUp />

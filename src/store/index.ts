@@ -2,16 +2,7 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { contentSlice } from './reducers/content.slice'
 import { uiSlice } from './reducers/ui.slice'
 
-import {
-  persistStore,
-  persistReducer,
-  // FLUSH,
-  // REGISTER,
-  // REHYDRATE,
-  // PAUSE,
-  // PERSIST,
-  // PURGE,
-} from 'redux-persist'
+import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
 import memoizeOne from 'memoize-one'
 import isDeepEqual from 'lodash.isequal'

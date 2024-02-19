@@ -13,7 +13,7 @@ import { DOMAIN } from '@/utils/consts'
 import { fetchNip05 } from '@/utils/helpers/helpers'
 import { Stack, Typography, useTheme } from '@mui/material'
 import { ChangeEvent, Fragment, useCallback, useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import { StyledSettingContainer } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
@@ -55,7 +55,7 @@ export const ModalEditName = () => {
       setIsAvailable(true)
       setIsChecking(false)
     }
-  }, [debouncedName])
+  }, [debouncedName, npub])
 
   useEffect(() => {
     checkIsUsernameAvailable()

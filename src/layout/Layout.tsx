@@ -1,13 +1,17 @@
 import { FC } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useSearchParams } from 'react-router-dom'
 import { Header } from './Header/Header'
-import { Container, ContainerProps, Divider, DividerProps, styled } from '@mui/material'
+import { Container, ContainerProps, styled } from '@mui/material'
+import { ReloadBadge } from '@/components/ReloadBadge/ReloadBadge'
 
 export const Layout: FC = () => {
+  const [searchParams] = useSearchParams()
+  const needReload = searchParams.get('reload') === 'true'
+
   return (
-    <StyledContainer maxWidth="md">
+    <StyledContainer maxWidth="md" className={needReload ? 'reload' : ''}>
+      <ReloadBadge />
       <Header />
-      <StyledDivider />
       <main>
         <Outlet />
       </main>
@@ -21,17 +25,11 @@ const StyledContainer = styled((props: ContainerProps) => <Container maxWidth="s
   flexDirection: 'column',
   paddingBottom: '1rem',
   position: 'relative',
-  '& > main': {
+  '&': {
     flex: 1,
     maxHeight: '100%',
+  },
+  '&:not(.reload) > main': {
     paddingTop: 'calc(66px + 1rem)',
   },
-})
-
-const StyledDivider = styled((props: DividerProps) => <Divider {...props} />)({
-  position: 'absolute',
-  top: '66px',
-  width: '100%',
-  left: 0,
-  height: '2px',
 })
