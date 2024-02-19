@@ -16,7 +16,7 @@ export enum ACTION_TYPE {
 }
 
 export const ACTIONS: { [type: string]: string } = {
-	basic: 'Basic permissions',
+  basic: 'Basic permissions',
   get_public_key: 'Get public key',
   sign_event: 'Sign event',
   connect: 'Connect',

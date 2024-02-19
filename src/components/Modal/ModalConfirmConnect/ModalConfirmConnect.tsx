@@ -73,11 +73,11 @@ export const ModalConfirmConnect = () => {
   useEffect(() => {
     if (isModalOpened) {
       if (isPopup) {
-        console.log("waiting for sw")
+        console.log('waiting for sw')
         // wait for SW to start
         swicWaitStarted().then(() => {
           // give it some time to load the pending reqs etc
-          console.log("waiting for sw done")
+          console.log('waiting for sw done')
           setTimeout(() => setIsLoaded(true), 500)
         })
       } else {
@@ -123,7 +123,6 @@ export const ModalConfirmConnect = () => {
       const options = { perms, appUrl }
       await confirmPending(pendingReqId, true, true, options)
     } else {
-
       try {
         await askNotificationPermission()
         const result = await swicCall('enablePush')

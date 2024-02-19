@@ -43,7 +43,7 @@ export function isWeakPassphase(passphrase: string): boolean {
   const compl = Math.pow(base, passphrase.length)
   const thresh = Math.pow(11, 14)
   // console.log({ big, small, number, punct, base, compl, thresh });
-  return compl < thresh; 
+  return compl < thresh
 }
 
 export class Keys {

@@ -693,7 +693,7 @@ export class NoauthBackend {
   }
 
   private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
-    if (!(req.method in backend.handlers)) return DECISION.IGNORE;
+    if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
@@ -1175,10 +1175,10 @@ export class NoauthBackend {
   }
 
   private async transferName(npub: string, name: string, newNpub: string) {
-    const key = this.enckeys.find(k => k.npub === npub)
-    if (!key) throw new Error("Npub not found")
-    if (!name) throw new Error("Empty name")
-    if (key.name !== name) throw new Error("Name changed, please reload")
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+    if (!name) throw new Error('Empty name')
+    if (key.name !== name) throw new Error('Name changed, please reload')
     await this.sendTransferNameToServer(npub, key.name, newNpub)
     await dbi.editName(npub, '')
     key.name = ''

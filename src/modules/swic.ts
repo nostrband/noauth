@@ -20,8 +20,8 @@ export async function swicRegister() {
     },
     onUpdate() {
       // tell new SW that it should activate immediately
-      swr?.waiting?.postMessage({type: 'SKIP_WAITING'})
-    }
+      swr?.waiting?.postMessage({ type: 'SKIP_WAITING' })
+    },
   })
 
   navigator.serviceWorker.ready.then(async (r) => {
@@ -33,8 +33,7 @@ export async function swicRegister() {
       console.log('This page is not currently controlled by a service worker.')
     }
 
-    while (queue.length)
-      await (queue.shift()!)()
+    while (queue.length) await queue.shift()!()
   })
 
   navigator.serviceWorker.addEventListener('message', (event) => {
@@ -43,11 +42,11 @@ export async function swicRegister() {
 }
 
 export function swicWaitStarted() {
-  return new Promise<void>(ok => {
+  return new Promise<void>((ok) => {
     if (swr && swr.active) ok()
     else queue.push(ok)
   })
-} 
+}
 
 function onMessage(data: any) {
   const { id, result, error } = data
@@ -78,7 +77,6 @@ export async function swicCall(method: string, ...args: any[]) {
   nextReqId++
 
   return new Promise((ok, rej) => {
-
     const call = async () => {
       if (!swr || !swr.active) {
         rej(new Error('No active service worker'))
