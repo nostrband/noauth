@@ -1,6 +1,6 @@
 import { DbKey, dbi } from './modules/db'
 import { useCallback, useEffect, useState } from 'react'
-import { swicOnRender } from './modules/swic'
+import { swicOnReload, swicOnRender } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
@@ -75,6 +75,12 @@ function App() {
   swicOnRender(() => {
     console.log('render')
     setRender((r) => r + 1)
+  })
+
+  // subscribe to service worker updates
+  swicOnReload(() => {
+    console.log('reload')
+    // FIXME show 'Please reload' badge at page top
   })
 
   return (

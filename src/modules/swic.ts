@@ -1,10 +1,12 @@
-// service-worker client interface
+// service-worker client interface,
+// works on the frontend, not sw
 import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
 
 export let swr: ServiceWorkerRegistration | null = null
 const reqs = new Map<number, { ok: (r: any) => void; rej: (r: any) => void }>()
 let nextReqId = 1
 let onRender: (() => void) | null = null
+let onReload: (() => void) | null = null
 const queue: (() => Promise<void> | void)[] = []
 
 export async function swicRegister() {
@@ -14,8 +16,12 @@ export async function swicRegister() {
       swr = registration
     },
     onError(e) {
-      console.log(`error ${e}`)
+      console.log('sw error', e)
     },
+    onUpdate() {
+      // tell new SW that it should activate immediately
+      swr?.waiting?.postMessage({type: 'SKIP_WAITING'})
+    }
   })
 
   navigator.serviceWorker.ready.then(async (r) => {
@@ -48,7 +54,11 @@ function onMessage(data: any) {
   console.log('SW message', id, result, error)
 
   if (!id) {
-    if (onRender) onRender()
+    if (result === 'reload') {
+      if (onReload) onReload()
+    } else {
+      if (onRender) onRender()
+    }
     return
   }
 
@@ -92,4 +102,8 @@ export async function swicCall(method: string, ...args: any[]) {
 
 export function swicOnRender(cb: () => void) {
   onRender = cb
+}
+
+export function swicOnReload(cb: () => void) {
+  onReload = cb
 }

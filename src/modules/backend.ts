@@ -28,6 +28,7 @@ enum DECISION {
 export interface KeyInfo {
   npub: string
   nip05?: string
+  name?: string
   locked: boolean
 }
 
@@ -245,13 +246,8 @@ export class NoauthBackend {
 
     const self = this
     swg.addEventListener('activate', (event) => {
-      console.log('activate')
-      //			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
-    })
-
-    swg.addEventListener('install', (event) => {
-      console.log('install')
-      //			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
+      console.log('activate new sw worker')
+      this.reloadUI()
     })
 
     swg.addEventListener('push', (event) => {
@@ -366,7 +362,7 @@ export class NoauthBackend {
     if (r.status !== 200 && r.status !== 201) {
       console.log('Fetch error', url, method, r.status)
       const body = await r.json()
-      throw new Error('Failed to fetch ' + url, { cause: body })
+      throw new Error('Failed to fetch ' + url, { cause: { body, status: r.status } })
     }
 
     return await r.json()
@@ -501,7 +497,7 @@ export class NoauthBackend {
         })
       } catch (e: any) {
         console.log('error', e.cause)
-        if (e.cause && e.cause.minPow > pow) pow = e.cause.minPow
+        if (e.cause && e.cause.body && e.cause.body.minPow > pow) pow = e.cause.body.minPow
         else throw e
       }
     }
@@ -637,6 +633,7 @@ export class NoauthBackend {
     return {
       npub: k.npub,
       nip05: k.nip05,
+      name: k.name,
       locked: this.isLocked(k.npub),
     }
   }
@@ -677,11 +674,16 @@ export class NoauthBackend {
     await this.startKey({ npub, sk })
 
     // assign nip05 before adding the key
-    // FIXME set name to db and if this call to 'send' fails
-    // then retry later
     if (!existingName && name && !name.includes('@')) {
       console.log('adding key', npub, name)
-      await this.sendNameToServer(npub, name)
+      try {
+        await this.sendNameToServer(npub, name)
+      } catch (e) {
+        console.log('create name failed', e)
+        // clear it
+        await dbi.editName(npub, '')
+        dbKey.name = ''
+      }
     }
 
     const sub = await this.swg.registration.pushManager.getSubscription()
@@ -1155,7 +1157,12 @@ export class NoauthBackend {
     const key = this.enckeys.find((k) => k.npub == npub)
     if (!key) throw new Error('Npub not found')
     if (key.name) {
-      await this.sendDeleteNameToServer(npub, key.name)
+      try {
+        await this.sendDeleteNameToServer(npub, key.name)
+      } catch (e: any) {
+        if (e.cause && e.cause.status !== 404) throw e
+        console.log("Deleted name didn't exist")
+      }
     }
     if (name) {
       await this.sendNameToServer(npub, name)
@@ -1166,10 +1173,10 @@ export class NoauthBackend {
   }
 
   private async transferName(npub: string, name: string, newNpub: string) {
-    const key = this.enckeys.find((k) => k.npub == npub)
-    if (!key) throw new Error('Npub not found')
-    if (!name) throw new Error('Empty name')
-    if (key.name !== name) throw new Error('Name changed, please reload')
+    const key = this.enckeys.find(k => k.npub === npub)
+    if (!key) throw new Error("Npub not found")
+    if (!name) throw new Error("Empty name")
+    if (key.name !== name) throw new Error("Name changed, please reload")
     await this.sendTransferNameToServer(npub, key.name, newNpub)
     await dbi.editName(npub, '')
     key.name = ''
@@ -1256,10 +1263,20 @@ export class NoauthBackend {
     }
   }
 
+  private async reloadUI() {
+    const clients = await this.swg.clients.matchAll({
+      includeUncontrolled: true,
+    })
+    console.log('reloadUI clients', clients.length)
+    for (const client of clients) {
+      client.postMessage({ result: 'reload' })
+    }
+  }
+
   public async onPush(event: any) {
     console.log('push', { data: event.data })
     // noop - we just need browser to launch this worker
     // FIXME use event.waitUntil and and unblock after we
-    // show a notification
+    // show a notification to avoid annoying the browser
   }
 }
