@@ -144,13 +144,8 @@ export class NoauthBackend {
 
     const self = this
     swg.addEventListener('activate', (event) => {
-      console.log('activate')
-      //			swg.addEventListener('activate', event => event.waitUntil(swg.clients.claim()));
-    })
-
-    swg.addEventListener('install', (event) => {
-      console.log('install')
-      //			swg.addEventListener('install', event => event.waitUntil(swg.skipWaiting()));
+      console.log('activate new sw worker')
+      this.reloadUI()
     })
 
     swg.addEventListener('push', (event) => {
@@ -1001,7 +996,7 @@ export class NoauthBackend {
   }
 
   private async editName(npub: string, name: string) {
-    const key = this.enckeys.find(k => k.npub == npub)
+    const key = this.enckeys.find(k => k.npub === npub)
     if (!key) throw new Error("Npub not found");
     if (key.name) {
       await this.sendDeleteNameToServer(npub, key.name)
@@ -1015,7 +1010,7 @@ export class NoauthBackend {
   }
 
   private async transferName(npub: string, name: string, newNpub: string) {
-    const key = this.enckeys.find(k => k.npub == npub)
+    const key = this.enckeys.find(k => k.npub === npub)
     if (!key) throw new Error("Npub not found")
     if (!name) throw new Error("Empty name")
     if (key.name !== name) throw new Error("Name changed, please reload")
@@ -1103,10 +1098,20 @@ export class NoauthBackend {
     }
   }
 
+  private async reloadUI() {
+    const clients = await this.swg.clients.matchAll({
+      includeUncontrolled: true,
+    })
+    console.log('reloadUI clients', clients.length)
+    for (const client of clients) {
+      client.postMessage({ result: 'reload' })
+    }
+  }
+
   public async onPush(event: any) {
     console.log('push', { data: event.data })
     // noop - we just need browser to launch this worker
     // FIXME use event.waitUntil and and unblock after we
-    // show a notification
+    // show a notification to avoid annoying the browser
   }
 }
