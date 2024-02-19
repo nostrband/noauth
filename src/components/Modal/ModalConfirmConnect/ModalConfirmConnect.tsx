@@ -95,8 +95,10 @@ export const ModalConfirmConnect = () => {
     const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
     // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
     if (isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
-      if (isPopup) window.close()
-      else closeModalAfterRequest()
+      // if (isPopup) window.close()
+      // else closeModalAfterRequest()
+      if (!isPopup)
+        closeModalAfterRequest()
       return null
     }
   }
