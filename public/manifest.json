@@ -1,6 +1,6 @@
 {
-  "name": "Nsec.app",
-  "short_name": "Nsec.app - Nostr key management tool",
+  "name": "Nsec.app - Nostr key management tool",
+  "short_name": "Nsec.app",
   "start_url": ".",
   "icons": [
     {
