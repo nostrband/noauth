@@ -48,7 +48,7 @@ interface Pending {
 }
 
 interface IAllowCallbackParams {
-  backend: NDKNip46Backend
+  backend: Nip46Backend
   npub: string
   id: string
   method: string
@@ -692,7 +692,9 @@ export class NoauthBackend {
     return this.keyInfo(dbKey)
   }
 
-  private getDecision(req: DbPending): DECISION {
+  private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
+    if (!(req.method in backend.handlers)) return DECISION.IGNORE;
+
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
 
@@ -877,7 +879,7 @@ export class NoauthBackend {
           const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
           console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
           for (const r of otherReqs) {
-            const dec = this.getDecision(r.req)
+            const dec = this.getDecision(backend, r.req)
             if (dec !== DECISION.ASK) {
               r.cb(dec, false)
             }
@@ -886,7 +888,7 @@ export class NoauthBackend {
       }
 
       // check perms
-      const dec = this.getDecision(req)
+      const dec = this.getDecision(backend, req)
       console.log(Date.now(), 'decision', req.id, dec)
 
       // have perm?
