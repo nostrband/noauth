@@ -6,7 +6,6 @@ import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography, useTheme } from '@mui/material'
-import { StyledAppLogo } from './styled'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
@@ -149,12 +148,14 @@ export const ModalImportKeys = () => {
   const nsecHelperText = getNsecHelperText()
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal}>
-      <Stack gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
-        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} alignSelf={'flex-start'}>
-          <StyledAppLogo />
+    <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
+      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+        <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
           <Typography fontWeight={600} variant="h5">
             Import key
+          </Typography>
+          <Typography noWrap variant="body2" color={'GrayText'}>
+            Bring your existing Nostr keys to Nsec.app
           </Typography>
         </Stack>
         <Input
