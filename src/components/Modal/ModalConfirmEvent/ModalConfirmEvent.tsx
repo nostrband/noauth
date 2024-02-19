@@ -83,8 +83,10 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
     // console.log("confirm event", { confirmEventReqs, isModalOpened, isNpubExists, isAppNpubExists });
     if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
-      if (isPopup) window.close()
-      else closeModalAfterRequest()
+      // if (isPopup) window.close()
+      // else closeModalAfterRequest()
+      if (!isPopup)
+        closeModalAfterRequest()
       return null
     }
   }
