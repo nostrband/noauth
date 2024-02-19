@@ -68,7 +68,6 @@ export const ModalAppDetails = () => {
     if (isEmptyString(url)) return
 
     try {
-
       const u = new URL(url)
 
       if (isEmptyString(name)) setDetails((prev) => ({ ...prev, name: u.hostname }))

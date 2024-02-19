@@ -1,7 +1,7 @@
-import { Avatar, Stack, Toolbar, Typography } from '@mui/material'
+import { Avatar, Stack, Toolbar, Typography, Divider, DividerProps, styled } from '@mui/material'
 import { StyledAppBar, StyledAppLogo, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
 import { Menu } from './components/Menu'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
 import { useProfile } from '@/hooks/useProfile'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
@@ -13,6 +13,8 @@ export const Header = () => {
   const themeMode = useAppSelector((state) => state.ui.themeMode)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
+  const [searchParams] = useSearchParams()
+  const needReload = searchParams.get('reload') === 'true'
 
   const { npub = '' } = useParams<{ npub: string }>()
   const { userName, userAvatar, avatarTitle } = useProfile(npub)
@@ -30,7 +32,7 @@ export const Header = () => {
   }
 
   return (
-    <StyledAppBar position="fixed">
+    <StyledAppBar position={needReload ? 'relative' : 'fixed'}>
       <Toolbar sx={{ padding: '12px' }}>
         <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
           {showProfile && (
@@ -56,6 +58,15 @@ export const Header = () => {
           {showProfile ? <ProfileMenu /> : <Menu />}
         </Stack>
       </Toolbar>
+      <StyledDivider />
     </StyledAppBar>
   )
 }
+
+const StyledDivider = styled((props: DividerProps) => <Divider {...props} />)({
+  position: 'absolute',
+  bottom: 0,
+  width: '100%',
+  left: 0,
+  height: '2px',
+})
