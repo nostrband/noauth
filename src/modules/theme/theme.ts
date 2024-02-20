@@ -21,6 +21,7 @@ const commonTheme: Theme = createTheme({
       styleOverrides: {
         root: {
           textTransform: 'initial',
+          color: 'red',
         },
       },
     },
@@ -95,5 +96,7 @@ const darkTheme: Theme = createTheme({
     },
   },
 })
+
+console.log(darkTheme)
 
 export { lightTheme, darkTheme }
