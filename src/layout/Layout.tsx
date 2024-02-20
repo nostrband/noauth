@@ -1,15 +1,17 @@
 import { FC } from 'react'
-import { Outlet, useSearchParams } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { Header } from './Header/Header'
 import { Container, ContainerProps, styled } from '@mui/material'
 import { ReloadBadge } from '@/components/ReloadBadge/ReloadBadge'
+import { useSessionStorage } from 'usehooks-ts'
+import { RELOAD_STORAGE_KEY } from '@/utils/consts'
 
 export const Layout: FC = () => {
-  const [searchParams] = useSearchParams()
-  const needReload = searchParams.get('reload') === 'true'
+  const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
+  const containerClassName = needReload ? 'reload' : ''
 
   return (
-    <StyledContainer maxWidth="md" className={needReload ? 'reload' : ''}>
+    <StyledContainer maxWidth="md" className={containerClassName}>
       <ReloadBadge />
       <Header />
       <main>
