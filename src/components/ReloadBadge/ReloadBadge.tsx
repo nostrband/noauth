@@ -1,16 +1,14 @@
-import { FC } from 'react'
+import { FC, memo, useCallback } from 'react'
 import { Collapse, Stack, Typography } from '@mui/material'
-import { useSearchParams } from 'react-router-dom'
 import { StyledAlert, StyledReloadButton } from './styled'
+import { useSessionStorage } from 'usehooks-ts'
+import { RELOAD_STORAGE_KEY } from '@/utils/consts'
 
-const ReloadBadgeContent: FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
+type ReloadBadgeContentProps = {
+  onReload: () => void
+}
 
-  const handleReload = () => {
-    searchParams.delete('reload')
-    setSearchParams(searchParams)
-    window.location.reload()
-  }
+const ReloadBadgeContent: FC<ReloadBadgeContentProps> = memo(({ onReload }) => {
   return (
     <Collapse in>
       <StyledAlert>
@@ -18,16 +16,20 @@ const ReloadBadgeContent: FC = () => {
           <Typography flex={1} className="title">
             New version available!
           </Typography>
-          <StyledReloadButton onClick={handleReload}>Reload</StyledReloadButton>
+          <StyledReloadButton onClick={onReload}>Reload</StyledReloadButton>
         </Stack>
       </StyledAlert>
     </Collapse>
   )
-}
+})
 
 export const ReloadBadge = () => {
-  const [searchParams] = useSearchParams()
-  const open = searchParams.get('reload') === 'true'
+  const [needReload, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
 
-  return <>{open && <ReloadBadgeContent />}</>
+  const handleReload = useCallback(() => {
+    setNeedReload(false)
+    window.location.reload()
+  }, [setNeedReload])
+
+  return <>{needReload && <ReloadBadgeContent onReload={handleReload} />}</>
 }

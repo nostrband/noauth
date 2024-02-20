@@ -1,20 +1,21 @@
 import { Avatar, Stack, Toolbar, Typography, Divider, DividerProps, styled } from '@mui/material'
 import { StyledAppBar, StyledAppLogo, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
 import { Menu } from './components/Menu'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
 import { useProfile } from '@/hooks/useProfile'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
 import { setThemeMode } from '@/store/reducers/ui.slice'
+import { useSessionStorage } from 'usehooks-ts'
+import { RELOAD_STORAGE_KEY } from '@/utils/consts'
 
 export const Header = () => {
   const themeMode = useAppSelector((state) => state.ui.themeMode)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const [searchParams] = useSearchParams()
-  const needReload = searchParams.get('reload') === 'true'
+  const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
 
   const { npub = '' } = useParams<{ npub: string }>()
   const { userName, userAvatar, avatarTitle } = useProfile(npub)

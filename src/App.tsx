@@ -9,12 +9,15 @@ import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
 import { ModalImportKeys } from './components/Modal/ModalImportKeys/ModalImportKeys'
 import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
 import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
-import { useSearchParams } from 'react-router-dom'
+import { useSessionStorage } from 'usehooks-ts'
+import { RELOAD_STORAGE_KEY } from './utils/consts'
 
 function App() {
   const [render, setRender] = useState(0)
   const dispatch = useAppDispatch()
-  const [searchParams, setSearchParams] = useSearchParams()
+
+  // eslint-disable-next-line
+  const [_, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
 
   const [isConnected, setIsConnected] = useState(false)
 
@@ -80,14 +83,24 @@ function App() {
   // subscribe to service worker updates
   swicOnReload(() => {
     console.log('reload')
-    searchParams.set('reload', 'true')
-    setSearchParams(searchParams)
+    setNeedReload(true)
   })
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      setNeedReload(false)
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+    // eslint-disable-next-line
+  }, [])
 
   return (
     <>
       <AppRoutes />
-
       <ModalInitial />
       <ModalImportKeys />
       <ModalSignUp />

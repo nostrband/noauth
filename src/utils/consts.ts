@@ -9,6 +9,8 @@ export const MAX_POW = 19
 
 export const KIND_RPC = 24133
 
+export const RELOAD_STORAGE_KEY = 'reload'
+
 export enum ACTION_TYPE {
   BASIC = 'basic',
   ADVANCED = 'advanced',
