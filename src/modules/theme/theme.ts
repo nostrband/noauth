@@ -1,13 +1,4 @@
-import { InterExtraLight, InterLight, InterRegular, InterMedium, InterSemiBold, InterBold } from '@/assets/fonts'
 import { createTheme, Theme } from '@mui/material'
-// import '@fontsource/inter'
-// import '@fontsource/inter/300.css'
-// import '@fontsource/inter' // Defaults to weight 400
-// import '@fontsource/inter/500.css'
-// import '@fontsource/inter/600.css'
-// import '@fontsource/inter/700.css'
-// import '@fontsource/inter/800.css'
-// import '@fontsource/inter/900.css'
 
 declare module '@mui/material/styles' {
   interface Palette {
@@ -26,13 +17,6 @@ const commonTheme: Theme = createTheme({
     fontFamily: ['Inter', 'sans-serif'].join(','),
   },
   components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        '@global': {
-          '@font-face': [InterExtraLight, InterLight, InterRegular, InterMedium, InterSemiBold, InterBold],
-        },
-      },
-    },
     MuiButton: {
       styleOverrides: {
         root: {
