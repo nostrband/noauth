@@ -9,7 +9,8 @@ export const StyledButton = styled((props: ButtonProps) => (
       startIcon: 'icon',
     }}
   />
-))(() => ({
+))(({ theme }) => ({
+  color: theme.palette.primary.main,
   marginBottom: '0.5rem',
   borderRadius: '8px',
   '&:is(:hover,:active)': {
@@ -17,5 +18,8 @@ export const StyledButton = styled((props: ButtonProps) => (
   },
   '& .icon': {
     marginRight: '5px',
+  },
+  '@media screen and (max-width: 320px)': {
+    marginBottom: '0.25rem',
   },
 }))

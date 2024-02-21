@@ -1,8 +1,11 @@
-import React, { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
+import { StyledAppIcon, StyledAppImg } from './styled'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
+import { IIconApp } from './types'
 
 const failedCache = new Map<string, boolean>()
 
-export const IconApp: FC<{ picture: string }> = ({ picture }) => {
+export const IconApp: FC<IIconApp> = ({ picture = '', alt, isRounded, isSmall, onClick, size, ...rest }) => {
   const c = failedCache.get(picture)
   const [isFailed, setIsFailed] = useState(c !== undefined ? c : true)
 
@@ -26,5 +29,21 @@ export const IconApp: FC<{ picture: string }> = ({ picture }) => {
     }
   }, [picture])
 
-  return <div>IconApp</div>
+  return (
+    <StyledAppIcon isNotLoaded={isFailed} size={size} onClick={onClick} {...rest}>
+      {alt ? (
+        <StyledAppImg size={size} alt={alt} isSmall={isSmall} src={isFailed ? '' : picture}>
+          {isFailed && (
+            <div className="MuiAvatar-root MuiAvatar-square MuiAvatar-colorDefault">
+              {alt.substring(0, 1).toUpperCase()}
+            </div>
+          )}
+        </StyledAppImg>
+      ) : (
+        <StyledAppImg size={size} alt={alt} isSmall={isSmall} src={isFailed ? '/' : picture}>
+          <ImageOutlinedIcon fontSize="inherit" />
+        </StyledAppImg>
+      )}
+    </StyledAppIcon>
+  )
 }

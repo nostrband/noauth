@@ -18,6 +18,7 @@ import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { HeadingContainer } from './styled'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -150,14 +151,14 @@ export const ModalImportKeys = () => {
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
       <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
-        <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
+        <HeadingContainer>
           <Typography fontWeight={600} variant="h5">
             Import key
           </Typography>
           <Typography noWrap variant="body2" color={'GrayText'}>
             Bring your existing Nostr keys to Nsec.app
           </Typography>
-        </Stack>
+        </HeadingContainer>
         <Input
           label="Choose a username"
           fullWidth
