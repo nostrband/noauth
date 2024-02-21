@@ -72,6 +72,7 @@ export function isPackagePerm(perm: string, reqPerm: string) {
       case 'sign_event:10002':
       case 'sign_event:30023':
       case 'sign_event:10000':
+      case 'sign_event:27235':
         return true
     }
   }
