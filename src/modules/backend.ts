@@ -5,6 +5,7 @@ import NDK, {
   NDKEvent,
   NDKNip46Backend,
   NDKPrivateKeySigner,
+  NDKRelaySet,
   NDKSigner,
   NDKSubscription,
   NDKSubscriptionCacheUsage,
@@ -20,6 +21,9 @@ import {
   DOMAIN,
   REQ_TTL,
   KIND_DATA,
+  OUTBOX_RELAYS,
+  BROADCAST_RELAY,
+  APP_TAG,
 } from '../utils/consts'
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
@@ -66,11 +70,6 @@ interface IAllowCallbackParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params?: any
 }
-
-const ndkGlobal = new NDK({
-  explicitRelayUrls: ['wss://relay.nostr.band', 'wss://nos.lol', 'wss://purplepag.es'],
-})
-ndkGlobal.connect()
 
 class Watcher {
   private ndk: NDK
@@ -250,7 +249,7 @@ export class NoauthBackend {
   private notifCallback: (() => void) | null = null
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
   private ndk = new NDK({
-    explicitRelayUrls: NIP46_RELAYS,
+    explicitRelayUrls: [...NIP46_RELAYS, ...OUTBOX_RELAYS, BROADCAST_RELAY],
     enableOutboxModel: false,
   })
 
@@ -339,6 +338,29 @@ export class NoauthBackend {
       // ensure we're subscribed on the server
       if (sub) await this.sendSubscriptionToServer(k.npub, sub)
     }
+
+    this.subscribeToAppPerms()
+  }
+
+  private async subscribeToAppPerms() {
+    const sub = this.ndk.subscribe(
+      {
+        kinds: [KIND_DATA],
+        '#t': [APP_TAG],
+      },
+      {
+        closeOnEose: false,
+        cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
+      },
+      NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
+      true // auto-start
+    )
+    sub.on('event', (e) => {
+      // parse,
+      // merge w/ existing apps/perms
+      // write to db
+      // if written - notify UI
+    })
   }
 
   public setNotifCallback(cb: () => void) {
@@ -726,6 +748,10 @@ export class NoauthBackend {
 
     if (perm) {
       console.log('req', req, 'perm', reqPerm, 'value', perm, appPerms)
+      // connect reqs are always 'ignore' if were disallowed
+      if (perm.perm === 'connect' && perm.value === '0') return DECISION.IGNORE
+
+      // all other reqs are not ignored
       return perm.value === '1' ? DECISION.ALLOW : DECISION.DISALLOW
     }
 
@@ -750,26 +776,27 @@ export class NoauthBackend {
       name: app.name,
       icon: app.icon,
       url: app.url,
+      timestamp: app.timestamp,
       perms,
     }
     const id = await this.sha256(`nsec.app_${npub}_${appNpub}`)
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== 'npub') throw new Error('Bad npub')
     const content = await key.signer.encrypt(new NDKUser({ pubkey }), JSON.stringify(data))
-    const event = new NDKEvent(ndkGlobal, {
+    const event = new NDKEvent(this.ndk, {
       pubkey,
       kind: KIND_DATA,
       content,
       created_at: Math.floor(Date.now() / 1000),
       tags: [
         ['d', id],
-        ['t', 'nsec.app/perm'],
+        ['t', APP_TAG],
       ],
     })
     event.sig = await event.sign(key.signer)
     console.log('app perms event', event.rawEvent(), 'payload', data)
-    await event.publish()
-    console.log('app perm event published', event.id)
+    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk))
+    console.log('app perm event published', event.id, 'to', relays)
   }
 
   private async connectApp({
@@ -1087,11 +1114,15 @@ export class NoauthBackend {
     const { data: pubkey } = nip19.decode(npub)
     const { data: appPubkey } = nip19.decode(appNpub)
 
-    const events = await this.ndk.fetchEvents({
-      kinds: [KIND_RPC],
-      '#p': [pubkey as string],
-      authors: [appPubkey as string],
-    })
+    const events = await this.ndk.fetchEvents(
+      {
+        kinds: [KIND_RPC],
+        '#p': [pubkey as string],
+        authors: [appPubkey as string],
+      },
+      undefined,
+      NDKRelaySet.fromRelayUrls(NIP46_RELAYS, this.ndk)
+    )
     console.log('fetched pending for', npub, events.size)
     this.pendingNpubEvents.set(npub, [...events.values()])
   }
