@@ -27,3 +27,11 @@ export const ACTIONS: { [type: string]: string } = {
   nip04_encrypt: 'Encrypt message',
   nip04_decrypt: 'Decrypt message',
 }
+
+export const APP_NSEC_SIZE = {
+  BIG: 'big',
+  LARGE: 'large',
+  MEDIUM: 'medium',
+  SMALL: 'small',
+  EXTRA_SMALL: 'extra-small',
+} as const

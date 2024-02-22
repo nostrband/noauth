@@ -5,9 +5,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { FC } from 'react'
 import { StyledEmptyAppsBox } from '../styled'
 import { Button } from '@/shared/Button/Button'
-import { call } from '@/utils/helpers/helpers'
-import { swicCall } from '@/modules/swic'
-import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+
 import { ItemApp } from './ItemApp'
 
 type AppsProps = {
@@ -16,22 +14,12 @@ type AppsProps = {
 }
 
 export const Apps: FC<AppsProps> = ({ apps = [] }) => {
-  const notify = useEnqueueSnackbar()
-
-  // eslint-disable-next-line
-  async function deletePerm(id: string) {
-    call(async () => {
-      await swicCall('deletePerm', id)
-      notify('Perm deleted!', 'success')
-    })
-  }
-
   const openAppStore = () => {
     window.open('https://nostrapp.link', '_blank')
   }
 
   return (
-    <Box flex={1} marginBottom={'1rem'} display={'flex'} flexDirection={'column'} overflow={'auto'}>
+    <Box marginBottom={'1rem'} display={'flex'} flexDirection={'column'}>
       <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'} marginBottom={'0.5rem'}>
         <SectionTitle>Connected apps</SectionTitle>
         <AppLink title="Discover Apps" onClick={openAppStore} />
@@ -45,7 +33,7 @@ export const Apps: FC<AppsProps> = ({ apps = [] }) => {
         </StyledEmptyAppsBox>
       )}
 
-      <Stack gap={'0.5rem'} overflow={'auto'} flex={1}>
+      <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
         {apps.map((a) => (
           <ItemApp {...a} key={a.appNpub} />
         ))}

@@ -9,7 +9,6 @@ import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/help
 import { Button } from '@/shared/Button/Button'
 import { ACTION_TYPE } from '@/utils/consts'
 import { Permissions } from './components/Permissions/Permissions'
-import { StyledAppIcon } from './styled'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
 import { swicCall } from '@/modules/swic'
@@ -20,6 +19,8 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import MoreIcon from '@mui/icons-material/MoreVertRounded'
 import { ModalAppDetails } from '@/components/Modal/ModalAppDetails/ModalAppDetails'
+import { IconApp } from '@/shared/IconApp/IconApp'
+import { HeadingContainer, AppInfoContainer, AppNameContainer } from './styled'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -67,12 +68,13 @@ const AppPage = () => {
     <>
       <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
-        <Stack marginBottom={'1rem'} direction={'row'} gap={'1rem'} width={'100%'} alignItems={'center'}>
-          <StyledAppIcon src={icon}>{appAvatarTitle}</StyledAppIcon>
-          <Box flex={'1'} overflow={'hidden'}>
-            <Stack direction={'row'} alignItems={'flex-start'} gap={'0.5rem'} marginBottom={'0.5rem'}>
-              <Box display={'flex'} flexDirection={'column'} flex={1}>
-                <Typography variant="h4" noWrap>
+
+        <HeadingContainer>
+          <IconApp size="big" picture={icon} alt={appAvatarTitle} />
+          <Box flex={'1'} overflow={'auto'} alignSelf={'flex-start'} width={'100%'}>
+            <AppInfoContainer>
+              <AppNameContainer>
+                <Typography className="app_name" variant="h4" noWrap>
                   {appName}
                 </Typography>
                 {isAppNameExists && (
@@ -80,16 +82,19 @@ const AppPage = () => {
                     {shortAppNpub}
                   </Typography>
                 )}
-              </Box>
+              </AppNameContainer>
+
               <IconButton onClick={handleShowAppDetailsModal}>
                 <MoreIcon />
               </IconButton>
-            </Stack>
+            </AppInfoContainer>
+
             <Typography variant="body2" noWrap>
               {connectedOn}
             </Typography>
           </Box>
-        </Stack>
+        </HeadingContainer>
+
         <Box marginBottom={'1rem'}>
           <SectionTitle marginBottom={'0.5rem'}>Disconnect</SectionTitle>
           <Button fullWidth onClick={handleShow}>

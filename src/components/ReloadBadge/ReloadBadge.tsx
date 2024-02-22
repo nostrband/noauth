@@ -1,5 +1,5 @@
 import { FC, memo, useCallback } from 'react'
-import { Collapse, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { StyledAlert, StyledReloadButton } from './styled'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from '@/utils/consts'
@@ -10,16 +10,14 @@ type ReloadBadgeContentProps = {
 
 const ReloadBadgeContent: FC<ReloadBadgeContentProps> = memo(({ onReload }) => {
   return (
-    <Collapse in>
-      <StyledAlert>
-        <Stack direction={'row'} className="content">
-          <Typography flex={1} className="title">
-            New version available!
-          </Typography>
-          <StyledReloadButton onClick={onReload}>Reload</StyledReloadButton>
-        </Stack>
-      </StyledAlert>
-    </Collapse>
+    <StyledAlert>
+      <Stack direction={'row'} className="content">
+        <Typography flex={1} className="title">
+          New version available!
+        </Typography>
+        <StyledReloadButton onClick={onReload}>Reload</StyledReloadButton>
+      </Stack>
+    </StyledAlert>
   )
 })
 

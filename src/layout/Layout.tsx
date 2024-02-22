@@ -27,11 +27,17 @@ const StyledContainer = styled((props: ContainerProps) => <Container maxWidth="s
   flexDirection: 'column',
   paddingBottom: '1rem',
   position: 'relative',
-  '&': {
+  '& > main': {
     flex: 1,
     maxHeight: '100%',
   },
   '&:not(.reload) > main': {
     paddingTop: 'calc(66px + 1rem)',
+  },
+  '@media screen and (max-width: 320px)': {
+    marginBottom: '0.25rem',
+    paddingLeft: '0.75rem',
+    paddingBottom: '0.75rem',
+    paddingRight: '0.75rem',
   },
 })

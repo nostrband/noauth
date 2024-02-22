@@ -1,5 +1,5 @@
 import { AppLogo } from '@/assets'
-import { Box, styled } from '@mui/material'
+import { Box, Stack, StackProps, styled } from '@mui/material'
 
 export const StyledAppLogo = styled((props) => (
   <Box {...props}>
@@ -11,4 +11,15 @@ export const StyledAppLogo = styled((props) => (
   borderRadius: '16px',
   display: 'grid',
   placeItems: 'center',
+}))
+
+export const HeadingContainer = styled((props: StackProps) => <Stack {...props} />)(() => ({
+  gap: '0.2rem',
+  padding: '0 1rem',
+  alignSelf: 'flex-start',
+  overflow: 'auto',
+  width: '100%',
+  '@media screen and (max-width: 320px)': {
+    padding: '0 0.75rem',
+  },
 }))

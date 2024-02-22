@@ -1,4 +1,5 @@
-import { Input, AppInputProps } from '@/shared/Input/Input'
+import { Input } from '@/shared/Input/Input'
+import { AppInputProps } from '@/shared/Input/types'
 import { Box, Button, ButtonProps, styled, Badge } from '@mui/material'
 import { forwardRef } from 'react'
 

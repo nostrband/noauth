@@ -19,6 +19,9 @@ const StyledButton = styled(
   const commonStyles = {
     fontWeight: 500,
     borderRadius: '1rem',
+    '@media screen and (max-width: 320px)': {
+      padding: '0.25rem 0.75rem',
+    },
   }
   if (varianttype === 'secondary') {
     return {
