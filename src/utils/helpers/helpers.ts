@@ -16,7 +16,7 @@ export const getShortenNpub = (npub = '') => {
 }
 
 export const getProfileUsername = (profile: MetaEvent | null) => {
-  if (!profile) return null
+  if (!profile) return undefined
   return profile?.info?.name || profile?.info?.display_name
 }
 
