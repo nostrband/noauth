@@ -248,6 +248,7 @@ export class NoauthBackend {
   private accessBuffer: DbPending[] = []
   private notifCallback: (() => void) | null = null
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
+  private permSub?: NDKSubscription
   private ndk = new NDK({
     explicitRelayUrls: [...NIP46_RELAYS, ...OUTBOX_RELAYS, BROADCAST_RELAY],
     enableOutboxModel: false,
@@ -343,10 +344,19 @@ export class NoauthBackend {
   }
 
   private async subscribeToAppPerms() {
-    const sub = this.ndk.subscribe(
+    if (this.permSub) {
+      this.permSub.stop()
+      this.permSub.removeAllListeners()
+      this.permSub = undefined
+    }
+
+    const authors = this.keys.map((k) => nip19.decode(k.npub).data as string)
+    this.permSub = this.ndk.subscribe(
       {
+        authors,
         kinds: [KIND_DATA],
         '#t': [APP_TAG],
+        limit: 100,
       },
       {
         closeOnEose: false,
@@ -355,12 +365,56 @@ export class NoauthBackend {
       NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
       true // auto-start
     )
-    sub.on('event', (e) => {
-      // parse,
-      // merge w/ existing apps/perms
-      // write to db
-      // if written - notify UI
+    this.permSub.on('event', async (e) => {
+      const npub = nip19.npubEncode(e.pubkey)
+      const key = this.keys.find((k) => k.npub === npub)
+      if (!key) return
+
+      // parse
+      try {
+        const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
+        const data = JSON.parse(payload)
+        console.log('Got app perm event', { e, data })
+        // FIXME validate first!
+        await this.mergeAppPerms(key, data)
+      } catch (err) {
+        console.log('Bad app perm event', e, err)
+      }
+
+      // notify UI
+      this.updateUI()
     })
+  }
+
+  private async mergeAppPerms(key: Key, data: any) {
+    let app = this.apps.find(a => a.appNpub === data.appNpub)
+    const appFromData = (): DbApp => {
+      return {
+        npub: data.npub,
+        appNpub: data.appNpub,
+        name: data.name,
+        icon: data.icon,
+        url: data.url,
+        // choose older creation timestamp
+        timestamp: app ? Math.min(app.timestamp, data.timestamp) : data.timestamp,
+        updateTimestamp: data.updateTimestamp
+      }
+    }
+    if (!app) {
+      // new app
+      app = appFromData()
+      console.log("New app from event", { data, app })
+      await dbi.addApp(app)
+    } else if (app.updateTimestamp < data.updateTimestamp) {
+      // update existing app
+      app = appFromData()
+      await dbi.updateApp(app)
+    } else {
+      // old data
+      console.log("skip old app perms", { data, app })
+    }
+
+    // FIXME merge perms
   }
 
   public setNotifCallback(cb: () => void) {
@@ -767,7 +821,7 @@ export class NoauthBackend {
   private async publishAppPerms({ npub, appNpub }: { npub: string; appNpub: string }) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
-    const app = this.apps.find((a) => a.appNpub === appNpub)
+    const app = this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
     if (!app) throw new Error('App not found')
     const perms = this.perms.filter((p) => p.appNpub === appNpub && p.npub === npub)
     const data = {
@@ -777,6 +831,7 @@ export class NoauthBackend {
       icon: app.icon,
       url: app.url,
       timestamp: app.timestamp,
+      updateTimestamp: app.updateTimestamp,
       perms,
     }
     const id = await this.sha256(`nsec.app_${npub}_${appNpub}`)
@@ -821,6 +876,7 @@ export class NoauthBackend {
       name: appName,
       icon: appIcon,
       url: appUrl,
+      updateTimestamp: Date.now()
     })
 
     // reload
@@ -908,6 +964,7 @@ export class NoauthBackend {
               name: '',
               icon: '',
               url: options.appUrl || '',
+              updateTimestamp: Date.now()
             })
 
             // reload
