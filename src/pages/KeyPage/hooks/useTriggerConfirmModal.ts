@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { DbPending, DbPerm } from '@/modules/db'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { ACTION_TYPE } from '@/utils/consts'
+import { ACTION_TYPE, REQ_TTL } from '@/utils/consts'
 import { useCallback, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -25,7 +25,7 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
   const isConfirmConnectModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
   const isConfirmEventModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
 
-  const filteredPendingReqs = pending.filter((p) => p.npub === npub)
+  const filteredPendingReqs = pending.filter((p) => p.npub === npub && p.timestamp > Date.now() - REQ_TTL)
   const filteredPerms = perms.filter((p) => p.npub === npub)
 
   const npubConnectPerms = filteredPerms.filter((perm) => perm.perm === 'connect' || perm.perm === ACTION_TYPE.BASIC)

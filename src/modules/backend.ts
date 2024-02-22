@@ -10,7 +10,7 @@ import NDK, {
   NDKSubscriptionCacheUsage,
   NDKUser,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN } from '../utils/consts'
+import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN, REQ_TTL } from '../utils/consts'
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
@@ -309,6 +309,13 @@ export class NoauthBackend {
     console.log('started perms', this.perms)
     this.apps = await dbi.listApps()
     console.log('started apps', this.apps)
+
+    // drop old pending reqs
+    const pending = await dbi.listPending()
+    for (const p of pending) {
+      if (p.timestamp < Date.now() - REQ_TTL)
+        await dbi.removePending(p.id)
+    }
 
     const sub = await this.swg.registration.pushManager.getSubscription()
 

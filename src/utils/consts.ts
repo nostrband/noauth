@@ -11,6 +11,8 @@ export const KIND_RPC = 24133
 
 export const RELOAD_STORAGE_KEY = 'reload'
 
+export const REQ_TTL = 60000 // 1 min
+
 export enum ACTION_TYPE {
   BASIC = 'basic',
   ADVANCED = 'advanced',
