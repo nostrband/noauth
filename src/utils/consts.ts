@@ -8,6 +8,7 @@ export const MIN_POW = 14
 export const MAX_POW = 19
 
 export const KIND_RPC = 24133
+export const KIND_DATA = 30078
 
 export const RELOAD_STORAGE_KEY = 'reload'
 

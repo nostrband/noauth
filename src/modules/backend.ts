@@ -10,7 +10,17 @@ import NDK, {
   NDKSubscriptionCacheUsage,
   NDKUser,
 } from '@nostr-dev-kit/ndk'
-import { NOAUTHD_URL, WEB_PUSH_PUBKEY, NIP46_RELAYS, MIN_POW, MAX_POW, KIND_RPC, DOMAIN, REQ_TTL } from '../utils/consts'
+import {
+  NOAUTHD_URL,
+  WEB_PUSH_PUBKEY,
+  NIP46_RELAYS,
+  MIN_POW,
+  MAX_POW,
+  KIND_RPC,
+  DOMAIN,
+  REQ_TTL,
+  KIND_DATA,
+} from '../utils/consts'
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
@@ -56,6 +66,11 @@ interface IAllowCallbackParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params?: any
 }
+
+const ndkGlobal = new NDK({
+  explicitRelayUrls: ['wss://relay.nostr.band', 'wss://nos.lol', 'wss://purplepag.es'],
+})
+ndkGlobal.connect()
 
 class Watcher {
   private ndk: NDK
@@ -313,8 +328,7 @@ export class NoauthBackend {
     // drop old pending reqs
     const pending = await dbi.listPending()
     for (const p of pending) {
-      if (p.timestamp < Date.now() - REQ_TTL)
-        await dbi.removePending(p.id)
+      if (p.timestamp < Date.now() - REQ_TTL) await dbi.removePending(p.id)
     }
 
     const sub = await this.swg.registration.pushManager.getSubscription()
@@ -724,6 +738,40 @@ export class NoauthBackend {
     return DECISION.ASK
   }
 
+  private async publishAppPerms({ npub, appNpub }: { npub: string; appNpub: string }) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Key not found')
+    const app = this.apps.find((a) => a.appNpub === appNpub)
+    if (!app) throw new Error('App not found')
+    const perms = this.perms.filter((p) => p.appNpub === appNpub && p.npub === npub)
+    const data = {
+      appNpub,
+      npub,
+      name: app.name,
+      icon: app.icon,
+      url: app.url,
+      perms,
+    }
+    const id = await this.sha256(`nsec.app_${npub}_${appNpub}`)
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error('Bad npub')
+    const content = await key.signer.encrypt(new NDKUser({ pubkey }), JSON.stringify(data))
+    const event = new NDKEvent(ndkGlobal, {
+      pubkey,
+      kind: KIND_DATA,
+      content,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [
+        ['d', id],
+        ['t', 'nsec.app/perm'],
+      ],
+    })
+    event.sig = await event.sign(key.signer)
+    console.log('app perms event', event.rawEvent(), 'payload', data)
+    await event.publish()
+    console.log('app perm event published', event.id)
+  }
+
   private async connectApp({
     npub,
     appNpub,
@@ -765,6 +813,9 @@ export class NoauthBackend {
 
     // reload
     this.perms = await dbi.listPerms()
+
+    // async
+    this.publishAppPerms({ npub, appNpub })
   }
 
   private async allowPermitCallback({
@@ -874,6 +925,9 @@ export class NoauthBackend {
         // to this req
         ok(decision)
 
+        // async
+        this.publishAppPerms({ npub: req.npub, appNpub: req.appNpub })
+
         // notify UI that it was confirmed
         // if (!PERF_TEST)
         this.updateUI()
@@ -933,7 +987,7 @@ export class NoauthBackend {
             // looping for 10 seconds (our request age threshold)
             backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
           } else {
-            console.log("skip sending auth_url")
+            console.log('skip sending auth_url')
           }
         }, 500)
 
