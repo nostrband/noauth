@@ -21,5 +21,8 @@ export const StyledToggleButtonsGroup = styled((props: ToggleButtonGroupProps) =
       border: 'initial',
       borderRadius: '1rem',
     },
+    '@media screen and (max-width: 320px)': {
+      marginBottom: '0.25rem',
+    },
   })
 )

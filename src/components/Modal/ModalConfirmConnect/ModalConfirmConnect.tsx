@@ -97,8 +97,7 @@ export const ModalConfirmConnect = () => {
     if (isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
       // if (isPopup) window.close()
       // else closeModalAfterRequest()
-      if (!isPopup)
-        closeModalAfterRequest()
+      if (!isPopup) closeModalAfterRequest()
       return null
     }
   }
@@ -198,11 +197,11 @@ export const ModalConfirmConnect = () => {
           >
             {appAvatarTitle}
           </Avatar>
-          <Box>
-            <Typography variant="h5" fontWeight={600}>
+          <Box overflow={'auto'}>
+            <Typography variant="h5" fontWeight={600} noWrap>
               {appName}
             </Typography>
-            <Typography variant="body2" color={'GrayText'}>
+            <Typography variant="body2" color={'GrayText'} noWrap>
               New app would like to connect
             </Typography>
           </Box>

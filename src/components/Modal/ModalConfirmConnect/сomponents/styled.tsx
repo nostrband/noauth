@@ -29,4 +29,17 @@ export const StyledToggleButton = styled((props: ToggleButtonProps) => (
     fontSize: '10px',
     fontWeight: 500,
   },
+  '@media screen and (max-width: 320px)': {
+    '& .title': {
+      fontSize: '14px',
+    },
+    '& .description': {
+      margin: '0.25rem 0',
+      display: '-webkit-box',
+      WebkitLineClamp: 3,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
+  },
 }))

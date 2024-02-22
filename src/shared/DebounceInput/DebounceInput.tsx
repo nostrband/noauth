@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { Input, AppInputProps } from '../Input/Input'
+import { Input } from '../Input/Input'
+import { AppInputProps } from '../Input/types'
 
 export type DebounceProps = {
   handleDebounce: (value: string) => void

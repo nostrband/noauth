@@ -1,8 +1,7 @@
 import { FC, useEffect, useState } from 'react'
-import { Fade, IconButton, Typography } from '@mui/material'
+import { Fade, Typography } from '@mui/material'
 import CopyToClipboard from 'react-copy-to-clipboard'
-import { CopyIcon } from '@/assets'
-import { StyledContainer } from './styled'
+import { StyledContainer, StyledCopyButton } from './styled'
 
 type InputCopyButtonProps = {
   value: string
@@ -40,9 +39,7 @@ export const InputCopyButton: FC<InputCopyButtonProps> = ({ value, onCopy = () =
         </Fade>
       )}
       <CopyToClipboard text={value} onCopy={handleCopy}>
-        <IconButton color="inherit">
-          <CopyIcon />
-        </IconButton>
+        <StyledCopyButton />
       </CopyToClipboard>
     </StyledContainer>
   )

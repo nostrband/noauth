@@ -1,13 +1,15 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes, Navigate } from 'react-router-dom'
-import HomePage from '../pages/HomePage/Home.Page'
 import { Layout } from '../layout/Layout'
 import { CircularProgress, Stack } from '@mui/material'
-import CreatePage from '@/pages/CreatePage/Create.Page'
 
-const KeyPage = lazy(() => import('../pages/KeyPage/Key.Page'))
-const ConfirmPage = lazy(() => import('../pages/Confirm.Page'))
-const AppPage = lazy(() => import('../pages/AppPage/App.Page'))
+// Pages
+import CreatePage from '@/pages/CreatePage/Create.Page'
+import HomePage from '../pages/HomePage/Home.Page'
+import KeyPage from '../pages/KeyPage/Key.Page'
+
+const ConfirmPage = lazy(() => import('@/pages/Confirm.Page'))
+const AppPage = lazy(() => import('@/pages/AppPage/App.Page'))
 
 const LoadingSpinner = () => (
   <Stack height={'100%'} justifyContent={'center'} alignItems={'center'}>
