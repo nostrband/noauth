@@ -19,6 +19,7 @@ export interface DbApp {
   url: string
   timestamp: number
   updateTimestamp: number
+  permUpdateTimestamp: number
 }
 
 export interface DbPerm {
@@ -66,7 +67,7 @@ export const db = new Dexie('noauthdb') as DbSchema
 
 db.version(9).stores({
   keys: 'npub',
-  apps: 'appNpub,npub,name,timestamp,updateTimestamp',
+  apps: 'appNpub,npub,name,timestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed',
@@ -116,11 +117,11 @@ export const dbi = {
   },
   updateApp: async (app: DbApp) => {
     try {
-      await db.apps.where({ appNpub: app.appNpub }).modify({
+      await db.apps.where({ appNpub: app.appNpub, npub: app.npub }).modify({
         name: app.name,
         icon: app.icon,
         url: app.url,
-        updateTimestamp: app.updateTimestamp 
+        updateTimestamp: app.updateTimestamp,
       })
     } catch (error) {
       console.log(`db updateApp error: ${error}`)
@@ -134,11 +135,22 @@ export const dbi = {
       return []
     }
   },
-  removeApp: async (appNpub: string) => {
+  removeApp: async (appNpub: string, npub: string) => {
     try {
+      // FIXME npub is necessary when we change the
+      // primary key from appNpub to appNpub+npub
       return await db.apps.delete(appNpub)
     } catch (error) {
       console.log(`db removeApp error: ${error}`)
+    }
+  },
+  updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
+    try {
+      await db.apps.where({ appNpub, npub }).modify({
+        permUpdateTimestamp: timestamp || Date.now(),
+      })
+    } catch (error) {
+      console.log(`db updatePermTimestamp error: ${error}`)
     }
   },
   addPerm: async (perm: DbPerm) => {
@@ -163,9 +175,9 @@ export const dbi = {
       console.log(`db removePerm error: ${error}`)
     }
   },
-  removeAppPerms: async (appNpub: string) => {
+  removeAppPerms: async (appNpub: string, npub: string) => {
     try {
-      return await db.perms.where({ appNpub }).delete()
+      return await db.perms.where({ appNpub, npub }).delete()
     } catch (error) {
       console.log(`db removeAppPerms error: ${error}`)
     }
