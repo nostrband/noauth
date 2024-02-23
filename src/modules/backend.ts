@@ -653,10 +653,12 @@ export class NoauthBackend {
     name,
     nsec,
     existingName,
+    passphrase
   }: {
     name: string
     nsec?: string
     existingName?: boolean
+    passphrase?: string
   }): Promise<KeyInfo> {
     // lowercase
     name = name.trim().toLocaleLowerCase()
@@ -1057,8 +1059,8 @@ export class NoauthBackend {
     await this.startKey({ npub, sk })
   }
 
-  private async generateKey(name: string) {
-    const k = await this.addKey({ name })
+  private async generateKey(name: string, passphrase: string) {
+    const k = await this.addKey({ name, passphrase })
     this.updateUI()
     return k
   }
@@ -1068,8 +1070,8 @@ export class NoauthBackend {
     await this.sendTokenToServer(npub, token)
   }
 
-  private async importKey(name: string, nsec: string) {
-    const k = await this.addKey({ name, nsec })
+  private async importKey(name: string, nsec: string, passphrase: string) {
+    const k = await this.addKey({ name, nsec, passphrase })
     this.updateUI()
     return k
   }
