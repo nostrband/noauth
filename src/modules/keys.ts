@@ -61,7 +61,7 @@ export class Keys {
     // We could use string.normalize() to make sure all JS implementations
     // are compatible, but since we're looking to make this thing a standard
     // then the simplest way is to exclude unicode and only work with ASCII
-    if (!isValidPassphase(passphrase)) throw new Error('Password must be 4+ ASCII chars')
+    if (!isValidPassphase(passphrase)) throw new Error('Password must be 6+ ASCII chars')
 
     return new Promise((ok, fail) => {
       // NOTE: we should use Argon2 or scrypt later, for now

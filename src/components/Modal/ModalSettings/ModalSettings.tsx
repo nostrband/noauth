@@ -2,9 +2,10 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, Stack, Typography } from '@mui/material'
-import { StyledButton, StyledSettingContainer, StyledSynchedText } from './styled'
+import { StyledButton, StyledSettingContainer, StyledSynchText, StyledSynchedText } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { CheckmarkIcon } from '@/assets'
+import GppMaybeOutlinedIcon from '@mui/icons-material/GppMaybeOutlined'
 import { Input } from '@/shared/Input/Input'
 import { ChangeEvent, FC, useEffect, useState } from 'react'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
@@ -27,7 +28,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const { npub = '' } = useParams<{ npub: string }>()
   const keys = useAppSelector(selectKeys)
-  const [_, copyToClipboard] = useCopyToClipboard()
+  const [, copyToClipboard] = useCopyToClipboard()
 
   const notify = useEnqueueSnackbar()
 
@@ -101,13 +102,12 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     e.preventDefault()
 
     try {
-      const key = await swicCall('exportKey', npub) as string
-      if (await copyToClipboard(key))
-        notify('Key copied to clipboard!')
-      else
-        notify('Failed to copy to clipboard', 'error')
+      const key = (await swicCall('exportKey', npub)) as string
+      if (!key) notify('Specify Cloud Sync password first!', 'error')
+      else if (await copyToClipboard(key)) notify('Key copied to clipboard!')
+      else notify('Failed to copy to clipboard', 'error')
     } catch (error) {
-      console.log("error", error)
+      console.log('error', error)
       notify(`Failed to copy to clipboard: ${error}`, 'error')
     }
   }
@@ -116,12 +116,18 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     <Modal open={isModalOpened} onClose={onClose} title="Settings">
       <Stack gap={'1rem'}>
         <StyledSettingContainer onSubmit={handleSubmit}>
-          <Stack direction={'row'} justifyContent={'space-between'}>
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'start'}>
             <SectionTitle>Cloud sync</SectionTitle>
             {isSynced && (
               <StyledSynchedText>
                 <CheckmarkIcon /> Synched
               </StyledSynchedText>
+            )}
+            {!isSynced && (
+              <StyledSynchText>
+                {/* <GppMaybeOutlinedIcon style={{ transform: 'scale(0.8)' }} />  */}
+                Not enabled
+              </StyledSynchText>
             )}
           </Stack>
           <Box>
