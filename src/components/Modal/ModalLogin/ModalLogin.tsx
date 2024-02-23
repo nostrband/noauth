@@ -147,7 +147,7 @@ export const ModalLogin = () => {
 
         <Stack gap={'0.5rem'}>
           <Button type="submit" fullWidth disabled={isLoading}>
-            Add account {isLoading && <LoadingSpinner />}
+            Login {isLoading && <LoadingSpinner />}
           </Button>
         </Stack>
       </Stack>
