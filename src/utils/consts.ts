@@ -3,11 +3,16 @@ export const WEB_PUSH_PUBKEY = process.env.REACT_APP_WEB_PUSH_PUBKEY
 export const DOMAIN = process.env.REACT_APP_DOMAIN
 export const RELAY = process.env.REACT_APP_RELAY || 'wss://relay.nsec.app'
 export const NIP46_RELAYS = [RELAY]
+export const OUTBOX_RELAYS = ['wss://relay.nostr.band', 'wss://nos.lol', 'wss://purplepag.es']
+export const BROADCAST_RELAY = 'wss://nostr.mutinywallet.com'
+
+export const APP_TAG = 'nsec.app/perm'
 
 export const MIN_POW = 14
 export const MAX_POW = 19
 
 export const KIND_RPC = 24133
+export const KIND_DATA = 30078
 
 export const RELOAD_STORAGE_KEY = 'reload'
 
