@@ -94,7 +94,7 @@ export const ModalSignUp = () => {
   const submitHandler = async (values: FormInputType) => {
     hidePassword()
     hideConfirmPassword()
-    if (isLoading || !isAvailable) return undefined
+    if (isLoading || !isAvailable || isPasswordInvalid) return undefined
     const { password, username } = values
     if (!username.trim() || !password.trim()) throw new Error('Fill out all fields!')
     try {

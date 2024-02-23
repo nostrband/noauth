@@ -122,7 +122,7 @@ export const ModalImportKeys = () => {
     hideNsec()
     hidePassword()
     hideConfirmPassword()
-    if (isLoading) return undefined
+    if (isLoading || isPasswordInvalid) return undefined
     try {
       const { nsec, username, password } = values
       if (!nsec.trim() || !username.trim() || !password.trim()) throw new Error('Fill out all fields!')
