@@ -766,11 +766,19 @@ export class NoauthBackend {
 
     const localKey = await this.keysModule.generateLocalKey()
     const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
+
     // @ts-ignore
     const dbKey: DbKey = { npub, name, enckey, localKey }
+
+    // FIXME this is all one big complex TX and if something fails
+    // we have to gracefully proceed somehow
+
     await dbi.addKey(dbKey)
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
+
+    if (passphrase)
+      await this.saveKey(npub, passphrase)
 
     // assign nip05 before adding the key
     if (!existingName && name && !name.includes('@')) {
@@ -1377,11 +1385,11 @@ export class NoauthBackend {
       //console.log("UI message", id, method, args)
       let result = undefined
       if (method === 'generateKey') {
-        result = await this.generateKey(args[0])
+        result = await this.generateKey(args[0], args[1])
       } else if (method === 'redeemToken') {
         result = await this.redeemToken(args[0], args[1])
       } else if (method === 'importKey') {
-        result = await this.importKey(args[0], args[1])
+        result = await this.importKey(args[0], args[1], args[2])
       } else if (method === 'saveKey') {
         result = await this.saveKey(args[0], args[1])
       } else if (method === 'fetchKey') {
