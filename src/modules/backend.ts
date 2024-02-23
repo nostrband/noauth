@@ -340,7 +340,7 @@ export class NoauthBackend {
       if (sub) await this.sendSubscriptionToServer(k.npub, sub)
     }
 
-    this.subscribeToAppPerms()
+//    this.subscribeToAppPerms()
   }
 
   private async subscribeToAppPerms() {
