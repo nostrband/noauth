@@ -340,7 +340,7 @@ export class NoauthBackend {
       if (sub) await this.sendSubscriptionToServer(k.npub, sub)
     }
 
-//    this.subscribeToAppPerms()
+    this.subscribeToAppPerms()
   }
 
   private async subscribeToAppPerms() {
@@ -365,7 +365,9 @@ export class NoauthBackend {
       NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
       true // auto-start
     )
+    let count = 0
     this.permSub.on('event', async (e) => {
+      count++
       const npub = nip19.npubEncode(e.pubkey)
       const key = this.keys.find((k) => k.npub === npub)
       if (!key) return
@@ -375,8 +377,11 @@ export class NoauthBackend {
         const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
         const data = JSON.parse(payload)
         console.log('Got app perm event', { e, data })
-        // FIXME validate first!
-        await this.mergeAppPerms(key, data)
+        // validate first
+        if (this.isValidAppPerms(data))
+          await this.mergeAppPerms(key, data)
+        else
+          console.log("Skip invalid app perms", data)
       } catch (err) {
         console.log('Bad app perm event', e, err)
       }
@@ -384,37 +389,94 @@ export class NoauthBackend {
       // notify UI
       this.updateUI()
     })
+
+    // wait for eose before proceeding
+    await new Promise((ok) => this.permSub!.on('eose', ok))
+
+    console.log("processed app perm events", count)
+  }
+
+  private isValidAppPerms(d: any) {
+    if (!d.npub || !d.appNpub || !d.timestamp || !d.updateTimestamp || !d.permUpdateTimestamp)
+      return false;
+
+    for (const p of d.perms) {
+      if (!p.id || !p.npub || !p.appNpub || !p.perm || !p.timestamp)
+        return false;
+    }
+
+    return true
   }
 
   private async mergeAppPerms(key: Key, data: any) {
-    let app = this.apps.find(a => a.appNpub === data.appNpub)
+    const app = this.apps.find((a) => a.appNpub === data.appNpub && a.npub === data.npub)
+
+    const newAppInfo = !app || app.updateTimestamp < data.updateTimestamp
+    const newPerms = !app || app.permUpdateTimestamp < data.permUpdateTimestamp
+
     const appFromData = (): DbApp => {
       return {
         npub: data.npub,
         appNpub: data.appNpub,
-        name: data.name,
-        icon: data.icon,
-        url: data.url,
+        name: data.name || '',
+        icon: data.icon || '',
+        url: data.url || '',
         // choose older creation timestamp
         timestamp: app ? Math.min(app.timestamp, data.timestamp) : data.timestamp,
-        updateTimestamp: data.updateTimestamp
+        updateTimestamp: data.updateTimestamp,
+        // choose newer perm update timestamp
+        permUpdateTimestamp: app
+          ? Math.min(app.permUpdateTimestamp, data.permUpdateTimestamp)
+          : data.permUpdateTimestamp,
       }
     }
     if (!app) {
       // new app
-      app = appFromData()
-      console.log("New app from event", { data, app })
-      await dbi.addApp(app)
-    } else if (app.updateTimestamp < data.updateTimestamp) {
+      const newApp = appFromData()
+      await dbi.addApp(newApp)
+      console.log('New app from event', { data, newApp })
+    } else if (newAppInfo) {
       // update existing app
-      app = appFromData()
-      await dbi.updateApp(app)
+      const appUpdate = appFromData()
+      await dbi.updateApp(appUpdate)
+      console.log('Update app from event', { data, appUpdate })
     } else {
       // old data
-      console.log("skip old app perms", { data, app })
+      console.log('skip old app perms', { data, app })
     }
 
-    // FIXME merge perms
+    // merge perms
+    // instead of doing diffs etc we could just assume that:
+    // 1. peers publish updated events as soon as updates are made
+    // 2. so each peer always has the latest info from other peers
+    // 3. so we can just use the latest perms object
+    // should be good enough for now, we just use perms with newest
+    // update... hm but if we delete some perm then there's no
+    // update timestamp! maybe we should just put permUpdateTimestamp
+    // to the App object and update it on perm updates?
+    // sounds fine and simple enough!
+    if (newPerms) {
+      // drop all existing perms
+      await dbi.removeAppPerms(data.appNpub, data.npub)
+
+      // set timestamp from the peer
+      await dbi.updateAppPermTimestamp(data.appNpub, data.npub, data.permUpdateTimestamp)
+
+      // add all perms from peer
+      for (const p of data.perms) {
+        const perm = {
+          id: p.id,
+          npub: p.npub,
+          appNpub: p.appNpub,
+          perm: p.perm,
+          value: p.value,
+          timestamp: p.timestamp,
+        }
+        await dbi.addPerm(perm)
+      }
+
+      console.log("updated perms from data", data)
+    }
   }
 
   public setNotifCallback(cb: () => void) {
@@ -786,6 +848,9 @@ export class NoauthBackend {
     const sub = await this.swg.registration.pushManager.getSubscription()
     if (sub) await this.sendSubscriptionToServer(npub, sub)
 
+    // async fetching of perms from relays
+    this.subscribeToAppPerms()
+
     return this.keyInfo(dbKey)
   }
 
@@ -832,6 +897,7 @@ export class NoauthBackend {
       url: app.url,
       timestamp: app.timestamp,
       updateTimestamp: app.updateTimestamp,
+      permUpdateTimestamp: app.permUpdateTimestamp,
       perms,
     }
     const id = await this.sha256(`nsec.app_${npub}_${appNpub}`)
@@ -876,7 +942,8 @@ export class NoauthBackend {
       name: appName,
       icon: appIcon,
       url: appUrl,
-      updateTimestamp: Date.now()
+      updateTimestamp: Date.now(),
+      permUpdateTimestamp: Date.now(),
     })
 
     // reload
@@ -892,6 +959,7 @@ export class NoauthBackend {
         value: '1',
         timestamp: Date.now(),
       })
+      await dbi.updateAppPermTimestamp(appNpub, npub)
     }
 
     // reload
@@ -964,7 +1032,8 @@ export class NoauthBackend {
               name: '',
               icon: '',
               url: options.appUrl || '',
-              updateTimestamp: Date.now()
+              updateTimestamp: Date.now(),
+              permUpdateTimestamp: Date.now(),
             })
 
             // reload
@@ -999,6 +1068,7 @@ export class NoauthBackend {
               value: allow ? '1' : '0',
               timestamp: Date.now(),
             })
+            await dbi.updateAppPermTimestamp(req.appNpub, req.npub)
           }
 
           // reload
@@ -1302,17 +1372,20 @@ export class NoauthBackend {
     }
   }
 
-  private async deleteApp(appNpub: string) {
-    this.apps = this.apps.filter((a) => a.appNpub !== appNpub)
-    this.perms = this.perms.filter((p) => p.appNpub !== appNpub)
-    await dbi.removeApp(appNpub)
-    await dbi.removeAppPerms(appNpub)
+  private async deleteApp(appNpub: string, npub: string) {
+    this.apps = this.apps.filter((a) => a.appNpub !== appNpub || a.npub !== npub)
+    this.perms = this.perms.filter((p) => p.appNpub !== appNpub || p.npub !== npub)
+    await dbi.removeApp(appNpub, npub)
+    await dbi.removeAppPerms(appNpub, npub)
     this.updateUI()
   }
 
   private async deletePerm(id: string) {
+    const perm = this.perms.find((p) => p.id === id)
+    if (!perm) throw new Error('Perm not found')
     this.perms = this.perms.filter((p) => p.id !== id)
     await dbi.removePerm(id)
+    await dbi.updateAppPermTimestamp(perm.appNpub, perm.npub)
     this.updateUI()
   }
 
@@ -1389,7 +1462,7 @@ export class NoauthBackend {
       } else if (method === 'connectApp') {
         result = await this.connectApp(args[0])
       } else if (method === 'deleteApp') {
-        result = await this.deleteApp(args[0])
+        result = await this.deleteApp(args[0], args[1])
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
       } else if (method === 'editName') {

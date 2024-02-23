@@ -54,7 +54,7 @@ const AppPage = () => {
 
   const handleDeleteApp = async () => {
     try {
-      await swicCall('deleteApp', appNpub)
+      await swicCall('deleteApp', appNpub, npub)
       notify(`App: «${appName}» successfully deleted!`, 'success')
       navigate(`/key/${npub}`)
     } catch (error: any) {
