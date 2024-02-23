@@ -9,6 +9,7 @@ export interface DbKey {
   relays?: string[]
   enckey: string
   profile?: MetaEvent | null
+  ncryptsec?: string
 }
 
 export interface DbApp {
@@ -18,6 +19,7 @@ export interface DbApp {
   icon: string
   url: string
   timestamp: number
+  updateTimestamp: number
 }
 
 export interface DbPerm {
@@ -63,9 +65,9 @@ export interface DbSchema extends Dexie {
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(8).stores({
+db.version(9).stores({
   keys: 'npub',
-  apps: 'appNpub,npub,name,timestamp',
+  apps: 'appNpub,npub,name,timestamp,updateTimestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed',
@@ -79,6 +81,13 @@ export const dbi = {
       await db.keys.add(key)
     } catch (error) {
       console.log(`db addKey error: ${error}`)
+    }
+  },
+  getKey: async (npub: string) => {
+    try {
+      return await db.keys.get(npub)
+    } catch (error) {
+      console.log(`db getKey error: ${error}`)
     }
   },
   listKeys: async (): Promise<DbKey[]> => {
@@ -113,12 +122,13 @@ export const dbi = {
       console.log(`db addApp error: ${error}`)
     }
   },
-  updateApp: async (app: Omit<DbApp, 'npub' | 'timestamp'>) => {
+  updateApp: async (app: DbApp) => {
     try {
       await db.apps.where({ appNpub: app.appNpub }).modify({
         name: app.name,
         icon: app.icon,
         url: app.url,
+        updateTimestamp: app.updateTimestamp 
       })
     } catch (error) {
       console.log(`db updateApp error: ${error}`)
