@@ -15,8 +15,10 @@ import { dbi } from '@/modules/db'
 import { usePassword } from '@/hooks/usePassword'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
+import { usePasswordValidation } from '@/hooks/usePasswordValidation'
+import { isValidPassphase } from '@/modules/keys'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -35,7 +37,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const { hidePassword, inputProps } = usePassword()
 
   const [enteredPassword, setEnteredPassword] = useState('')
-  const [isPasswordInvalid, setIsPasswordInvalid] = useState(false)
+  const { isPasswordInvalid, passwordStrength, reset, setIsPasswordInvalid } = usePasswordValidation(enteredPassword)
 
   const [isChecked, setIsChecked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -44,10 +46,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
 
   useEffect(() => {
     return () => {
-      if (isModalOpened) {
-        // modal closed
-        hidePassword()
-      }
+      if (isModalOpened) hidePassword() // modal closed
     }
   }, [hidePassword, isModalOpened])
 
@@ -57,17 +56,13 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     handleCloseModal()
     return null
   }
-
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const password = e.target.value
-    setIsPasswordInvalid(!!password && !isValidPassphase(password))
-    setEnteredPassword(password)
+    setEnteredPassword(e.target.value.trim())
   }
 
   const onClose = () => {
     handleCloseModal()
-    setEnteredPassword('')
-    setIsPasswordInvalid(false)
+    reset()
   }
 
   const handleChangeCheckbox = (e: unknown, checked: boolean) => {
@@ -77,7 +72,6 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsPasswordInvalid(false)
-
     if (!isValidPassphase(enteredPassword)) {
       return setIsPasswordInvalid(true)
     }
@@ -86,11 +80,10 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
       await swicCall('saveKey', npub, enteredPassword)
       notify('Key saved', 'success')
       dbi.addSynced(npub) // Sync npub
-      setEnteredPassword('')
-      setIsPasswordInvalid(false)
+      reset()
       setIsLoading(false)
     } catch (error) {
-      setIsPasswordInvalid(false)
+      reset()
       setIsLoading(false)
     }
   }
@@ -119,28 +112,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             placeholder="Enter a password"
             disabled={!isChecked}
           />
-          {isPasswordInvalid ? (
-            <Typography variant="body2" color={'red'}>
-              Password must include 6+ English letters, numbers or punctuation marks.
-            </Typography>
-          ) : !!enteredPassword && isWeakPassphase(enteredPassword) ? (
-            <Typography variant="body2" color={'orange'}>
-              Weak password
-            </Typography>
-          ) : !!enteredPassword && !isPasswordInvalid ? (
-            <Typography variant="body2" color={'green'}>
-              Good password
-            </Typography>
-          ) : isSynced ? (
-            <Typography variant="body2" color={'GrayText'}>
-              To change your password, type a new one and sync.
-            </Typography>
-          ) : (
-            <Typography variant="body2" color={'GrayText'}>
-              This key will be encrypted and stored on our server. You can use the password to download this key onto
-              another device.
-            </Typography>
-          )}
+          <PasswordValidationStatus isPasswordInvalid={isPasswordInvalid} passwordStrength={passwordStrength} />
           <StyledButton type="submit" fullWidth disabled={!isChecked}>
             Sync {isLoading && <LoadingSpinner mode="secondary" />}
           </StyledButton>

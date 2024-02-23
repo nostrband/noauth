@@ -19,16 +19,22 @@ import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { HeadingContainer } from './styled'
+import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
+import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 
-const FORM_DEFAULT_VALUES = {
+const FORM_DEFAULT_VALUES: FormInputType = {
   username: '',
   nsec: '',
+  password: '',
+  rePassword: '',
 }
 
 export const ModalImportKeys = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.IMPORT_KEYS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.IMPORT_KEYS)
+  const { hidePassword: hideNsec, inputProps: nsecInputProps } = usePassword()
+  const { hidePassword: hideConfirmPassword, inputProps: confirmPasswordInputProps } = usePassword()
   const { hidePassword, inputProps } = usePassword()
   const theme = useTheme()
 
@@ -47,10 +53,13 @@ export const ModalImportKeys = () => {
   const [nameNpub, setNameNpub] = useState('')
   const [isTakenByNsec, setIsTakenByNsec] = useState(false)
   const [isBadNsec, setIsBadNsec] = useState(false)
-  const enteredUsername = watch('username')
-  const enteredNsec = watch('nsec')
+  const enteredUsername = watch('username') || ''
+  const enteredNsec = watch('nsec') || ''
+  const enteredPassword = watch('password') || ''
   const [debouncedUsername] = useDebounce(enteredUsername, 100)
   const [debouncedNsec] = useDebounce(enteredNsec, 100)
+
+  const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
   const checkIsUsernameAvailable = useCallback(async () => {
     if (!debouncedUsername.trim().length) return undefined
@@ -95,17 +104,23 @@ export const ModalImportKeys = () => {
 
   const cleanUpStates = useCallback(() => {
     hidePassword()
+    hideConfirmPassword()
+    hideNsec()
     reset()
+    resetPasswordValidation()
     setIsLoading(false)
     setNameNpub('')
     setIsTakenByNsec(false)
     setIsBadNsec(false)
-  }, [reset, hidePassword])
+  }, [reset, hideNsec, hidePassword, hideConfirmPassword, resetPasswordValidation])
 
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
 
   const submitHandler = async (values: FormInputType) => {
+    hideNsec()
+    hidePassword()
+    hideConfirmPassword()
     if (isLoading) return undefined
     try {
       const { nsec, username } = values
@@ -186,7 +201,7 @@ export const ModalImportKeys = () => {
           fullWidth
           {...register('nsec')}
           error={!!errors.nsec}
-          {...inputProps}
+          {...nsecInputProps}
           helperText={nsecHelperText}
           helperTextProps={{
             sx: {
@@ -196,7 +211,34 @@ export const ModalImportKeys = () => {
             },
           }}
         />
-
+        <Input
+          label="Password"
+          fullWidth
+          {...inputProps}
+          placeholder="Enter a password"
+          {...register('password')}
+          error={!!errors.password}
+        />
+        <Input
+          label="Confirm Password"
+          {...register('rePassword')}
+          error={!!errors.rePassword}
+          fullWidth
+          {...confirmPasswordInputProps}
+          placeholder="Confirm password"
+        />
+        {!errors?.rePassword?.message && (
+          <PasswordValidationStatus
+            boxProps={{ sx: { padding: '0 0.5rem' } }}
+            isPasswordInvalid={isPasswordInvalid}
+            passwordStrength={passwordStrength}
+          />
+        )}
+        {!!errors?.rePassword?.message && (
+          <Typography variant="body2" color={'red'}>
+            {errors.rePassword.message}
+          </Typography>
+        )}
         <Button type="submit" disabled={isLoading}>
           Import key {isLoading && <LoadingSpinner />}
         </Button>

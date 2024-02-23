@@ -53,6 +53,7 @@ export const ModalLogin = () => {
   }, [reset, hidePassword])
 
   const submitHandler = async (values: FormInputType) => {
+    hidePassword()
     if (isLoading) return undefined
 
     try {
