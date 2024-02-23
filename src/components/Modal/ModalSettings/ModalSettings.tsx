@@ -17,6 +17,7 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { useCopyToClipboard } from 'usehooks-ts'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -26,6 +27,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const { npub = '' } = useParams<{ npub: string }>()
   const keys = useAppSelector(selectKeys)
+  const [_, copyToClipboard] = useCopyToClipboard()
 
   const notify = useEnqueueSnackbar()
 
@@ -95,6 +97,21 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     }
   }
 
+  const exportKey = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const key = await swicCall('exportKey', npub) as string
+      if (await copyToClipboard(key))
+        notify('Key copied to clipboard!')
+      else
+        notify('Failed to copy to clipboard', 'error')
+    } catch (error) {
+      console.log("error", error)
+      notify(`Failed to copy to clipboard: ${error}`, 'error')
+    }
+  }
+
   return (
     <Modal open={isModalOpened} onClose={onClose} title="Settings">
       <Stack gap={'1rem'}>
@@ -143,6 +160,18 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
           )}
           <StyledButton type="submit" fullWidth disabled={!isChecked}>
             Sync {isLoading && <LoadingSpinner mode="secondary" />}
+          </StyledButton>
+        </StyledSettingContainer>
+
+        <StyledSettingContainer>
+          <Stack direction={'row'} justifyContent={'space-between'}>
+            <SectionTitle>Export key</SectionTitle>
+          </Stack>
+          <Typography variant="body2" color={'GrayText'}>
+            Export your key encrypted with your password (NIP49)
+          </Typography>
+          <StyledButton type="submit" fullWidth onClick={exportKey}>
+            Export
           </StyledButton>
         </StyledSettingContainer>
       </Stack>

@@ -28,6 +28,7 @@ import {
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
+import { encrypt as encryptNip49 } from './nip49'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -770,6 +771,10 @@ export class NoauthBackend {
     // @ts-ignore
     const dbKey: DbKey = { npub, name, enckey, localKey }
 
+    // nip49
+    if (passphrase)
+      dbKey.ncryptsec = encryptNip49(Buffer.from(sk, 'hex'), passphrase, 16, nsec ? 0x01 : 0x00)
+
     // FIXME this is all one big complex TX and if something fails
     // we have to gracefully proceed somehow
 
@@ -1294,7 +1299,7 @@ export class NoauthBackend {
       enckey,
       passphrase,
     })
-    const k = await this.addKey({ name, nsec, existingName })
+    const k = await this.addKey({ name, nsec, existingName, passphrase })
     this.updateUI()
     return k
   }
@@ -1379,6 +1384,12 @@ export class NoauthBackend {
     return true
   }
 
+  private async exportKey(npub: string): Promise<string> {
+    const dbKey = await dbi.getKey(npub)
+    if (!dbKey) throw new Error("Key not found")
+    return dbKey.ncryptsec || ''
+  }
+
   public async onMessage(event: any) {
     const { id, method, args } = event.data
     try {
@@ -1410,6 +1421,8 @@ export class NoauthBackend {
         result = await this.enablePush()
       } else if (method === 'fetchPendingRequests') {
         result = await this.fetchPendingRequests(args[0], args[1])
+      } else if (method === 'exportKey') {
+        result = await this.exportKey(args[0])
       } else {
         console.log('unknown method from UI ', method)
       }
