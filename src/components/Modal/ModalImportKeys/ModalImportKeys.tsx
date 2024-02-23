@@ -5,7 +5,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Stack, Typography, useTheme } from '@mui/material'
+import { Typography, useTheme } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
@@ -18,9 +18,10 @@ import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { HeadingContainer } from './styled'
+import { Container, HeadingContainer } from './styled'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
+import { dbi } from '@/modules/db'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   username: '',
@@ -63,7 +64,7 @@ export const ModalImportKeys = () => {
 
   const checkIsUsernameAvailable = useCallback(async () => {
     if (!debouncedUsername.trim().length) return undefined
-    const npubNip05 = await fetchNip05(`${debouncedUsername}@${DOMAIN}`)
+    const npubNip05 = await fetchNip05(`${debouncedUsername.trim()}@${DOMAIN}`)
     setNameNpub(npubNip05 || '')
   }, [debouncedUsername])
 
@@ -78,7 +79,7 @@ export const ModalImportKeys = () => {
       return
     }
     try {
-      const { type, data } = nip19.decode(debouncedNsec)
+      const { type, data } = nip19.decode(debouncedNsec.trim())
       const ok = type === 'nsec'
       setIsBadNsec(!ok)
       if (ok) {
@@ -123,12 +124,13 @@ export const ModalImportKeys = () => {
     hideConfirmPassword()
     if (isLoading) return undefined
     try {
-      const { nsec, username } = values
-      if (!nsec || !username) throw new Error('Enter username and nsec')
+      const { nsec, username, password } = values
+      if (!nsec.trim() || !username.trim() || !password.trim()) throw new Error('Fill out all fields!')
       if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
-      const k: any = await swicCall('importKey', username, nsec)
+      const k: any = await swicCall('importKey', username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
+      dbi.addSynced(k.npub)
       navigate(`/key/${k.npub}`)
       cleanUpStates()
     } catch (error: any) {
@@ -165,7 +167,7 @@ export const ModalImportKeys = () => {
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
-      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+      <Container component={'form'} onSubmit={handleSubmit(submitHandler)}>
         <HeadingContainer>
           <Typography fontWeight={600} variant="h5">
             Import key
@@ -242,7 +244,7 @@ export const ModalImportKeys = () => {
         <Button type="submit" disabled={isLoading}>
           Import key {isLoading && <LoadingSpinner />}
         </Button>
-      </Stack>
+      </Container>
     </Modal>
   )
 }
