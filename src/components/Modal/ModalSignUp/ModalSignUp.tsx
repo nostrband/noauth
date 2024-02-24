@@ -10,7 +10,7 @@ import { CheckmarkIcon } from '@/assets'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePassword } from '@/hooks/usePassword'
@@ -61,8 +61,10 @@ export const ModalSignUp = () => {
 
   const [isLoading, setIsLoading] = useState(false)
 
+  const isValidName = isValidUserName(debouncedUsername)
+
   const checkIsUsernameAvailable = useCallback(async () => {
-    if (!debouncedUsername.trim().length) return undefined
+    if (!isValidName) return undefined
     try {
       setIsChecking(true)
       const npubNip05 = await fetchNip05(`${debouncedUsername.trim()}@${DOMAIN}`)
@@ -79,9 +81,10 @@ export const ModalSignUp = () => {
   }, [checkIsUsernameAvailable])
 
   const getInputHelperText = () => {
-    if (!enteredUsername.trim()) return "Don't worry, username can be changed later."
+    if (!enteredUsername.trim()) return "Username can be changed later."
     if (isChecking) return 'Loading...'
     if (!isAvailable) return 'Already taken'
+    if (!isValidName) return 'Invalid name'
     return (
       <Fragment>
         <CheckmarkIcon /> Available
@@ -134,7 +137,7 @@ export const ModalSignUp = () => {
 
   const getHelperTextColor = useCallback(() => {
     if (!debouncedUsername.trim() || isChecking) return theme.palette.textSecondaryDecorate.main
-    return isAvailable ? theme.palette.success.main : theme.palette.error.main
+    return isValidName && isAvailable ? theme.palette.success.main : theme.palette.error.main
   }, [debouncedUsername, isAvailable, isChecking, theme])
 
   return (
@@ -182,6 +185,7 @@ export const ModalSignUp = () => {
         />
         {!errors?.rePassword?.message && (
           <PasswordValidationStatus
+            isSignUp={true}
             boxProps={{ sx: { padding: '0 0.5rem' } }}
             isPasswordInvalid={isPasswordInvalid}
             passwordStrength={passwordStrength}

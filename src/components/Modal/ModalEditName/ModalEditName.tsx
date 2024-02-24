@@ -10,7 +10,7 @@ import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { Stack, Typography, useTheme } from '@mui/material'
 import { ChangeEvent, Fragment, useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -44,8 +44,10 @@ export const ModalEditName = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isTransferLoading, setIsTransferLoading] = useState(false)
 
+  const isValidName = isValidUserName(debouncedName)
+
   const checkIsUsernameAvailable = useCallback(async () => {
-    if (!debouncedName.trim().length) return undefined
+    if (!isValidName) return undefined
     try {
       setIsChecking(true)
       const npubNip05 = await fetchNip05(`${debouncedName}@${DOMAIN}`)
@@ -80,6 +82,7 @@ export const ModalEditName = () => {
     if (!debouncedName.trim().length || isNameEqual) return ''
     if (isChecking) return 'Loading...'
     if (!isAvailable) return 'Already taken'
+    if (!isValidName) return 'Invalid name'
     return (
       <Fragment>
         <CheckmarkIcon /> Available
@@ -90,7 +93,7 @@ export const ModalEditName = () => {
 
   const getHelperTextColor = useCallback(() => {
     if (!debouncedName || isChecking || isNameEqual) return palette.textSecondaryDecorate.main
-    return isAvailable ? palette.success.main : palette.error.main
+    return isAvailable && isValidName ? palette.success.main : palette.error.main
     // deps
   }, [debouncedName, isAvailable, isChecking, isNameEqual, palette])
 

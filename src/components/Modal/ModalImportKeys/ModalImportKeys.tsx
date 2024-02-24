@@ -13,7 +13,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { usePassword } from '@/hooks/usePassword'
 import { useCallback, useEffect, useState } from 'react'
 import { useDebounce } from 'use-debounce'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
@@ -62,8 +62,10 @@ export const ModalImportKeys = () => {
 
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
+  const isValidName = isValidUserName(debouncedUsername)
+
   const checkIsUsernameAvailable = useCallback(async () => {
-    if (!debouncedUsername.trim().length) return undefined
+    if (!isValidName) return undefined
     const npubNip05 = await fetchNip05(`${debouncedUsername.trim()}@${DOMAIN}`)
     setNameNpub(npubNip05 || '')
   }, [debouncedUsername])
@@ -150,6 +152,7 @@ export const ModalImportKeys = () => {
     if (isTakenByNsec) return 'Name matches your key'
     if (isBadNsec) return 'Invalid nsec'
     if (nameNpub) return 'Already taken'
+    if (!isValidName) return 'Invalid name'
     return (
       <>
         <CheckmarkIcon /> Available
@@ -188,9 +191,9 @@ export const ModalImportKeys = () => {
             sx: {
               '&.helper_text': {
                 color:
-                  enteredUsername && (isTakenByNsec || !nameNpub)
+                  enteredUsername && isValidName && (isTakenByNsec || !nameNpub)
                     ? theme.palette.success.main
-                    : enteredUsername && nameNpub
+                    : enteredUsername && (nameNpub || !isValidName)
                       ? theme.palette.error.main
                       : theme.palette.textSecondaryDecorate.main,
               },
@@ -231,6 +234,7 @@ export const ModalImportKeys = () => {
         />
         {!errors?.rePassword?.message && (
           <PasswordValidationStatus
+            isSignUp={true}
             boxProps={{ sx: { padding: '0 0.5rem' } }}
             isPasswordInvalid={isPasswordInvalid}
             passwordStrength={passwordStrength}

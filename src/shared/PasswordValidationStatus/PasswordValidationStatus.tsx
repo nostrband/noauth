@@ -7,6 +7,7 @@ type PasswordValidationStatusProps = {
   passwordStrength: PasswordStrength | ''
   textVariant?: TypographyProps['variant']
   boxProps?: BoxProps
+  isSignUp?: boolean
 }
 
 export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> = ({
@@ -14,6 +15,7 @@ export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> =
   passwordStrength,
   textVariant = 'body2',
   boxProps,
+  isSignUp,
 }) => {
   const getStatus = () => {
     if (isPasswordInvalid) {
@@ -37,6 +39,13 @@ export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> =
         </Typography>
       )
     }
+    if (isSignUp)
+      return (
+        <Typography variant={textVariant} color={'GrayText'}>
+          Password is used to encrypt your keys and sync through the cloud.
+        </Typography>
+      )
+
     return (
       <Typography variant={textVariant} color={'GrayText'}>
         This key will be encrypted and stored on our server. You can use the password to download this key onto another

@@ -143,7 +143,7 @@ export const ModalLogin = () => {
           {...register('password')}
           {...inputProps}
           error={!!errors.password}
-          helperText={'Password you set in Cloud Sync settings'}
+          // helperText={'Password you set in Cloud Sync settings'}
         />
 
         <Stack gap={'0.5rem'}>
