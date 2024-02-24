@@ -29,3 +29,11 @@ export const StyledSynchedText = styled((props: TypographyProps) => <Typography 
     color: theme.palette.success.main,
   }
 })
+
+export const StyledSynchText = styled((props: TypographyProps) => <Typography variant="caption" {...props} />)(({
+  theme,
+}) => {
+  return {
+    color: theme.palette.error.main,
+  }
+})

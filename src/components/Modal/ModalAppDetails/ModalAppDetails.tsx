@@ -10,7 +10,7 @@ import { isEmptyString } from '@/utils/helpers/helpers'
 import { useParams } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
 import { selectApps } from '@/store'
-import { dbi } from '@/modules/db'
+import { DbApp, dbi } from '@/modules/db'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { setApps } from '@/store/reducers/content.slice'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -20,7 +20,7 @@ export const ModalAppDetails = () => {
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.APP_DETAILS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.APP_DETAILS)
 
-  const { appNpub = '' } = useParams()
+  const { npub = '', appNpub = '' } = useParams()
   const apps = useAppSelector(selectApps)
   const dispatch = useAppDispatch()
 
@@ -33,8 +33,8 @@ export const ModalAppDetails = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
 
+  const currentApp = apps.find((app) => app.appNpub === appNpub && app.npub === npub)
   useEffect(() => {
-    const currentApp = apps.find((app) => app.appNpub === appNpub)
     if (!currentApp) return
 
     setDetails({
@@ -94,14 +94,15 @@ export const ModalAppDetails = () => {
 
   const submitHandler = async (e: FormEvent) => {
     e.preventDefault()
-    if (isLoading) return undefined
+    if (isLoading || !currentApp) return undefined
     try {
       setIsLoading(true)
-      const updatedApp = {
+      const updatedApp: DbApp = {
+        ...currentApp,
         url,
         name,
         icon,
-        appNpub,
+        updateTimestamp: Date.now()
       }
       await dbi.updateApp(updatedApp)
       const apps = await dbi.listApps()

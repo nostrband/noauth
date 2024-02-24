@@ -97,6 +97,4 @@ const darkTheme: Theme = createTheme({
   },
 })
 
-console.log(darkTheme)
-
 export { lightTheme, darkTheme }

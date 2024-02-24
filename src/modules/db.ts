@@ -9,6 +9,7 @@ export interface DbKey {
   relays?: string[]
   enckey: string
   profile?: MetaEvent | null
+  ncryptsec?: string
 }
 
 export interface DbApp {
@@ -18,6 +19,8 @@ export interface DbApp {
   icon: string
   url: string
   timestamp: number
+  updateTimestamp: number
+  permUpdateTimestamp: number
 }
 
 export interface DbPerm {
@@ -63,7 +66,7 @@ export interface DbSchema extends Dexie {
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(8).stores({
+db.version(9).stores({
   keys: 'npub',
   apps: 'appNpub,npub,name,timestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',
@@ -79,6 +82,13 @@ export const dbi = {
       await db.keys.add(key)
     } catch (error) {
       console.log(`db addKey error: ${error}`)
+    }
+  },
+  getKey: async (npub: string) => {
+    try {
+      return await db.keys.get(npub)
+    } catch (error) {
+      console.log(`db getKey error: ${error}`)
     }
   },
   listKeys: async (): Promise<DbKey[]> => {
@@ -113,12 +123,13 @@ export const dbi = {
       console.log(`db addApp error: ${error}`)
     }
   },
-  updateApp: async (app: Omit<DbApp, 'npub' | 'timestamp'>) => {
+  updateApp: async (app: DbApp) => {
     try {
-      await db.apps.where({ appNpub: app.appNpub }).modify({
+      await db.apps.where({ appNpub: app.appNpub, npub: app.npub }).modify({
         name: app.name,
         icon: app.icon,
         url: app.url,
+        updateTimestamp: app.updateTimestamp,
       })
     } catch (error) {
       console.log(`db updateApp error: ${error}`)
@@ -132,11 +143,22 @@ export const dbi = {
       return []
     }
   },
-  removeApp: async (appNpub: string) => {
+  removeApp: async (appNpub: string, npub: string) => {
     try {
+      // FIXME npub is necessary when we change the
+      // primary key from appNpub to appNpub+npub
       return await db.apps.delete(appNpub)
     } catch (error) {
       console.log(`db removeApp error: ${error}`)
+    }
+  },
+  updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
+    try {
+      await db.apps.where({ appNpub, npub }).modify({
+        permUpdateTimestamp: timestamp || Date.now(),
+      })
+    } catch (error) {
+      console.log(`db updatePermTimestamp error: ${error}`)
     }
   },
   addPerm: async (perm: DbPerm) => {
@@ -161,9 +183,9 @@ export const dbi = {
       console.log(`db removePerm error: ${error}`)
     }
   },
-  removeAppPerms: async (appNpub: string) => {
+  removeAppPerms: async (appNpub: string, npub: string) => {
     try {
-      return await db.perms.where({ appNpub }).delete()
+      return await db.perms.where({ appNpub, npub }).delete()
     } catch (error) {
       console.log(`db removeAppPerms error: ${error}`)
     }

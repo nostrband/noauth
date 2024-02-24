@@ -30,12 +30,17 @@ export async function askNotificationPermission() {
   return new Promise<void>((ok, rej) => {
     // Let's check if the browser supports notifications
     if (!('Notification' in window)) {
-      rej('This browser does not support notifications.')
+      rej(new Error('This browser does not support notifications.'))
     } else {
-      Notification.requestPermission().then(() => {
-        if (Notification.permission === 'granted') ok()
-        else rej()
-      })
+      Notification.requestPermission()
+        .then(() => {
+          if (Notification.permission === 'granted') ok()
+          else rej(new Error('Denied'))
+        })
+        .catch((e) => {
+          console.log('failed to request permission', e)
+          rej(e)
+        })
     }
   })
 }
@@ -126,7 +131,8 @@ export const getReferrerAppUrl = () => {
   if (!window.document.referrer) return ''
   try {
     const u = new URL(window.document.referrer.toLocaleLowerCase())
-    if (u.hostname !== DOMAIN && !u.hostname.endsWith('.' + DOMAIN)) return u.origin
+    if (u.hostname !== DOMAIN && !u.hostname.endsWith('.' + DOMAIN) && u.origin !== window.location.origin)
+      return u.origin
   } catch {}
   return ''
 }
@@ -156,4 +162,14 @@ export function getPermActionName(req: DbPerm) {
 
 export const isEmptyString = (str = '') => {
   return str.trim().length === 0
+}
+
+export const isValidUserName = (username: string) => {
+  const REGEX = /^[a-z0-9_\-.]{2,128}$/;
+  if (!REGEX.test(username.toLowerCase())) return false
+  try {
+    const { type } = nip19.decode(username)
+    if (type === 'nsec') return false
+  } catch {}
+  return true
 }

@@ -12,7 +12,7 @@ export const StyledInputContainer = styled((props: BoxProps) => <Box {...props} 
       border: '0.3px solid #FFFFFF54',
       fontSize: '0.875rem',
       '&.error': {
-        border: '0.3px solid ' + theme.palette.error.main,
+        border: '1px solid ' + theme.palette.error.main,
       },
     },
     '& .input:is(.disabled, &)': {

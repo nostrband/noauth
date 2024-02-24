@@ -23,3 +23,11 @@ export const HeadingContainer = styled((props: StackProps) => <Stack {...props} 
     padding: '0 0.75rem',
   },
 }))
+
+export const Container = styled((props: StackProps) => <Stack {...props} />)(() => ({
+  gap: '1rem',
+  paddingTop: '1rem',
+  '@media screen and (max-width: 485px)': {
+    gap: '0.5rem',
+  },
+}))

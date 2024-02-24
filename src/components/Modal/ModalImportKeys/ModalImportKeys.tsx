@@ -5,7 +5,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Stack, Typography, useTheme } from '@mui/material'
+import { Typography, useTheme } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
@@ -13,22 +13,29 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { usePassword } from '@/hooks/usePassword'
 import { useCallback, useEffect, useState } from 'react'
 import { useDebounce } from 'use-debounce'
-import { fetchNip05 } from '@/utils/helpers/helpers'
+import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { HeadingContainer } from './styled'
+import { Container, HeadingContainer } from './styled'
+import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
+import { usePasswordValidation } from '@/hooks/usePasswordValidation'
+import { dbi } from '@/modules/db'
 
-const FORM_DEFAULT_VALUES = {
+const FORM_DEFAULT_VALUES: FormInputType = {
   username: '',
   nsec: '',
+  password: '',
+  rePassword: '',
 }
 
 export const ModalImportKeys = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.IMPORT_KEYS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.IMPORT_KEYS)
+  const { hidePassword: hideNsec, inputProps: nsecInputProps } = usePassword()
+  const { hidePassword: hideConfirmPassword, inputProps: confirmPasswordInputProps } = usePassword()
   const { hidePassword, inputProps } = usePassword()
   const theme = useTheme()
 
@@ -47,14 +54,19 @@ export const ModalImportKeys = () => {
   const [nameNpub, setNameNpub] = useState('')
   const [isTakenByNsec, setIsTakenByNsec] = useState(false)
   const [isBadNsec, setIsBadNsec] = useState(false)
-  const enteredUsername = watch('username')
-  const enteredNsec = watch('nsec')
+  const enteredUsername = watch('username') || ''
+  const enteredNsec = watch('nsec') || ''
+  const enteredPassword = watch('password') || ''
   const [debouncedUsername] = useDebounce(enteredUsername, 100)
   const [debouncedNsec] = useDebounce(enteredNsec, 100)
 
+  const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
+
+  const isValidName = isValidUserName(debouncedUsername)
+
   const checkIsUsernameAvailable = useCallback(async () => {
-    if (!debouncedUsername.trim().length) return undefined
-    const npubNip05 = await fetchNip05(`${debouncedUsername}@${DOMAIN}`)
+    if (!isValidName) return undefined
+    const npubNip05 = await fetchNip05(`${debouncedUsername.trim()}@${DOMAIN}`)
     setNameNpub(npubNip05 || '')
   }, [debouncedUsername])
 
@@ -69,7 +81,7 @@ export const ModalImportKeys = () => {
       return
     }
     try {
-      const { type, data } = nip19.decode(debouncedNsec)
+      const { type, data } = nip19.decode(debouncedNsec.trim())
       const ok = type === 'nsec'
       setIsBadNsec(!ok)
       if (ok) {
@@ -95,25 +107,32 @@ export const ModalImportKeys = () => {
 
   const cleanUpStates = useCallback(() => {
     hidePassword()
+    hideConfirmPassword()
+    hideNsec()
     reset()
+    resetPasswordValidation()
     setIsLoading(false)
     setNameNpub('')
     setIsTakenByNsec(false)
     setIsBadNsec(false)
-  }, [reset, hidePassword])
+  }, [reset, hideNsec, hidePassword, hideConfirmPassword, resetPasswordValidation])
 
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
 
   const submitHandler = async (values: FormInputType) => {
-    if (isLoading) return undefined
+    hideNsec()
+    hidePassword()
+    hideConfirmPassword()
+    if (isLoading || isPasswordInvalid) return undefined
     try {
-      const { nsec, username } = values
-      if (!nsec || !username) throw new Error('Enter username and nsec')
+      const { nsec, username, password } = values
+      if (!nsec.trim() || !username.trim() || !password.trim()) throw new Error('Fill out all fields!')
       if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
-      const k: any = await swicCall('importKey', username, nsec)
+      const k: any = await swicCall('importKey', username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
+      dbi.addSynced(k.npub)
       navigate(`/key/${k.npub}`)
       cleanUpStates()
     } catch (error: any) {
@@ -133,6 +152,7 @@ export const ModalImportKeys = () => {
     if (isTakenByNsec) return 'Name matches your key'
     if (isBadNsec) return 'Invalid nsec'
     if (nameNpub) return 'Already taken'
+    if (!isValidName) return 'Invalid name'
     return (
       <>
         <CheckmarkIcon /> Available
@@ -150,7 +170,7 @@ export const ModalImportKeys = () => {
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
-      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+      <Container component={'form'} onSubmit={handleSubmit(submitHandler)}>
         <HeadingContainer>
           <Typography fontWeight={600} variant="h5">
             Import key
@@ -171,9 +191,9 @@ export const ModalImportKeys = () => {
             sx: {
               '&.helper_text': {
                 color:
-                  enteredUsername && (isTakenByNsec || !nameNpub)
+                  enteredUsername && isValidName && (isTakenByNsec || !nameNpub)
                     ? theme.palette.success.main
-                    : enteredUsername && nameNpub
+                    : enteredUsername && (nameNpub || !isValidName)
                       ? theme.palette.error.main
                       : theme.palette.textSecondaryDecorate.main,
               },
@@ -186,7 +206,7 @@ export const ModalImportKeys = () => {
           fullWidth
           {...register('nsec')}
           error={!!errors.nsec}
-          {...inputProps}
+          {...nsecInputProps}
           helperText={nsecHelperText}
           helperTextProps={{
             sx: {
@@ -196,11 +216,39 @@ export const ModalImportKeys = () => {
             },
           }}
         />
-
+        <Input
+          label="Password"
+          fullWidth
+          {...inputProps}
+          placeholder="Enter a password"
+          {...register('password')}
+          error={!!errors.password}
+        />
+        <Input
+          label="Confirm Password"
+          {...register('rePassword')}
+          error={!!errors.rePassword}
+          fullWidth
+          {...confirmPasswordInputProps}
+          placeholder="Confirm password"
+        />
+        {!errors?.rePassword?.message && (
+          <PasswordValidationStatus
+            isSignUp={true}
+            boxProps={{ sx: { padding: '0 0.5rem' } }}
+            isPasswordInvalid={isPasswordInvalid}
+            passwordStrength={passwordStrength}
+          />
+        )}
+        {!!errors?.rePassword?.message && (
+          <Typography variant="body2" color={'red'}>
+            {errors.rePassword.message}
+          </Typography>
+        )}
         <Button type="submit" disabled={isLoading}>
           Import key {isLoading && <LoadingSpinner />}
         </Button>
-      </Stack>
+      </Container>
     </Modal>
   )
 }
