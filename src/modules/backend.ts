@@ -28,6 +28,7 @@ import {
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
+import { encrypt as encryptNip49 } from './nip49'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -805,10 +806,12 @@ export class NoauthBackend {
     name,
     nsec,
     existingName,
+    passphrase
   }: {
     name: string
     nsec?: string
     existingName?: boolean
+    passphrase?: string
   }): Promise<KeyInfo> {
     // lowercase
     name = name.trim().toLocaleLowerCase()
@@ -826,11 +829,23 @@ export class NoauthBackend {
 
     const localKey = await this.keysModule.generateLocalKey()
     const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
+
     // @ts-ignore
     const dbKey: DbKey = { npub, name, enckey, localKey }
+
+    // nip49
+    if (passphrase)
+      dbKey.ncryptsec = encryptNip49(Buffer.from(sk, 'hex'), passphrase, 16, nsec ? 0x01 : 0x00)
+
+    // FIXME this is all one big complex TX and if something fails
+    // we have to gracefully proceed somehow
+
     await dbi.addKey(dbKey)
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
+
+    if (passphrase)
+      await this.saveKey(npub, passphrase)
 
     // assign nip05 before adding the key
     if (!existingName && name && !name.includes('@')) {
@@ -1269,8 +1284,8 @@ export class NoauthBackend {
     await this.startKey({ npub, sk })
   }
 
-  private async generateKey(name: string) {
-    const k = await this.addKey({ name })
+  private async generateKey(name: string, passphrase: string) {
+    const k = await this.addKey({ name, passphrase })
     this.updateUI()
     return k
   }
@@ -1280,8 +1295,8 @@ export class NoauthBackend {
     await this.sendTokenToServer(npub, token)
   }
 
-  private async importKey(name: string, nsec: string) {
-    const k = await this.addKey({ name, nsec })
+  private async importKey(name: string, nsec: string, passphrase: string) {
+    const k = await this.addKey({ name, nsec, passphrase })
     this.updateUI()
     return k
   }
@@ -1354,7 +1369,7 @@ export class NoauthBackend {
       enckey,
       passphrase,
     })
-    const k = await this.addKey({ name, nsec, existingName })
+    const k = await this.addKey({ name, nsec, existingName, passphrase })
     this.updateUI()
     return k
   }
@@ -1442,17 +1457,23 @@ export class NoauthBackend {
     return true
   }
 
+  private async exportKey(npub: string): Promise<string> {
+    const dbKey = await dbi.getKey(npub)
+    if (!dbKey) throw new Error("Key not found")
+    return dbKey.ncryptsec || ''
+  }
+
   public async onMessage(event: any) {
     const { id, method, args } = event.data
     try {
       //console.log("UI message", id, method, args)
       let result = undefined
       if (method === 'generateKey') {
-        result = await this.generateKey(args[0])
+        result = await this.generateKey(args[0], args[1])
       } else if (method === 'redeemToken') {
         result = await this.redeemToken(args[0], args[1])
       } else if (method === 'importKey') {
-        result = await this.importKey(args[0], args[1])
+        result = await this.importKey(args[0], args[1], args[2])
       } else if (method === 'saveKey') {
         result = await this.saveKey(args[0], args[1])
       } else if (method === 'fetchKey') {
@@ -1473,6 +1494,8 @@ export class NoauthBackend {
         result = await this.enablePush()
       } else if (method === 'fetchPendingRequests') {
         result = await this.fetchPendingRequests(args[0], args[1])
+      } else if (method === 'exportKey') {
+        result = await this.exportKey(args[0])
       } else {
         console.log('unknown method from UI ', method)
       }

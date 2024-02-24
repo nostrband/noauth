@@ -9,6 +9,7 @@ export interface DbKey {
   relays?: string[]
   enckey: string
   profile?: MetaEvent | null
+  ncryptsec?: string
 }
 
 export interface DbApp {
@@ -81,6 +82,13 @@ export const dbi = {
       await db.keys.add(key)
     } catch (error) {
       console.log(`db addKey error: ${error}`)
+    }
+  },
+  getKey: async (npub: string) => {
+    try {
+      return await db.keys.get(npub)
+    } catch (error) {
+      console.log(`db getKey error: ${error}`)
     }
   },
   listKeys: async (): Promise<DbKey[]> => {

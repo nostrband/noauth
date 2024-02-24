@@ -2,7 +2,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, Stack, Typography } from '@mui/material'
-import { StyledButton, StyledSettingContainer, StyledSynchedText } from './styled'
+import { StyledButton, StyledSettingContainer, StyledSynchText, StyledSynchedText } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { CheckmarkIcon } from '@/assets'
 import { Input } from '@/shared/Input/Input'
@@ -15,8 +15,11 @@ import { dbi } from '@/modules/db'
 import { usePassword } from '@/hooks/usePassword'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
+import { usePasswordValidation } from '@/hooks/usePasswordValidation'
+import { isValidPassphase } from '@/modules/keys'
+import { useCopyToClipboard } from 'usehooks-ts'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -26,6 +29,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const { npub = '' } = useParams<{ npub: string }>()
   const keys = useAppSelector(selectKeys)
+  const [, copyToClipboard] = useCopyToClipboard()
 
   const notify = useEnqueueSnackbar()
 
@@ -35,7 +39,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const { hidePassword, inputProps } = usePassword()
 
   const [enteredPassword, setEnteredPassword] = useState('')
-  const [isPasswordInvalid, setIsPasswordInvalid] = useState(false)
+  const { isPasswordInvalid, passwordStrength, reset, setIsPasswordInvalid } = usePasswordValidation(enteredPassword)
 
   const [isChecked, setIsChecked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -44,10 +48,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
 
   useEffect(() => {
     return () => {
-      if (isModalOpened) {
-        // modal closed
-        hidePassword()
-      }
+      if (isModalOpened) hidePassword() // modal closed
     }
   }, [hidePassword, isModalOpened])
 
@@ -57,17 +58,13 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     handleCloseModal()
     return null
   }
-
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const password = e.target.value
-    setIsPasswordInvalid(!!password && !isValidPassphase(password))
-    setEnteredPassword(password)
+    setEnteredPassword(e.target.value.trim())
   }
 
   const onClose = () => {
     handleCloseModal()
-    setEnteredPassword('')
-    setIsPasswordInvalid(false)
+    reset()
   }
 
   const handleChangeCheckbox = (e: unknown, checked: boolean) => {
@@ -77,7 +74,6 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsPasswordInvalid(false)
-
     if (!isValidPassphase(enteredPassword)) {
       return setIsPasswordInvalid(true)
     }
@@ -86,12 +82,25 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
       await swicCall('saveKey', npub, enteredPassword)
       notify('Key saved', 'success')
       dbi.addSynced(npub) // Sync npub
-      setEnteredPassword('')
-      setIsPasswordInvalid(false)
+      reset()
       setIsLoading(false)
     } catch (error) {
-      setIsPasswordInvalid(false)
+      reset()
       setIsLoading(false)
+    }
+  }
+
+  const exportKey = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const key = (await swicCall('exportKey', npub)) as string
+      if (!key) notify('Specify Cloud Sync password first!', 'error')
+      else if (await copyToClipboard(key)) notify('Key copied to clipboard!')
+      else notify('Failed to copy to clipboard', 'error')
+    } catch (error) {
+      console.log('error', error)
+      notify(`Failed to copy to clipboard: ${error}`, 'error')
     }
   }
 
@@ -99,13 +108,14 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     <Modal open={isModalOpened} onClose={onClose} title="Settings">
       <Stack gap={'1rem'}>
         <StyledSettingContainer onSubmit={handleSubmit}>
-          <Stack direction={'row'} justifyContent={'space-between'}>
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'start'}>
             <SectionTitle>Cloud sync</SectionTitle>
             {isSynced && (
               <StyledSynchedText>
                 <CheckmarkIcon /> Synched
               </StyledSynchedText>
             )}
+            {!isSynced && <StyledSynchText>Not enabled</StyledSynchText>}
           </Stack>
           <Box>
             <Checkbox onChange={handleChangeCheckbox} checked={isChecked} />
@@ -119,30 +129,21 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
             placeholder="Enter a password"
             disabled={!isChecked}
           />
-          {isPasswordInvalid ? (
-            <Typography variant="body2" color={'red'}>
-              Password must include 6+ English letters, numbers or punctuation marks.
-            </Typography>
-          ) : !!enteredPassword && isWeakPassphase(enteredPassword) ? (
-            <Typography variant="body2" color={'orange'}>
-              Weak password
-            </Typography>
-          ) : !!enteredPassword && !isPasswordInvalid ? (
-            <Typography variant="body2" color={'green'}>
-              Good password
-            </Typography>
-          ) : isSynced ? (
-            <Typography variant="body2" color={'GrayText'}>
-              To change your password, type a new one and sync.
-            </Typography>
-          ) : (
-            <Typography variant="body2" color={'GrayText'}>
-              This key will be encrypted and stored on our server. You can use the password to download this key onto
-              another device.
-            </Typography>
-          )}
+          <PasswordValidationStatus isPasswordInvalid={isPasswordInvalid} passwordStrength={passwordStrength} />
           <StyledButton type="submit" fullWidth disabled={!isChecked}>
             Sync {isLoading && <LoadingSpinner mode="secondary" />}
+          </StyledButton>
+        </StyledSettingContainer>
+
+        <StyledSettingContainer>
+          <Stack direction={'row'} justifyContent={'space-between'}>
+            <SectionTitle>Export key</SectionTitle>
+          </Stack>
+          <Typography variant="body2" color={'GrayText'}>
+            Export your key encrypted with your password (NIP49)
+          </Typography>
+          <StyledButton type="submit" fullWidth onClick={exportKey}>
+            Export
           </StyledButton>
         </StyledSettingContainer>
       </Stack>

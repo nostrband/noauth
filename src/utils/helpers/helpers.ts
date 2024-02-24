@@ -163,3 +163,13 @@ export function getPermActionName(req: DbPerm) {
 export const isEmptyString = (str = '') => {
   return str.trim().length === 0
 }
+
+export const isValidUserName = (username: string) => {
+  const REGEX = /^[a-z0-9_\-.]{2,128}$/;
+  if (!REGEX.test(username.toLowerCase())) return false
+  try {
+    const { type } = nip19.decode(username)
+    if (type === 'nsec') return false
+  } catch {}
+  return true
+}

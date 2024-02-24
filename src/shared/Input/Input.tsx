@@ -6,7 +6,7 @@ import { AppInputProps } from './types'
 const renderItem = <T,>(item: T, value: ReactNode) => (item ? value : null)
 
 export const Input = forwardRef<HTMLInputElement, AppInputProps>(
-  ({ helperText, containerProps, helperTextProps, label, ...props }, ref) => {
+  ({ helperText, containerProps, helperTextProps, label, error, ...props }, ref) => {
     return (
       <StyledInputContainer {...containerProps}>
         {renderItem(
@@ -21,10 +21,11 @@ export const Input = forwardRef<HTMLInputElement, AppInputProps>(
           {...props}
           classes={{ error: 'error', root: 'input_root', input: 'input', disabled: 'disabled' }}
           ref={ref}
+          error={error}
         />
         {renderItem(
           helperText,
-          <FormHelperText {...helperTextProps} className="helper_text">
+          <FormHelperText error={error} {...helperTextProps} className="helper_text">
             {helperText}
           </FormHelperText>
         )}
