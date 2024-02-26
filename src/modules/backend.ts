@@ -429,7 +429,10 @@ export class NoauthBackend {
           : data.permUpdateTimestamp,
       }
     }
-    if (!app) {
+    if (!app && data.deleted) {
+      // already deleted
+      console.log('App already deleted', { data })
+    } else if (!app) {
       // new app
       const newApp = appFromData()
       await dbi.addApp(newApp)
