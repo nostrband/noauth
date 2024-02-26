@@ -1418,6 +1418,14 @@ export class NoauthBackend {
     }
   }
 
+  private async updateApp(app: DbApp) {
+    await dbi.updateApp(app)
+    this.apps = await dbi.listApps()
+    console.log('updated app', app)
+    this.publishAppPerms({ appNpub: app.appNpub, npub: app.npub })
+    this.updateUI()
+  }
+
   private async deleteApp(appNpub: string, npub: string) {
     this.apps = this.apps.filter((a) => a.appNpub !== appNpub || a.npub !== npub)
     this.perms = this.perms.filter((p) => p.appNpub !== appNpub || p.npub !== npub)
@@ -1515,6 +1523,8 @@ export class NoauthBackend {
         result = await this.confirm(args[0], args[1], args[2], args[3])
       } else if (method === 'connectApp') {
         result = await this.connectApp(args[0])
+      } else if (method === 'updateApp') {
+        result = await this.updateApp(args[0])
       } else if (method === 'deleteApp') {
         result = await this.deleteApp(args[0], args[1])
       } else if (method === 'deletePerm') {

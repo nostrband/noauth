@@ -46,6 +46,7 @@ const AppPage = () => {
   const appDomain = getDomain(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
+  const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
 
@@ -70,7 +71,7 @@ const AppPage = () => {
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
 
         <HeadingContainer>
-          <IconApp size="big" picture={icon} alt={appAvatarTitle} />
+          <IconApp size="big" picture={appIcon} alt={appAvatarTitle} />
           <Box flex={'1'} overflow={'auto'} alignSelf={'flex-start'} width={'100%'}>
             <AppInfoContainer>
               <AppNameContainer>
