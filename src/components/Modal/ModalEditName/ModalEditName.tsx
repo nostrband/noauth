@@ -57,7 +57,7 @@ export const ModalEditName = () => {
       setIsAvailable(true)
       setIsChecking(false)
     }
-  }, [debouncedName, npub])
+  }, [debouncedName, npub, isValidName])
 
   useEffect(() => {
     checkIsUsernameAvailable()
@@ -95,7 +95,7 @@ export const ModalEditName = () => {
     if (!debouncedName || isChecking || isNameEqual) return palette.textSecondaryDecorate.main
     return isAvailable && isValidName ? palette.success.main : palette.error.main
     // deps
-  }, [debouncedName, isAvailable, isChecking, isNameEqual, palette])
+  }, [debouncedName, isAvailable, isChecking, isNameEqual, palette, isValidName])
 
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
   if (isModalOpened && !isNpubExists) {

@@ -68,7 +68,7 @@ export const ModalImportKeys = () => {
     if (!isValidName) return undefined
     const npubNip05 = await fetchNip05(`${debouncedUsername.trim()}@${DOMAIN}`)
     setNameNpub(npubNip05 || '')
-  }, [debouncedUsername])
+  }, [debouncedUsername, isValidName])
 
   useEffect(() => {
     checkIsUsernameAvailable()
