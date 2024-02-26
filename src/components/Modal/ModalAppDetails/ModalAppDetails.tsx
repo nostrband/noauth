@@ -8,12 +8,12 @@ import { StyledInput } from './styled'
 import { FormEvent, useEffect, useState } from 'react'
 import { isEmptyString } from '@/utils/helpers/helpers'
 import { useParams } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '@/store/hooks/redux'
+import { useAppSelector } from '@/store/hooks/redux'
 import { selectApps } from '@/store'
-import { DbApp, dbi } from '@/modules/db'
+import { DbApp } from '@/modules/db'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { setApps } from '@/store/reducers/content.slice'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { swicCall } from '@/modules/swic'
 
 export const ModalAppDetails = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -22,7 +22,6 @@ export const ModalAppDetails = () => {
 
   const { npub = '', appNpub = '' } = useParams()
   const apps = useAppSelector(selectApps)
-  const dispatch = useAppDispatch()
 
   const notify = useEnqueueSnackbar()
 
@@ -97,6 +96,7 @@ export const ModalAppDetails = () => {
     if (isLoading || !currentApp) return undefined
     try {
       setIsLoading(true)
+
       const updatedApp: DbApp = {
         ...currentApp,
         url,
@@ -104,13 +104,7 @@ export const ModalAppDetails = () => {
         icon,
         updateTimestamp: Date.now()
       }
-      await dbi.updateApp(updatedApp)
-      const apps = await dbi.listApps()
-      dispatch(
-        setApps({
-          apps,
-        })
-      )
+      await swicCall('updateApp', updatedApp)
       notify(`App successfully updated!`, 'success')
       setIsLoading(false)
       handleCloseModal()
