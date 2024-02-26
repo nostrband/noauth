@@ -396,6 +396,8 @@ export class NoauthBackend {
   }
 
   private isValidAppPerms(d: any) {
+    if (d.npub && d.appNpub && d.updateTimestamp && d.deleted) return true
+
     if (!d.npub || !d.appNpub || !d.timestamp || !d.updateTimestamp || !d.permUpdateTimestamp) return false
 
     for (const p of d.perms) {
@@ -930,7 +932,7 @@ export class NoauthBackend {
         appNpub,
         npub,
         updateTimestamp: Date.now(),
-        deleted: true
+        deleted: true,
       }
     }
     const { type, data: pubkey } = nip19.decode(npub)
