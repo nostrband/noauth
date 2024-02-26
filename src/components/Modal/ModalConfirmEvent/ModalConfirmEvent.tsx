@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
+import { call, getAppIconTitle, getDomain, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -85,16 +85,19 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
       // if (isPopup) window.close()
       // else closeModalAfterRequest()
-      if (!isPopup)
-        closeModalAfterRequest()
+      if (!isPopup) closeModalAfterRequest()
       return null
     }
   }
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  const { name, icon = '' } = triggerApp || {}
-  const appName = name || getShortenNpub(appNpub)
-  const appAvatarTitle = getAppIconTitle(name, appNpub)
+  const { name, url = '', icon = '' } = triggerApp || {}
+  const appDomain = getDomain(url)
+  const shortAppNpub = getShortenNpub(appNpub)
+  const appName = name || appDomain || shortAppNpub
+  const appIcon = icon || `https://${appDomain}/favicon.ico`
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const isAppNameExists = !!name || !!appDomain
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -142,7 +145,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
               height: 56,
               borderRadius: '12px',
             }}
-            src={icon}
+            src={appIcon}
           >
             {appAvatarTitle}
           </Avatar>
@@ -150,6 +153,11 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
             <Typography variant="h5" fontWeight={600}>
               {appName}
             </Typography>
+            {isAppNameExists && (
+              <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
+                {shortAppNpub}
+              </Typography>
+            )}{' '}
             <Typography variant="body2" color={'GrayText'}>
               App wants to perform these actions
             </Typography>
