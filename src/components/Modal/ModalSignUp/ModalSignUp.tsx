@@ -74,7 +74,7 @@ export const ModalSignUp = () => {
       setIsAvailable(false)
       setIsChecking(false)
     }
-  }, [debouncedUsername])
+  }, [debouncedUsername, isValidName])
 
   useEffect(() => {
     checkIsUsernameAvailable()
@@ -138,7 +138,7 @@ export const ModalSignUp = () => {
   const getHelperTextColor = useCallback(() => {
     if (!debouncedUsername.trim() || isChecking) return theme.palette.textSecondaryDecorate.main
     return isValidName && isAvailable ? theme.palette.success.main : theme.palette.error.main
-  }, [debouncedUsername, isAvailable, isChecking, theme])
+  }, [debouncedUsername, isAvailable, isChecking, theme, isValidName])
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
