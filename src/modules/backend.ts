@@ -29,6 +29,7 @@ import {
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
 import { encrypt as encryptNip49 } from './nip49'
+import { EventEmitter } from 'tseep'
 //import { PrivateKeySigner } from './signer'
 
 //const PERF_TEST = false
@@ -237,7 +238,7 @@ class Nip46Backend extends NDKNip46Backend {
 //   }
 // }
 
-export class NoauthBackend {
+export class NoauthBackend extends EventEmitter {
   readonly swg: ServiceWorkerGlobalScope
   private keysModule: Keys
   private enckeys: DbKey[] = []
@@ -256,6 +257,7 @@ export class NoauthBackend {
   })
 
   public constructor(swg: ServiceWorkerGlobalScope) {
+    super()
     this.swg = swg
     this.keysModule = new Keys(swg.crypto.subtle)
     this.ndk.connect()
@@ -341,7 +343,13 @@ export class NoauthBackend {
       if (sub) await this.sendSubscriptionToServer(k.npub, sub)
     }
 
-    this.subscribeToAppPerms()
+    // FIXME waiting here isn't working fully bcs 
+    // we don't put all events into a queue and don't process
+    // them sequentially, so EOSE might be delivered
+    // before all events are actually processed
+    await this.subscribeToAppPerms()
+
+    this.emit(`start`)
   }
 
   private async subscribeToAppPerms() {
@@ -1156,6 +1164,10 @@ export class NoauthBackend {
       if (dec !== DECISION.ASK) {
         // reply immediately
         onAllow(false, dec, false)
+
+        // notify 
+        this.emit(`done-${req.id}`, req)
+
       } else {
         // put pending req to db
         await dbi.addPending(req)
@@ -1168,6 +1180,9 @@ export class NoauthBackend {
           req,
           cb: (decision, remember, options) => onAllow(true, decision, remember, options),
         })
+
+        // notify those who are waiting for this req
+        this.emit(`pending-${req.id}`, req)
 
         // OAuth flow
         const isConnect = method === 'connect'
@@ -1281,6 +1296,8 @@ export class NoauthBackend {
         backend.processEvent(e)
       }
     }
+
+    this.emit(`start-key-${npub}`)
   }
 
   private async fetchPendingRequests(npub: string, appNpub: string) {
@@ -1298,6 +1315,69 @@ export class NoauthBackend {
     )
     console.log('fetched pending for', npub, events.size)
     this.pendingNpubEvents.set(npub, [...events.values()])
+  }
+
+  private async waitKey(npub: string): Promise<Key | undefined> {
+    const key = this.keys.find(k => k.npub === npub)
+    if (key) return key
+    return new Promise(ok => {
+      // start-key will be called before start if key exists
+      this.once(`start-key-${npub}`, () => ok(this.keys.find(k => k.npub === npub)))
+      this.once(`start`, () => ok(undefined))
+    })
+  }
+
+  private async checkPendingRequest(npub: string, appNpub: string, reqId: string) {
+    console.log("checkPendingRequest", { npub, appNpub, reqId })
+    // already there - return immediately
+    const req = this.confirmBuffer.find(r => r.req.id === reqId)
+    if (req) return true
+
+    return new Promise(async (ok, rej) => {
+      // FIXME what if key wasn't loaded yet?
+      const key = await this.waitKey(npub)
+      if (!key) return rej(new Error("Key not found"))
+
+      // to avoid races, add onEvent handlers before checking relays
+      const pendingEventName = `pending-${reqId}`
+      const doneEventName = `done-${reqId}`
+      const listener = () => { ok(true) }
+      this.once(pendingEventName, listener)
+      this.once(doneEventName, listener)
+
+      // if not found on relay release the event handlers
+      const notFound = () => {
+        // don't leak memory if events aren't on relays
+        // and these handlers won't ever be called
+        this.removeListener(pendingEventName, listener)
+        this.removeListener(doneEventName, listener)
+        ok(false)
+      }
+
+      // check relay
+      await this.fetchPendingRequests(npub, appNpub)
+      const reqs = this.pendingNpubEvents.get(npub)
+      console.log("checkPendingRequest", { npub, appNpub, reqId, reqs })
+      if (!reqs || !reqs.length) return notFound()
+      this.pendingNpubEvents.delete(npub)
+
+      // parse reqs and find by id
+      const { data: appPubkey } = nip19.decode(appNpub)
+      const appUser = new NDKUser({ pubkey: appPubkey as string })
+      for (const r of reqs) {
+        try {
+          const payload = await key.signer.decrypt(appUser, r.content)
+          const data = JSON.parse(payload)
+
+          // found on relay, promise will be resolved by an 
+          // event handler above
+          if (data.id === reqId && data.method) return
+        } catch {}
+      }
+
+      // not found on relay
+      notFound()  
+    })
   }
 
   public async unlock(npub: string) {
@@ -1535,6 +1615,8 @@ export class NoauthBackend {
         result = await this.transferName(args[0], args[1], args[2])
       } else if (method === 'enablePush') {
         result = await this.enablePush()
+      } else if (method === 'checkPendingRequest') {
+        result = await this.checkPendingRequest(args[0], args[1], args[2])
       } else if (method === 'fetchPendingRequests') {
         result = await this.fetchPendingRequests(args[0], args[1])
       } else if (method === 'exportKey') {

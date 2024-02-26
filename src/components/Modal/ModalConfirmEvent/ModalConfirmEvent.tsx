@@ -40,6 +40,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
   const [searchParams] = useSearchParams()
 
+  const pendingReqId = searchParams.get('reqId') || ''
   const appNpub = searchParams.get('appNpub') || ''
   const isPopup = searchParams.get('popup') === 'true'
   const { npub = '' } = useParams<{ npub: string }>()
@@ -64,11 +65,17 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
 
   useEffect(() => {
     if (isModalOpened) {
-      if (isPopup) {
+      if (isPopup && pendingReqId) {
         // wait for SW to start
-        swicWaitStarted().then(() => {
-          // give it some time to load the pending reqs etc
-          setTimeout(() => setIsLoaded(true), 500)
+        swicWaitStarted().then(async () => {
+          console.log('waiting for sw done')
+          // block until req is loaded or we're sure it doesn't exist
+          const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
+          console.log("checkPendingRequest", { ok, currentAppPendingReqs })
+          // if req exists let's wait for it to be 
+          // taken from db and dispatched to redux
+          if (!ok) setIsLoaded(true)
+          else setTimeout(() => setIsLoaded(true), 100)
         })
       } else {
         setIsLoaded(true)
@@ -76,7 +83,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     } else {
       setIsLoaded(false)
     }
-  }, [isModalOpened, isPopup])
+  }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
 
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)

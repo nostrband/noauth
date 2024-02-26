@@ -72,13 +72,18 @@ export const ModalConfirmConnect = () => {
 
   useEffect(() => {
     if (isModalOpened) {
-      if (isPopup) {
-        console.log('waiting for sw')
+      if (isPopup && pendingReqId) {
+        // console.log('waiting for sw')
         // wait for SW to start
-        swicWaitStarted().then(() => {
-          // give it some time to load the pending reqs etc
-          console.log('waiting for sw done')
-          setTimeout(() => setIsLoaded(true), 500)
+        swicWaitStarted().then(async () => {
+          // console.log('waiting for sw done')
+          // block until req is loaded or we're sure it doesn't exist
+          const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
+          // console.log("checkPendingRequest", { ok, pending })
+          // if req exists let's wait for it to be 
+          // taken from db and dispatched to redux
+          if (!ok) setIsLoaded(true)
+          else setTimeout(() => setIsLoaded(true), 100)
         })
       } else {
         setIsLoaded(true)
@@ -86,7 +91,7 @@ export const ModalConfirmConnect = () => {
     } else {
       setIsLoaded(false)
     }
-  }, [isModalOpened, isPopup])
+  }, [isModalOpened, isPopup, npub, appNpub, pendingReqId])
 
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
