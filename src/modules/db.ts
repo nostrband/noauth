@@ -154,12 +154,15 @@ export const dbi = {
   },
   updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
     try {
+      const permUpdateTimestamp = timestamp || Date.now()
       await db.apps.where({ appNpub, npub }).modify({
-        permUpdateTimestamp: timestamp || Date.now(),
+        permUpdateTimestamp
       })
+      return permUpdateTimestamp
     } catch (error) {
       console.log(`db updatePermTimestamp error: ${error}`)
     }
+    return 0
   },
   addPerm: async (perm: DbPerm) => {
     try {

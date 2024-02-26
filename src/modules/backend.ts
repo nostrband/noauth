@@ -407,6 +407,13 @@ export class NoauthBackend {
     return true
   }
 
+  private async updateAppPermTimestamp(appNpub: string, npub: string, timestamp = 0) {
+    // write to db then update our cache
+    const tm = await dbi.updateAppPermTimestamp(appNpub, npub, timestamp)
+    const app = this.apps.find(a => a.appNpub === appNpub && a.npub === npub)
+    if (app) app.permUpdateTimestamp = tm
+  }
+
   private async mergeAppPerms(data: any) {
     const app = this.apps.find((a) => a.appNpub === data.appNpub && a.npub === data.npub)
 
@@ -450,7 +457,7 @@ export class NoauthBackend {
       }
     } else {
       // old data
-      console.log('skip old app perms', { data, app })
+      console.log('Skip old app info from event', { data, app })
     }
 
     // merge perms
@@ -468,7 +475,7 @@ export class NoauthBackend {
       await dbi.removeAppPerms(data.appNpub, data.npub)
 
       // set timestamp from the peer
-      await dbi.updateAppPermTimestamp(data.appNpub, data.npub, data.permUpdateTimestamp)
+      await this.updateAppPermTimestamp(data.appNpub, data.npub, data.permUpdateTimestamp)
 
       // add all perms from peer
       for (const p of data.perms) {
@@ -996,8 +1003,10 @@ export class NoauthBackend {
         value: '1',
         timestamp: Date.now(),
       })
-      await dbi.updateAppPermTimestamp(appNpub, npub)
     }
+
+    // perm update timestamp
+    await this.updateAppPermTimestamp(appNpub, npub)
 
     // reload
     this.perms = await dbi.listPerms()
@@ -1105,19 +1114,19 @@ export class NoauthBackend {
               value: allow ? '1' : '0',
               timestamp: Date.now(),
             })
-            await dbi.updateAppPermTimestamp(req.appNpub, req.npub)
           }
+          await this.updateAppPermTimestamp(req.appNpub, req.npub)
 
           // reload
           this.perms = await dbi.listPerms()
+
+          // if remembering - publish
+          this.publishAppPerms({ npub: req.npub, appNpub: req.appNpub })
         }
 
         // release this promise to send reply
         // to this req
         ok(decision)
-
-        // async
-        this.publishAppPerms({ npub: req.npub, appNpub: req.appNpub })
 
         // notify UI that it was confirmed
         // if (!PERF_TEST)
@@ -1423,7 +1432,8 @@ export class NoauthBackend {
     if (!perm) throw new Error('Perm not found')
     this.perms = this.perms.filter((p) => p.id !== id)
     await dbi.removePerm(id)
-    await dbi.updateAppPermTimestamp(perm.appNpub, perm.npub)
+    await this.updateAppPermTimestamp(perm.appNpub, perm.npub)
+    this.publishAppPerms({ appNpub: perm.appNpub, npub: perm.npub })
     this.updateUI()
   }
 
