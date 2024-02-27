@@ -17,9 +17,9 @@ export const Header = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
-
   const [searchParams] = useSearchParams()
   const isPopupMode = searchParams.get('popup') === 'true'
+  const showReloadBadge = !isPopupMode && needReload
 
   const { npub = '' } = useParams<{ npub: string }>()
   const { userName, userAvatar, avatarTitle } = useProfile(npub)
@@ -42,11 +42,11 @@ export const Header = () => {
   }, [isPopupMode, isKeyPage])
 
   return (
-    <StyledAppBar position={needReload ? 'relative' : 'fixed'}>
+    <StyledAppBar position={showReloadBadge ? 'relative' : 'fixed'}>
       <Toolbar sx={{ padding: '12px' }}>
         <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
           {isKeyPage && (
-            <StyledProfileContainer nonclickable={isPopupMode}>
+            <StyledProfileContainer nonclickable={isPopupMode || undefined}>
               <Avatar src={userAvatar} alt={userName} onClick={handleNavigate} className="avatar">
                 {avatarTitle}
               </Avatar>

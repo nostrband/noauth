@@ -71,8 +71,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
           console.log('waiting for sw done')
           // block until req is loaded or we're sure it doesn't exist
           const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
-          console.log("checkPendingRequest", { ok, currentAppPendingReqs })
-          // if req exists let's wait for it to be 
+          console.log('checkPendingRequest', { ok, currentAppPendingReqs })
+          // if req exists let's wait for it to be
           // taken from db and dispatched to redux
           if (!ok) setIsLoaded(true)
           else setTimeout(() => setIsLoaded(true), 100)
@@ -83,6 +83,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     } else {
       setIsLoaded(false)
     }
+    // eslint-disable-next-line
   }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
 
   if (isLoaded) {
