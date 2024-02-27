@@ -75,15 +75,13 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   const isAppNameExists = !!name || !!appDomain
   const redirectUri = searchParams.get('redirect_uri') || ''
   const done = searchParams.get('done') === 'true'
-  console.log({ isModalOpened, redirectUri });
 
   useEffect(() => {
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
       // wait for SW to start
       swicWaitStarted().then(async () => {
-        const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
-        console.log("checkPendingRequest", ok)
+        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
         setIsLoaded(true)
       })
     } else {
@@ -118,7 +116,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
         console.log('confirmed', req.id, selectedActionType, allow)
       })
     })
-    // if (!isPopup) closeModalAfterRequest()
+    if (!isPopup) closeModalAfterRequest()
     closePopup()
   }
 
