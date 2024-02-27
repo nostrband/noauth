@@ -85,7 +85,13 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
   ])
 
   const handleOpenConfirmEventModal = useCallback(() => {
-    if (!filteredPendingReqs.length || connectPendings.length) return undefined
+    if (
+      !filteredPendingReqs.length ||
+      connectPendings.length ||
+      isConfirmEventModalOpened ||
+      isConfirmConnectModalOpened
+    )
+      return undefined
 
     for (let i = 0; i < Object.keys(prepareEventPendings).length; i++) {
       const appNpub = Object.keys(prepareEventPendings)[i]
@@ -103,7 +109,15 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
       })
       break
     }
-  }, [connectPendings.length, filteredPendingReqs.length, handleOpen, prepareEventPendings, isPopup])
+  }, [
+    connectPendings.length,
+    filteredPendingReqs.length,
+    handleOpen,
+    prepareEventPendings,
+    isPopup,
+    isConfirmEventModalOpened,
+    isConfirmConnectModalOpened,
+  ])
 
   useEffect(() => {
     handleOpenConfirmEventModal()

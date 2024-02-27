@@ -28,7 +28,7 @@ export const ModalConfirmConnect = () => {
   const navigate = useNavigate()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const paramNpub = searchParams.get('npub') || ''
   const { npub = paramNpub } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
@@ -41,6 +41,8 @@ export const ModalConfirmConnect = () => {
   const pendingReqId = searchParams.get('reqId') || ''
   const isPopup = searchParams.get('popup') === 'true'
   const token = searchParams.get('token') || ''
+  const redirectUri = searchParams.get('redirect_uri') || ''
+  const done = searchParams.get('done') === 'true'
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
@@ -58,6 +60,8 @@ export const ModalConfirmConnect = () => {
       sp.delete('popup')
       sp.delete('npub')
       sp.delete('appUrl')
+      sp.delete('token')
+      sp.delete('redirect_uri')
     },
   })
 
@@ -71,25 +75,16 @@ export const ModalConfirmConnect = () => {
   // FIXME move to a separate hook and reuse?
 
   useEffect(() => {
-    if (isModalOpened) {
-      if (isPopup && pendingReqId) {
-        // console.log('waiting for sw')
-        // wait for SW to start
-        swicWaitStarted().then(async () => {
-          // console.log('waiting for sw done')
-          // block until req is loaded or we're sure it doesn't exist
-          const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
-          // console.log("checkPendingRequest", { ok, pending })
-          // if req exists let's wait for it to be 
-          // taken from db and dispatched to redux
-          if (!ok) setIsLoaded(true)
-          else setTimeout(() => setIsLoaded(true), 100)
-        })
-      } else {
+    if (!isModalOpened) return
+    if (isPopup && pendingReqId) {
+      // wait for SW to start
+      swicWaitStarted().then(async () => {
+        // block until req is loaded or we're sure it doesn't exist
+        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
         setIsLoaded(true)
-      }
+      })
     } else {
-      setIsLoaded(false)
+      setIsLoaded(true)
     }
   }, [isModalOpened, isPopup, npub, appNpub, pendingReqId])
 
@@ -100,8 +95,7 @@ export const ModalConfirmConnect = () => {
     const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
     // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
     if (isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
-      // if (isPopup) window.close()
-      // else closeModalAfterRequest()
+      // we are looking at a stale event!
       if (!isPopup) closeModalAfterRequest()
       return null
     }
@@ -112,13 +106,25 @@ export const ModalConfirmConnect = () => {
     return setSelectedActionType(value)
   }
 
+  const closePopup = () => {
+    if (!isPopup) return
+    if (!redirectUri) return window.close()
+
+    // add done marker first
+    searchParams.append('done', 'true')
+    setSearchParams(searchParams)
+
+    // and then do the redirect
+    window.location.href = redirectUri
+  }
+
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     call(async () => {
       await swicCall('confirm', id, allow, remember, options)
       console.log('confirmed', id, allow, remember, options)
-      closeModalAfterRequest()
     })
-    if (isPopup) window.close()
+    if (!isPopup) closeModalAfterRequest()
+    closePopup()
   }
 
   const allow = async () => {
@@ -162,7 +168,7 @@ export const ModalConfirmConnect = () => {
 
       notify('App connected! Closing...', 'success')
 
-      if (isPopup) setTimeout(() => window.close(), 3000)
+      if (isPopup) setTimeout(() => closePopup(), 3000)
       else navigate(`/key/${npub}`, { replace: true })
     }
   }
@@ -185,7 +191,12 @@ export const ModalConfirmConnect = () => {
   return (
     <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
-        {!pendingReqId && (
+        {done && (
+          <Typography variant="body1" color={'GrayText'}>
+            Redirecting back to your app...
+          </Typography>
+        )}
+        {!done && !pendingReqId && (
           <Typography variant="body1" color={'GrayText'}>
             You will be asked to <b>enable notifications</b>, this is needed for a reliable communication with Nostr
             apps.
