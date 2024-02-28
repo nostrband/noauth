@@ -1,6 +1,6 @@
 import { DbKey, dbi } from './modules/db'
 import { useCallback, useEffect, useState } from 'react'
-import { swicOnReload, swicOnRender } from './modules/swic'
+import { swicCheckpoint, swicOnReload, swicOnRender } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
@@ -56,8 +56,9 @@ function App() {
     const pending = await dbi.listPending()
     dispatch(setPending({ pending }))
 
-    // rerender
-    //		setRender((r) => r + 1)
+    // all updates from backend reloaded, 
+    // backend replies can be delivered now
+    await swicCheckpoint()
 
     // eslint-disable-next-line
   }, [dispatch])

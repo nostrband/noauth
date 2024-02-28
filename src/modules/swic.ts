@@ -8,6 +8,7 @@ let nextReqId = 1
 let onRender: (() => void) | null = null
 let onReload: (() => void) | null = null
 const queue: (() => Promise<void> | void)[] = []
+const checkpointQueue: (() => Promise<void> | void)[] = []
 
 export async function swicRegister() {
   serviceWorkerRegistration.register({
@@ -48,6 +49,13 @@ export function swicWaitStarted() {
   })
 }
 
+export async function swicCheckpoint() {
+  // take existing callbacks
+  const cbs = checkpointQueue.splice(1, checkpointQueue.length)
+  for (const cb of cbs)
+    await cb()
+}
+
 function onMessage(data: any) {
   const { id, result, error } = data
   console.log('SW message', id, result, error)
@@ -68,8 +76,13 @@ function onMessage(data: any) {
   }
 
   reqs.delete(id)
-  if (error) r.rej(error)
-  else r.ok(result)
+  checkpointQueue.push(() => {
+    // a hacky way to let App handle onRender first
+    // to update redux and only then we deliver the
+    // reply
+    if (error) r.rej(error)
+    else r.ok(result)
+  })
 }
 
 export async function swicCall(method: string, ...args: any[]) {
