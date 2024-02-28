@@ -61,6 +61,30 @@ export function getReqPerm(req: DbPending): string {
   return req.method
 }
 
+export function permListToPerms(perms: string): string[] {
+  const r: string[] = []
+  for (const p of perms.split(',')) {
+    const kv = p.split(':')
+    switch (kv[0]) {
+      // these are always given, don't show them
+      case 'connect':
+      case 'get_public_key':
+        break
+      // @ts-ignore
+      case 'sign_event':
+        // don't let global sign_event perm
+        if (kv[1] === '')
+          continue
+        // fallthrough
+      case 'nip04_decrypt':
+      case 'nip04_encrypt':
+        r.push(p)
+        break
+    }
+  }
+  return [...new Set(r)]
+}
+
 export function isPackagePerm(perm: string, reqPerm: string) {
   if (perm === ACTION_TYPE.BASIC) {
     switch (reqPerm) {
@@ -165,7 +189,7 @@ export const isEmptyString = (str = '') => {
 }
 
 export const isValidUserName = (username: string) => {
-  const REGEX = /^[a-z0-9_\-.]{2,128}$/;
+  const REGEX = /^[a-z0-9_\-.]{2,128}$/
   if (!REGEX.test(username.toLowerCase())) return false
   try {
     const { type } = nip19.decode(username)

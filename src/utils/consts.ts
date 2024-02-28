@@ -22,6 +22,7 @@ export enum ACTION_TYPE {
   BASIC = 'basic',
   ADVANCED = 'advanced',
   CUSTOM = 'custom',
+  REQUESTED = 'requested',
 }
 
 export const ACTIONS: { [type: string]: string } = {
