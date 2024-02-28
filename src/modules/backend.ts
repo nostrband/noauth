@@ -1628,6 +1628,8 @@ export class NoauthBackend extends EventEmitter {
         id,
         result,
       })
+      // ensure it's sent to make checkpoint work
+      this.updateUI()
     } catch (e: any) {
       console.log('backend error', e)
       event.source.postMessage({

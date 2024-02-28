@@ -171,7 +171,7 @@ const CreatePage = () => {
                     {errors.rePassword.message}
                   </Typography>
                 )}
-                <GetStartedButton type="submit">Create account {isLoading && <LoadingSpinner />}</GetStartedButton>
+                <GetStartedButton type="submit" disabled={isLoading}>Create account {isLoading && <LoadingSpinner />}</GetStartedButton>
               </Stack>
 
               <Typography textAlign={'left'} variant="h5" paddingTop="1em">
