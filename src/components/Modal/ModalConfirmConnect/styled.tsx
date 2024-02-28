@@ -1,5 +1,5 @@
 import { AppButtonProps, Button } from '@/shared/Button/Button'
-import { ToggleButtonGroup, ToggleButtonGroupProps, styled } from '@mui/material'
+import { Stack, StackProps, ToggleButtonGroup, ToggleButtonGroupProps, styled } from '@mui/material'
 
 export const StyledButton = styled((props: AppButtonProps) => <Button {...props} />)(() => ({
   borderRadius: '19px',
@@ -26,3 +26,9 @@ export const StyledToggleButtonsGroup = styled((props: ToggleButtonGroupProps) =
     },
   })
 )
+
+export const StyledActionsListContainer = styled((props: StackProps) => <Stack {...props} />)(({ theme }) => ({
+  padding: '0.75rem',
+  background: theme.palette.backgroundSecondary.default,
+  borderRadius: '1rem',
+}))

@@ -54,6 +54,7 @@ const CreatePage = () => {
   const name = searchParams.get('name') || ''
   const token = searchParams.get('token') || ''
   const appNpub = searchParams.get('appNpub') || ''
+  const perms = searchParams.get('perms') || ''
   const isValid = name && token && appNpub
 
   const nip05 = `${name}@${DOMAIN}`
@@ -110,6 +111,7 @@ const CreatePage = () => {
           name,
           // will close after all done
           popup: 'true',
+          perms
         },
         replace: true,
       })

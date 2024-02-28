@@ -6,19 +6,25 @@ import {
   call,
   getAppIconTitle,
   getDomain,
+  getPermActionName,
   getReferrerAppUrl,
   getShortenNpub,
+  permListToPerms,
 } from '@/utils/helpers/helpers'
-import { Avatar, Box, Stack, Typography } from '@mui/material'
+import { Avatar, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
-import { StyledButton, StyledToggleButtonsGroup } from './styled'
+import { StyledActionsListContainer, StyledButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useEffect, useState } from 'react'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { DbPerm } from '@/modules/db'
+import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
+
+type RequestedPerm = DbPerm & { checked: boolean }
 
 export const ModalConfirmConnect = () => {
   const keys = useAppSelector(selectKeys)
@@ -34,8 +40,8 @@ export const ModalConfirmConnect = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
-  const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.BASIC)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [requestedPerms, setRequestedPerms] = useState<RequestedPerm[]>([])
 
   const appNpub = searchParams.get('appNpub') || ''
   const pendingReqId = searchParams.get('reqId') || ''
@@ -43,6 +49,11 @@ export const ModalConfirmConnect = () => {
   const token = searchParams.get('token') || ''
   const redirectUri = searchParams.get('redirect_uri') || ''
   const done = searchParams.get('done') === 'true'
+  const permsParam = searchParams.get('perms') || ''
+
+  const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
+    permsParam ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
+  )
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
@@ -53,6 +64,23 @@ export const ModalConfirmConnect = () => {
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
+  useEffect(() => {
+    const perms = permListToPerms(permsParam).map(
+      (p) =>
+        ({
+          id: p,
+          appNpub,
+          npub,
+          checked: true,
+          perm: p,
+          timestamp: Date.now(),
+          value: '1',
+        }) as RequestedPerm
+    )
+    setRequestedPerms(perms)
+    console.log('perms', { perms, permsParam })
+  }, [permsParam, appNpub, npub])
+
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
       sp.delete('appNpub')
@@ -62,18 +90,11 @@ export const ModalConfirmConnect = () => {
       sp.delete('appUrl')
       sp.delete('token')
       sp.delete('redirect_uri')
+      sp.delete('perms')
     },
   })
 
-  // NOTE: when opened directly to this modal using authUrl,
-  // we might not have pending requests visible yet bcs we haven't
-  // loaded them yet, which means this modal will be closed with
-  // the logic below. So now if it's popup then we wait for SW
-  // and then wait a little more to give it time to fetch
-  // pending reqs from db. Same logic implemented in confirm-event.
-
   // FIXME move to a separate hook and reuse?
-
   useEffect(() => {
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
@@ -106,6 +127,14 @@ export const ModalConfirmConnect = () => {
     return setSelectedActionType(value)
   }
 
+  const handleChangeCheckbox = (reqId: string) => () => {
+    const newRequestedPerms = requestedPerms.map((req) => {
+      if (req.id === reqId) return { ...req, checked: !req.checked }
+      return req
+    })
+    setRequestedPerms(newRequestedPerms)
+  }
+
   const closePopup = () => {
     if (!isPopup) return
     if (!redirectUri) return window.close()
@@ -130,6 +159,8 @@ export const ModalConfirmConnect = () => {
   const allow = async () => {
     let perms = ['connect', 'get_public_key']
     if (selectedActionType === ACTION_TYPE.BASIC) perms = [ACTION_TYPE.BASIC]
+    else if (selectedActionType === ACTION_TYPE.REQUESTED)
+      perms.push(...requestedPerms.filter((p) => p.checked).map((p) => p.perm))
 
     if (pendingReqId) {
       const options = { perms, appUrl }
@@ -188,6 +219,8 @@ export const ModalConfirmConnect = () => {
     })
   }
 
+  const hasReqPerms = requestedPerms.length > 0
+
   return (
     <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
@@ -222,16 +255,37 @@ export const ModalConfirmConnect = () => {
             </Typography>
           </Box>
         </Stack>
+        {hasReqPerms && (
+          <StyledActionsListContainer marginBottom={'1rem'}>
+            <SectionTitle>Requested permissions</SectionTitle>
+            <List>
+              {requestedPerms.map((req) => {
+                return (
+                  <ListItem key={req.id}>
+                    <ListItemIcon>
+                      <Checkbox checked={req.checked} onChange={handleChangeCheckbox(req.id)} />
+                    </ListItemIcon>
+                    <ListItemText>{getPermActionName(req)}</ListItemText>
+                  </ListItem>
+                )
+              })}
+            </List>
+          </StyledActionsListContainer>
+        )}
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
           <ActionToggleButton
-            value={ACTION_TYPE.BASIC}
-            title="Basic permissions"
-            description="Read your public key, sign notes, reactions, zaps, etc"
+            value={hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC}
+            title={hasReqPerms ? 'Requested permissions' : 'Basic permissions'}
+            description={
+              hasReqPerms
+                ? 'Grant permissions requested above'
+                : 'Read your public key, sign notes, reactions, zaps, etc'
+            }
           />
           <ActionToggleButton
             value={ACTION_TYPE.CUSTOM}
             title="On demand"
-            description="Confirm permissions when the app asks for them"
+            description="Confirm permissions later when this app executes an action"
           />
         </StyledToggleButtonsGroup>
         <Stack direction={'row'} gap={'1rem'}>

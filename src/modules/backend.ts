@@ -1115,7 +1115,7 @@ export class NoauthBackend extends EventEmitter {
           // write new perms confirmed by user
           for (const p of newPerms) {
             await dbi.addPerm({
-              id: req.id,
+              id: `${req.id}-${p}`,
               npub: req.npub,
               appNpub: req.appNpub,
               perm: p,
@@ -1186,8 +1186,9 @@ export class NoauthBackend extends EventEmitter {
 
         // OAuth flow
         const isConnect = method === 'connect'
+        const perms = isConnect && params.length >= 3 ? `&perms=${params[2]}` : '' 
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true`
+        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true${perms}`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
@@ -1636,6 +1637,8 @@ export class NoauthBackend extends EventEmitter {
         id,
         error: e.toString(),
       })
+      // checkpoint
+      this.updateUI()
     }
   }
 
