@@ -32,23 +32,23 @@ export const StyledAppName = styled((props: TypographyProps) => (
   marginLeft: '0.5rem',
 }))
 
-export const StyledProfileContainer = styled((props: StackProps & { nonclickable: boolean }) => <Stack {...props} />)(
-  ({ nonclickable = false }) => ({
-    gap: '1rem',
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    '& .avatar': {
-      cursor: 'pointer',
-    },
-    '& .username': {
-      cursor: 'pointer',
-    },
-    '& > *': {
-      pointerEvents: nonclickable ? 'none' : 'initial',
-    },
-  })
-)
+export const StyledProfileContainer = styled((props: StackProps & { nonclickable: boolean | undefined }) => (
+  <Stack {...props} />
+))(({ nonclickable }) => ({
+  gap: '1rem',
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+  '& .avatar': {
+    cursor: 'pointer',
+  },
+  '& .username': {
+    cursor: 'pointer',
+  },
+  '& > *': {
+    pointerEvents: nonclickable ? 'none' : 'initial',
+  },
+}))
 
 export const StyledThemeButton = styled(IconButton)({
   margin: '0 0.5rem',

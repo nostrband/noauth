@@ -7,6 +7,9 @@ import { StyledEmptyAppsBox } from '../styled'
 import { Button } from '@/shared/Button/Button'
 
 import { ItemApp } from './ItemApp'
+import { useAppSelector } from '@/store/hooks/redux'
+import { selectPermsByNpub } from '@/store'
+import { Navigate, useParams } from 'react-router-dom'
 
 type AppsProps = {
   apps: DbApp[]
@@ -14,8 +17,21 @@ type AppsProps = {
 }
 
 export const Apps: FC<AppsProps> = ({ apps = [] }) => {
+  const { npub = '' } = useParams()
+  const perms = useAppSelector((state) => selectPermsByNpub(state, npub))
+  const keys = useAppSelector((state) => state.content.keys)
+
+  const key = keys.find((k) => k.npub === npub)
+  const isKeyExists = npub.trim().length && key
+
+  if (!isKeyExists) return <Navigate to={`/home`} />
+
   const openAppStore = () => {
     window.open('https://nostrapp.link', '_blank')
+  }
+
+  const getAppPerms = (app: DbApp) => {
+    return perms.filter((perm) => perm.appNpub === app.appNpub)
   }
 
   return (
@@ -35,7 +51,7 @@ export const Apps: FC<AppsProps> = ({ apps = [] }) => {
 
       <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
         {apps.map((a) => (
-          <ItemApp {...a} key={a.appNpub} />
+          <ItemApp {...a} key={a.appNpub} perms={getAppPerms(a)} />
         ))}
       </Stack>
     </Box>

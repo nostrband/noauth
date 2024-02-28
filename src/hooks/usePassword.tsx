@@ -13,7 +13,7 @@ export const usePassword = () => {
   const inputProps = useMemo(
     () => ({
       endAdornment: (
-        <IconButton size="small" onClick={handlePasswordTypeChange}>
+        <IconButton size="small" onClick={handlePasswordTypeChange} type="button">
           {isPasswordShown ? (
             <VisibilityOffOutlinedIcon htmlColor="#6b6b6b" />
           ) : (
