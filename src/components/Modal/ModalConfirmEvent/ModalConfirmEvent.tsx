@@ -38,7 +38,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
 
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const pendingReqId = searchParams.get('reqId') || ''
   const appNpub = searchParams.get('appNpub') || ''
@@ -60,30 +60,34 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     onClose: (sp) => {
       sp.delete('appNpub')
       sp.delete('reqId')
+      sp.delete('redirect_uri')
+      sp.delete('popup')
     },
   })
 
+  const triggerApp = apps.find((app) => app.appNpub === appNpub)
+  const { name, url = '', icon = '' } = triggerApp || {}
+  const appDomain = getDomain(url)
+  const shortAppNpub = getShortenNpub(appNpub)
+  const appName = name || appDomain || shortAppNpub
+  const appIcon = icon || `https://${appDomain}/favicon.ico`
+  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const isAppNameExists = !!name || !!appDomain
+  const redirectUri = searchParams.get('redirect_uri') || ''
+  const done = searchParams.get('done') === 'true'
+
   useEffect(() => {
-    if (isModalOpened) {
-      if (isPopup && pendingReqId) {
-        // wait for SW to start
-        swicWaitStarted().then(async () => {
-          console.log('waiting for sw done')
-          // block until req is loaded or we're sure it doesn't exist
-          const ok = await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
-          console.log("checkPendingRequest", { ok, currentAppPendingReqs })
-          // if req exists let's wait for it to be 
-          // taken from db and dispatched to redux
-          if (!ok) setIsLoaded(true)
-          else setTimeout(() => setIsLoaded(true), 100)
-        })
-      } else {
+    if (!isModalOpened) return
+    if (isPopup && pendingReqId) {
+      // wait for SW to start
+      swicWaitStarted().then(async () => {
+        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
         setIsLoaded(true)
-      }
+      })
     } else {
-      setIsLoaded(false)
+      setIsLoaded(true)
     }
-  }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
+  }, [isModalOpened, isPopup, npub, appNpub, pendingReqId])
 
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
@@ -96,15 +100,6 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
       return null
     }
   }
-
-  const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  const { name, url = '', icon = '' } = triggerApp || {}
-  const appDomain = getDomain(url)
-  const shortAppNpub = getShortenNpub(appNpub)
-  const appName = name || appDomain || shortAppNpub
-  const appIcon = icon || `https://${appDomain}/favicon.ico`
-  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-  const isAppNameExists = !!name || !!appDomain
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
     if (!value) return undefined
@@ -121,8 +116,21 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
         console.log('confirmed', req.id, selectedActionType, allow)
       })
     })
-    closeModalAfterRequest()
-    if (isPopup) window.close()
+    if (!isPopup) closeModalAfterRequest()
+    closePopup()
+  }
+
+  const closePopup = () => {
+    console.log("closePopup", { isPopup, redirectUri })
+    if (!isPopup) return
+    if (!redirectUri) return window.close()
+
+    // add done marker first
+    searchParams.append('done', 'true')
+    setSearchParams(searchParams)
+
+    // and then do the redirect
+    window.location.href = redirectUri
   }
 
   const handleChangeCheckbox = (reqId: string) => () => {
@@ -136,7 +144,8 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   if (isPopup) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        confirmPending(false)
+        // FIXME it should be 'ignore once',
+        // confirmPending(false)
       }
     })
   }
@@ -144,6 +153,11 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   return (
     <Modal title="Permission request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
+        {done && (
+          <Typography variant="body1" color={'GrayText'}>
+            Redirecting back to your app...
+          </Typography>
+        )}
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
           <Avatar
             variant="square"
