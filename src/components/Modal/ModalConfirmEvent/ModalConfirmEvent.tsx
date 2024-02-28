@@ -87,7 +87,7 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
     } else {
       setIsLoaded(true)
     }
-  }, [isModalOpened, isPopup, npub, appNpub, pendingReqId])
+  }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
 
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)

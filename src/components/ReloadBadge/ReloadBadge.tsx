@@ -3,6 +3,7 @@ import { Stack, Typography } from '@mui/material'
 import { StyledAlert, StyledReloadButton } from './styled'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from '@/utils/consts'
+import { useSearchParams } from 'react-router-dom'
 
 type ReloadBadgeContentProps = {
   onReload: () => void
@@ -23,11 +24,14 @@ const ReloadBadgeContent: FC<ReloadBadgeContentProps> = memo(({ onReload }) => {
 
 export const ReloadBadge = () => {
   const [needReload, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
+  const [searchParams] = useSearchParams()
+  const isPopupMode = searchParams.get('popup') === 'true'
+  const showReloadBadge = !isPopupMode && needReload
 
   const handleReload = useCallback(() => {
     setNeedReload(false)
     window.location.reload()
   }, [setNeedReload])
 
-  return <>{needReload && <ReloadBadgeContent onReload={handleReload} />}</>
+  return <>{showReloadBadge && <ReloadBadgeContent onReload={handleReload} />}</>
 }

@@ -50,8 +50,9 @@ export function swicWaitStarted() {
 }
 
 export async function swicCheckpoint() {
+  console.log("swicCheckpoint queue", checkpointQueue.length)
   // take existing callbacks
-  const cbs = checkpointQueue.splice(1, checkpointQueue.length)
+  const cbs = checkpointQueue.splice(0, checkpointQueue.length)
   for (const cb of cbs)
     await cb()
 }

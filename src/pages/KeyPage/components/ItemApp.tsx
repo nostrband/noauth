@@ -1,19 +1,24 @@
-import { DbApp } from '@/modules/db'
+import { DbApp, DbPerm } from '@/modules/db'
 import { Avatar, Stack, Typography } from '@mui/material'
-import { FC } from 'react'
+import { FC, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
 import { StyledItemAppContainer } from './styled'
 
-type ItemAppProps = DbApp
+type ItemAppProps = DbApp & { perms: DbPerm[] }
 
-export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) => {
+export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url, perms = [] }) => {
   const appDomain = getDomain(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
+
+  const getPermsType = useCallback(() => {
+    const isIncludeBasic = perms.some((perm) => perm.perm === 'basic')
+    return isIncludeBasic ? 'Basic actions' : 'On demand'
+  }, [perms])
 
   return (
     <StyledItemAppContainer
@@ -37,7 +42,7 @@ export const ItemApp: FC<ItemAppProps> = ({ npub, appNpub, icon, name, url }) =>
           </Typography>
         )}
         <Typography noWrap display={'block'} variant="caption" color={'GrayText'}>
-          Basic actions
+          {getPermsType()}
         </Typography>
       </Stack>
     </StyledItemAppContainer>
