@@ -1,12 +1,13 @@
 import { ReactNode, forwardRef } from 'react'
-import { FormHelperText, FormLabel, InputBase } from '@mui/material'
+import { FormHelperText, FormLabel, InputBase, useTheme } from '@mui/material'
 import { StyledInputContainer } from './styled'
 import { AppInputProps } from './types'
 
 const renderItem = <T,>(item: T, value: ReactNode) => (item ? value : null)
 
 export const Input = forwardRef<HTMLInputElement, AppInputProps>(
-  ({ helperText, containerProps, helperTextProps, label, error, ...props }, ref) => {
+  ({ helperText, containerProps, helperTextProps, helperTextColor, label, error, ...props }, ref) => {
+    const theme = useTheme()
     return (
       <StyledInputContainer {...containerProps}>
         {renderItem(
@@ -25,7 +26,16 @@ export const Input = forwardRef<HTMLInputElement, AppInputProps>(
         />
         {renderItem(
           helperText,
-          <FormHelperText error={error} {...helperTextProps} className="helper_text">
+          <FormHelperText
+            error={error}
+            {...helperTextProps}
+            sx={{
+              '&.helper_text': {
+                color: helperTextColor || theme.palette.text.primary,
+              },
+            }}
+            className="helper_text"
+          >
             {helperText}
           </FormHelperText>
         )}
