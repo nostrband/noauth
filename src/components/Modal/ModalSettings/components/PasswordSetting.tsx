@@ -4,6 +4,8 @@ import { Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { CheckmarkIcon } from '@/assets'
 import WarningIcon from '@mui/icons-material/ReportGmailerrorredRounded'
+import { useModalSearchParams } from '@/hooks/useModalSearchParams'
+import { MODAL_PARAMS_KEYS } from '@/types/modal'
 
 type PasswordSettingProps = {
   isSynced: boolean
@@ -11,6 +13,13 @@ type PasswordSettingProps = {
 
 export const PasswordSetting: FC<PasswordSettingProps> = () => {
   const isSynced = false
+
+  const { handleOpen } = useModalSearchParams()
+
+  const handleOpenSetPasswordModal = () => {
+    handleOpen(MODAL_PARAMS_KEYS.SET_PASSWORD)
+  }
+
   return (
     <StyledSettingContainer>
       <Stack direction={'row'} justifyContent={'space-between'} alignItems={'start'}>
@@ -39,7 +48,7 @@ export const PasswordSetting: FC<PasswordSettingProps> = () => {
           <Typography variant="body2" color={'GrayText'}>
             Please specify password to enable key export and to safely sync keys to other devices
           </Typography>
-          <StyledButton type="button" fullWidth>
+          <StyledButton type="button" fullWidth onClick={handleOpenSetPasswordModal}>
             Set password
           </StyledButton>
         </Stack>

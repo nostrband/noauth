@@ -22,6 +22,7 @@ import { DOMAIN } from '@/utils/consts'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
+import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPassword'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -116,6 +117,7 @@ const KeyPage = () => {
       <ModalConfirmConnect />
       <ModalConfirmEvent confirmEventReqs={prepareEventPendings} />
       <ModalEditName />
+      <ModalSetPassword isSynced={isSynced} />
     </>
   )
 }
