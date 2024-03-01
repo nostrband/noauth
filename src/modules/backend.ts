@@ -24,6 +24,8 @@ import {
   OUTBOX_RELAYS,
   BROADCAST_RELAY,
   APP_TAG,
+  NSEC_APP_NPUB,
+  SEED_RELAYS,
 } from '../utils/consts'
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
@@ -177,66 +179,6 @@ class Nip46Backend extends NDKNip46Backend {
     }
   }
 }
-
-// class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
-//   private privkey: string
-//   private nip04 = new Nip04()
-
-//   constructor(privkey: string) {
-//     this.privkey = privkey
-//   }
-
-//   private async getKey(backend: NDKNip46Backend, id: string, remotePubkey: string, recipientPubkey: string) {
-//     if (
-//       !(await backend.pubkeyAllowed({
-//         id,
-//         pubkey: remotePubkey,
-//         // @ts-ignore
-//         method: 'get_nip04_key',
-//         params: recipientPubkey,
-//       }))
-//     ) {
-//       backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
-//       return undefined
-//     }
-
-//     return Buffer.from(this.nip04.createKey(this.privkey, recipientPubkey)).toString('hex')
-//   }
-
-//   async handle(backend: NDKNip46Backend, id: string, remotePubkey: string, params: string[]) {
-//     const [recipientPubkey] = params
-//     return await this.getKey(backend, id, remotePubkey, recipientPubkey)
-//   }
-// }
-
-// FIXME why  do we need it? Just to print
-// class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
-//   readonly backend: NDKNip46Backend
-//   readonly method: string
-//   private body: IEventHandlingStrategy
-
-//   constructor(
-//     backend: NDKNip46Backend,
-//     method: string,
-//     body: IEventHandlingStrategy
-//   ) {
-//     this.backend = backend
-//     this.method = method
-//     this.body = body
-//   }
-
-//   async handle(
-//     backend: NDKNip46Backend,
-//     id: string,
-//     remotePubkey: string,
-//     params: string[]
-//   ): Promise<string | undefined> {
-//     return this.body.handle(backend, id, remotePubkey, params).then((r) => {
-//       console.log(Date.now(), 'req', id, 'method', this.method, 'result', r)
-//       return r
-//     })
-//   }
-// }
 
 export class NoauthBackend extends EventEmitter {
   readonly swg: ServiceWorkerGlobalScope
@@ -909,7 +851,77 @@ export class NoauthBackend extends EventEmitter {
     // async fetching of perms from relays
     this.subscribeToAppPerms()
 
+    // seed new key with profile, relays etc
+    if (!nsec)
+      this.publishNewKeyInfo(npub)
+
     return this.keyInfo(dbKey)
+  }
+
+  private async publishNewKeyInfo(npub: string) {
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error("Bad npub")
+
+    const signer = this.keys.find(k => k.npub === npub)?.signer
+    const key = this.enckeys.find(k => k.npub === npub)
+    if (!key || !signer) throw new Error("Key not found")
+    const name = key.name?.split('@')[0]
+    const nip05 = name?.includes('@') ? name : `${name}@${DOMAIN}`
+
+    // profile
+    const profile = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 0,
+      content: JSON.stringify({
+        name,
+        nip05,
+      }),
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000)
+    })
+    profile.sig = await profile.sign(signer)
+
+    // contact list
+    const contacts = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 3,
+      content: '',
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000)
+    })
+    if (NSEC_APP_NPUB) {
+      try {
+        const { type, data: nsecAppNpub } = nip19.decode(NSEC_APP_NPUB)
+        if (type === 'npub')
+          contacts.tags.push(['p', nsecAppNpub])
+      } catch {}
+    }
+    const relays: any = {}
+    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS]) {
+      relays[r] = { read: true, write: true }
+    }
+    contacts.content = JSON.stringify(relays)
+    contacts.sig = await contacts.sign(signer)
+
+    // nip65
+    const nip65 = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 10002,
+      content: '',
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000)
+    })
+    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS])
+      nip65.tags.push(['r', r])
+    nip65.sig = await nip65.sign(signer)
+
+    console.log("seed key events", { profile, contacts, nip65 })
+
+    // publish in background
+    const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
+    profile.publish(relayset)
+    contacts.publish(relayset)
+    nip65.publish(relayset)
   }
 
   private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
