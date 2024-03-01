@@ -22,7 +22,7 @@ export const StyledButton = styled(Button)(({ theme }) => {
   }
 })
 
-export const StyledSynchedText = styled((props: TypographyProps & { synced?: boolean }) => (
+export const StyledSynchedText = styled((props: TypographyProps & { synced?: 'true' }) => (
   <Typography variant="caption" {...props} />
 ))(({ theme, synced }) => {
   return {

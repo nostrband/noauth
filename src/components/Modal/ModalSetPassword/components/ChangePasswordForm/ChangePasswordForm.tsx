@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Stack } from '@mui/material'
+import { FC, useEffect } from 'react'
+import { Stack, Typography } from '@mui/material'
 import { FormInputType, schema } from './const'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -7,6 +7,10 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { Input } from '@/shared/Input/Input'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { Button } from '@/shared/Button/Button'
+import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { useParams } from 'react-router-dom'
+import { swicCall } from '@/modules/swic'
+import { dbi } from '@/modules/db'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   existingPassword: '',
@@ -14,7 +18,14 @@ const FORM_DEFAULT_VALUES: FormInputType = {
   rePassword: '',
 }
 
-export const ChangePasswordForm = () => {
+type ChangePasswordFormProps = {
+  onClose: () => void
+}
+
+export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onClose }) => {
+  const notify = useEnqueueSnackbar()
+  const { npub = '' } = useParams<{ npub: string }>()
+
   const {
     handleSubmit,
     reset,
@@ -33,9 +44,15 @@ export const ChangePasswordForm = () => {
   const submitHandler = async (values: FormInputType) => {
     if (isPasswordInvalid) return
     try {
-      console.log(values)
-    } catch (error) {
-      console.log(error)
+      const { password, existingPassword } = values
+      if (!existingPassword.trim() || !password.trim()) throw new Error('Please fill out all fields!')
+
+      await swicCall('saveKey', npub, password, existingPassword)
+      dbi.addSynced(npub)
+      notify('Password has been successfully updated', 'success')
+      onClose()
+    } catch (error: any) {
+      notify(error?.message || 'Failed to update a password', 'error')
     }
   }
 
@@ -68,12 +85,17 @@ export const ChangePasswordForm = () => {
         error={!!errors.rePassword}
         fullWidth
       />
-      {!errors?.rePassword?.message && (
+      {Object.values(errors).length === 0 && (
         <PasswordValidationStatus
           boxProps={{ sx: { padding: '0 0.5rem' } }}
           isPasswordInvalid={isPasswordInvalid}
           passwordStrength={passwordStrength}
         />
+      )}
+      {Object.values(errors).length > 0 && (
+        <Typography variant="body2" color={'red'} padding={'0 0.5rem'}>
+          {Object.values(errors)[0].message}
+        </Typography>
       )}
       <Button type="submit">Save</Button>
     </Stack>

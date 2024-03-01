@@ -11,9 +11,7 @@ type PasswordSettingProps = {
   isSynced: boolean
 }
 
-export const PasswordSetting: FC<PasswordSettingProps> = () => {
-  const isSynced = false
-
+export const PasswordSetting: FC<PasswordSettingProps> = ({ isSynced }) => {
   const { handleOpen } = useModalSearchParams()
 
   const handleOpenSetPasswordModal = () => {
@@ -26,7 +24,7 @@ export const PasswordSetting: FC<PasswordSettingProps> = () => {
         <SectionTitle>Password</SectionTitle>
 
         {isSynced && (
-          <StyledSynchedText synced>
+          <StyledSynchedText synced={'true'}>
             <CheckmarkIcon /> Enabled
           </StyledSynchedText>
         )}
@@ -39,7 +37,7 @@ export const PasswordSetting: FC<PasswordSettingProps> = () => {
       </Stack>
 
       {isSynced && (
-        <StyledButton type="button" fullWidth>
+        <StyledButton type="button" fullWidth onClick={handleOpenSetPasswordModal}>
           Change password
         </StyledButton>
       )}

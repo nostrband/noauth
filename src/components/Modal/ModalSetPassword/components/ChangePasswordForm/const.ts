@@ -1,8 +1,8 @@
 import * as yup from 'yup'
 
 export const schema = yup.object().shape({
-  existingPassword: yup.string().required(),
-  password: yup.string().required(),
+  existingPassword: yup.string().required('Please fill out all fields'),
+  password: yup.string().required('Please fill out all fields'),
   rePassword: yup
     .string()
     .required('Please fill out all fields')

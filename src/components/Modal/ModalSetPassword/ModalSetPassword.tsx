@@ -9,16 +9,15 @@ type ModalSetPasswordProps = {
   isSynced: boolean
 }
 
-export const ModalSetPassword: FC<ModalSetPasswordProps> = () => {
-  const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
+export const ModalSetPassword: FC<ModalSetPasswordProps> = ({ isSynced }) => {
+  const { getModalOpened, createHandleCloseBack } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SET_PASSWORD)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.SET_PASSWORD)
-  const isSynced = true
+  const handleCloseModal = createHandleCloseBack(MODAL_PARAMS_KEYS.SET_PASSWORD, MODAL_PARAMS_KEYS.SETTINGS)
   const title = isSynced ? 'Change password' : 'Set password'
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} title={title} withCloseButton={false}>
-      {isSynced ? <ChangePasswordForm /> : <SetPasswordForm />}
+      {isSynced ? <ChangePasswordForm onClose={handleCloseModal} /> : <SetPasswordForm onClose={handleCloseModal} />}
     </Modal>
   )
 }
