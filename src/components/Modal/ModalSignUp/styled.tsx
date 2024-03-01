@@ -1,5 +1,6 @@
 import { AppLogo } from '@/assets'
-import { Box, styled } from '@mui/material'
+import { Box, Stack, StackProps, styled } from '@mui/material'
+import { forwardRef } from 'react'
 
 export const StyledAppLogo = styled((props) => (
   <Box {...props}>
@@ -12,3 +13,12 @@ export const StyledAppLogo = styled((props) => (
   display: 'grid',
   placeItems: 'center',
 })
+
+export const InputsContainer = styled(
+  forwardRef<HTMLDivElement, StackProps>((props, ref) => <Stack {...props} ref={ref} />)
+)(() => ({
+  gap: '1rem',
+  '@media screen and (max-width: 485px)': {
+    gap: '0.5rem',
+  },
+}))

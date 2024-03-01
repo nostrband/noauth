@@ -35,10 +35,10 @@ export const StyledInputContainer = styled((props: BoxProps) => <Box {...props} 
       },
       '& > .label': {
         margin: '0 0.25rem 0.25rem',
-        fontSize: '0.75rem',
       },
       '& > .helper_text': {
         fontSize: '0.75rem',
+        margin: '0.25rem 0.5rem 0',
       },
     },
   }

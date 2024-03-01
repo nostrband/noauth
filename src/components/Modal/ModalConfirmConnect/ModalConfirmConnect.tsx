@@ -3,7 +3,6 @@ import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import {
   askNotificationPermission,
-  call,
   getAppIconTitle,
   getDomain,
   getPermActionName,
@@ -23,6 +22,7 @@ import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
+import { nip19 } from 'nostr-tools'
 
 type RequestedPerm = DbPerm & { checked: boolean }
 
@@ -135,7 +135,7 @@ export const ModalConfirmConnect = () => {
     setRequestedPerms(newRequestedPerms)
   }
 
-  const closePopup = () => {
+  const closePopup = (result?: string) => {
     if (!isPopup) return
     if (!redirectUri) return window.close()
 
@@ -144,16 +144,20 @@ export const ModalConfirmConnect = () => {
     setSearchParams(searchParams)
 
     // and then do the redirect
-    window.location.href = redirectUri
+    const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
+    window.location.href = url
   }
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
-    call(async () => {
-      await swicCall('confirm', id, allow, remember, options)
-      console.log('confirmed', id, allow, remember, options)
-    })
-    if (!isPopup) closeModalAfterRequest()
-    closePopup()
+    try {
+      const result = await swicCall('confirm', id, allow, remember, options)
+      console.log('confirmed', { id, allow, remember, options, result })
+      if (!isPopup) closeModalAfterRequest()
+      closePopup(result as string)
+    } catch (e) {
+      console.log(`Error: ${e}`)
+      notify('Error: ' + e, 'error')
+    }
   }
 
   const allow = async () => {
@@ -199,7 +203,8 @@ export const ModalConfirmConnect = () => {
 
       notify('App connected! Closing...', 'success')
 
-      if (isPopup) setTimeout(() => closePopup(), 3000)
+      const { data: pubkey } = nip19.decode(npub)
+      if (isPopup) setTimeout(() => closePopup(pubkey as string), 3000)
       else navigate(`/key/${npub}`, { replace: true })
     }
   }

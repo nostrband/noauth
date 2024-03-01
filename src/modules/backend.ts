@@ -24,6 +24,8 @@ import {
   OUTBOX_RELAYS,
   BROADCAST_RELAY,
   APP_TAG,
+  NSEC_APP_NPUB,
+  SEED_RELAYS,
 } from '../utils/consts'
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
@@ -59,7 +61,7 @@ interface Key {
 
 interface Pending {
   req: DbPending
-  cb: (allow: DECISION, remember: boolean, options?: any) => void
+  cb: (allow: DECISION, remember: boolean, options?: any) => Promise<string | undefined>
   notified?: boolean
 }
 
@@ -116,10 +118,14 @@ class Watcher {
 }
 
 class Nip46Backend extends NDKNip46Backend {
-  private allowCb: (params: IAllowCallbackParams) => Promise<DECISION>
+  private allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
   private npub: string = ''
 
-  public constructor(ndk: NDK, signer: NDKSigner, allowCb: (params: IAllowCallbackParams) => Promise<DECISION>) {
+  public constructor(
+    ndk: NDK,
+    signer: NDKSigner,
+    allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
+  ) {
     super(ndk, signer, () => Promise.resolve(true))
     this.allowCb = allowCb
     signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
@@ -142,7 +148,7 @@ class Nip46Backend extends NDKNip46Backend {
       return
     }
 
-    const decision = await this.allowCb({
+    const [decision, resultCb] = await this.allowCb({
       backend: this,
       npub: this.npub,
       id,
@@ -169,6 +175,10 @@ class Nip46Backend extends NDKNip46Backend {
       }
     }
 
+    // pass results back to UI
+    console.log("response", { method, response })
+    resultCb?.(response)
+
     if (response) {
       this.debug(`sending response to ${remotePubkey}`, response)
       this.rpc.sendResponse(id, remotePubkey, response)
@@ -177,66 +187,6 @@ class Nip46Backend extends NDKNip46Backend {
     }
   }
 }
-
-// class Nip04KeyHandlingStrategy implements IEventHandlingStrategy {
-//   private privkey: string
-//   private nip04 = new Nip04()
-
-//   constructor(privkey: string) {
-//     this.privkey = privkey
-//   }
-
-//   private async getKey(backend: NDKNip46Backend, id: string, remotePubkey: string, recipientPubkey: string) {
-//     if (
-//       !(await backend.pubkeyAllowed({
-//         id,
-//         pubkey: remotePubkey,
-//         // @ts-ignore
-//         method: 'get_nip04_key',
-//         params: recipientPubkey,
-//       }))
-//     ) {
-//       backend.debug(`get_nip04_key request from ${remotePubkey} rejected`)
-//       return undefined
-//     }
-
-//     return Buffer.from(this.nip04.createKey(this.privkey, recipientPubkey)).toString('hex')
-//   }
-
-//   async handle(backend: NDKNip46Backend, id: string, remotePubkey: string, params: string[]) {
-//     const [recipientPubkey] = params
-//     return await this.getKey(backend, id, remotePubkey, recipientPubkey)
-//   }
-// }
-
-// FIXME why  do we need it? Just to print
-// class EventHandlingStrategyWrapper implements IEventHandlingStrategy {
-//   readonly backend: NDKNip46Backend
-//   readonly method: string
-//   private body: IEventHandlingStrategy
-
-//   constructor(
-//     backend: NDKNip46Backend,
-//     method: string,
-//     body: IEventHandlingStrategy
-//   ) {
-//     this.backend = backend
-//     this.method = method
-//     this.body = body
-//   }
-
-//   async handle(
-//     backend: NDKNip46Backend,
-//     id: string,
-//     remotePubkey: string,
-//     params: string[]
-//   ): Promise<string | undefined> {
-//     return this.body.handle(backend, id, remotePubkey, params).then((r) => {
-//       console.log(Date.now(), 'req', id, 'method', this.method, 'result', r)
-//       return r
-//     })
-//   }
-// }
 
 export class NoauthBackend extends EventEmitter {
   readonly swg: ServiceWorkerGlobalScope
@@ -255,6 +205,7 @@ export class NoauthBackend extends EventEmitter {
     explicitRelayUrls: [...NIP46_RELAYS, ...OUTBOX_RELAYS, BROADCAST_RELAY],
     enableOutboxModel: false,
   })
+  private pushNpubs: string[] = []
 
   public constructor(swg: ServiceWorkerGlobalScope) {
     super()
@@ -321,6 +272,7 @@ export class NoauthBackend extends EventEmitter {
   }
 
   public async start() {
+    console.log(Date.now(), 'starting')
     this.enckeys = await dbi.listKeys()
     console.log('started encKeys', this.listKeys())
     this.perms = await dbi.listPerms()
@@ -336,20 +288,35 @@ export class NoauthBackend extends EventEmitter {
 
     const sub = await this.swg.registration.pushManager.getSubscription()
 
+    // start keys, only pushed ones, or all of them if
+    // there was no push
+    console.log('pushNpubs', JSON.stringify(this.pushNpubs))
     for (const k of this.enckeys) {
-      await this.unlock(k.npub)
-
-      // ensure we're subscribed on the server
-      if (sub) await this.sendSubscriptionToServer(k.npub, sub)
+      if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) await this.unlock(k.npub)
     }
 
-    // FIXME waiting here isn't working fully bcs 
-    // we don't put all events into a queue and don't process
-    // them sequentially, so EOSE might be delivered
-    // before all events are actually processed
-    await this.subscribeToAppPerms()
+    // pause to let SW processing pushed pubkey's incoming requests
+    setTimeout(async () => {
+      // unlock the rest of keys
+      if (this.pushNpubs.length > 0) {
+        for (const k of this.enckeys) {
+          if (!this.pushNpubs.find((n) => n === k.npub)) await this.unlock(k.npub)
+        }
+      }
+
+      // ensure we're subscribed on the server
+      if (sub) {
+        // subscribe in the background to avoid blocking
+        // the request processing
+        for (const k of this.enckeys) this.sendSubscriptionToServer(k.npub, sub)
+      }
+
+      // sync app perms
+      this.subscribeToAppPerms()
+    }, 3000)
 
     this.emit(`start`)
+    console.log(Date.now(), 'started')
   }
 
   private async subscribeToAppPerms() {
@@ -418,7 +385,7 @@ export class NoauthBackend extends EventEmitter {
   private async updateAppPermTimestamp(appNpub: string, npub: string, timestamp = 0) {
     // write to db then update our cache
     const tm = await dbi.updateAppPermTimestamp(appNpub, npub, timestamp)
-    const app = this.apps.find(a => a.appNpub === appNpub && a.npub === npub)
+    const app = this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
     if (app) app.permUpdateTimestamp = tm
   }
 
@@ -892,7 +859,74 @@ export class NoauthBackend extends EventEmitter {
     // async fetching of perms from relays
     this.subscribeToAppPerms()
 
+    // seed new key with profile, relays etc
+    if (!nsec) this.publishNewKeyInfo(npub)
+
     return this.keyInfo(dbKey)
+  }
+
+  private async publishNewKeyInfo(npub: string) {
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error('Bad npub')
+
+    const signer = this.keys.find((k) => k.npub === npub)?.signer
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key || !signer) throw new Error('Key not found')
+    const name = key.name?.split('@')[0]
+    const nip05 = name?.includes('@') ? name : `${name}@${DOMAIN}`
+
+    // profile
+    const profile = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 0,
+      content: JSON.stringify({
+        name,
+        nip05,
+      }),
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000),
+    })
+    profile.sig = await profile.sign(signer)
+
+    // contact list
+    const contacts = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 3,
+      content: '',
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000),
+    })
+    if (NSEC_APP_NPUB) {
+      try {
+        const { type, data: nsecAppNpub } = nip19.decode(NSEC_APP_NPUB)
+        if (type === 'npub') contacts.tags.push(['p', nsecAppNpub])
+      } catch {}
+    }
+    const relays: any = {}
+    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS]) {
+      relays[r] = { read: true, write: true }
+    }
+    contacts.content = JSON.stringify(relays)
+    contacts.sig = await contacts.sign(signer)
+
+    // nip65
+    const nip65 = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 10002,
+      content: '',
+      tags: [],
+      created_at: Math.floor(Date.now() / 1000),
+    })
+    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS]) nip65.tags.push(['r', r])
+    nip65.sig = await nip65.sign(signer)
+
+    console.log('seed key events', { profile, contacts, nip65 })
+
+    // publish in background
+    const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
+    profile.publish(relayset)
+    contacts.publish(relayset)
+    nip65.publish(relayset)
   }
 
   private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
@@ -1030,19 +1064,19 @@ export class NoauthBackend extends EventEmitter {
     method,
     remotePubkey,
     params,
-  }: IAllowCallbackParams): Promise<DECISION> {
+  }: IAllowCallbackParams): Promise<[DECISION, ((result: string | undefined) => void) | undefined]> {
     // same reqs usually come on reconnects
     if (this.doneReqIds.includes(id)) {
       console.log('request already done', id)
       // FIXME maybe repeat the reply, but without the Notification?
-      return DECISION.IGNORE
+      return [DECISION.IGNORE, undefined]
     }
 
     const appNpub = nip19.npubEncode(remotePubkey)
     const connected = !!this.apps.find((a) => a.appNpub === appNpub)
     if (!connected && method !== 'connect') {
       console.log('ignoring request before connect', method, id, appNpub, npub)
-      return DECISION.IGNORE
+      return [DECISION.IGNORE, undefined]
     }
 
     const req: DbPending = {
@@ -1057,7 +1091,7 @@ export class NoauthBackend extends EventEmitter {
     const self = this
     return new Promise(async (ok) => {
       // called when it's decided whether to allow this or not
-      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any) => {
+      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any, resultCb?: (result: string | undefined) => void) => {
         // confirm
         console.log(Date.now(), decision, npub, method, options, params)
 
@@ -1134,7 +1168,7 @@ export class NoauthBackend extends EventEmitter {
 
         // release this promise to send reply
         // to this req
-        ok(decision)
+        ok([decision, resultCb])
 
         // notify UI that it was confirmed
         // if (!PERF_TEST)
@@ -1163,11 +1197,10 @@ export class NoauthBackend extends EventEmitter {
       // have perm?
       if (dec !== DECISION.ASK) {
         // reply immediately
-        onAllow(false, dec, false)
+        onAllow(false, dec, false, {})
 
-        // notify 
+        // notify
         this.emit(`done-${req.id}`, req)
-
       } else {
         // put pending req to db
         await dbi.addPending(req)
@@ -1178,7 +1211,9 @@ export class NoauthBackend extends EventEmitter {
         // put to a list of pending requests
         this.confirmBuffer.push({
           req,
-          cb: (decision, remember, options) => onAllow(true, decision, remember, options),
+          cb: (decision, remember, options) => new Promise(ok => {
+            onAllow(true, decision, remember, options, ok)
+          })
         })
 
         // notify those who are waiting for this req
@@ -1186,7 +1221,7 @@ export class NoauthBackend extends EventEmitter {
 
         // OAuth flow
         const isConnect = method === 'connect'
-        const perms = isConnect && params.length >= 3 ? `&perms=${params[2]}` : '' 
+        const perms = isConnect && params.length >= 3 ? `&perms=${params[2]}` : ''
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
         const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true${perms}`
         console.log('sending authUrl', authUrl, 'for', req)
@@ -1249,7 +1284,7 @@ export class NoauthBackend extends EventEmitter {
     // start
     backend.start()
     watcher.start()
-    console.log('started', npub)
+    console.log(Date.now(), 'started', npub)
 
     // backoff reset on successfull connection
     const self = this
@@ -1257,7 +1292,7 @@ export class NoauthBackend extends EventEmitter {
       // reset backoff
       const key = self.keys.find((k) => k.npub === npub)
       if (key) key.backoff = 0
-      console.log('reset backoff for', npub)
+      console.log(Date.now(), 'reset backoff for', npub)
     }
 
     // reconnect handling
@@ -1319,30 +1354,32 @@ export class NoauthBackend extends EventEmitter {
   }
 
   private async waitKey(npub: string): Promise<Key | undefined> {
-    const key = this.keys.find(k => k.npub === npub)
+    const key = this.keys.find((k) => k.npub === npub)
     if (key) return key
-    return new Promise(ok => {
+    return new Promise((ok) => {
       // start-key will be called before start if key exists
-      this.once(`start-key-${npub}`, () => ok(this.keys.find(k => k.npub === npub)))
+      this.once(`start-key-${npub}`, () => ok(this.keys.find((k) => k.npub === npub)))
       this.once(`start`, () => ok(undefined))
     })
   }
 
   private async checkPendingRequest(npub: string, appNpub: string, reqId: string) {
-    console.log("checkPendingRequest", { npub, appNpub, reqId })
+    console.log('checkPendingRequest', { npub, appNpub, reqId })
     // already there - return immediately
-    const req = this.confirmBuffer.find(r => r.req.id === reqId)
+    const req = this.confirmBuffer.find((r) => r.req.id === reqId)
     if (req) return true
 
     return new Promise(async (ok, rej) => {
       // FIXME what if key wasn't loaded yet?
       const key = await this.waitKey(npub)
-      if (!key) return rej(new Error("Key not found"))
+      if (!key) return rej(new Error('Key not found'))
 
       // to avoid races, add onEvent handlers before checking relays
       const pendingEventName = `pending-${reqId}`
       const doneEventName = `done-${reqId}`
-      const listener = () => { ok(true) }
+      const listener = () => {
+        ok(true)
+      }
       this.once(pendingEventName, listener)
       this.once(doneEventName, listener)
 
@@ -1358,7 +1395,7 @@ export class NoauthBackend extends EventEmitter {
       // check relay
       await this.fetchPendingRequests(npub, appNpub)
       const reqs = this.pendingNpubEvents.get(npub)
-      console.log("checkPendingRequest", { npub, appNpub, reqId, reqs })
+      console.log('checkPendingRequest', { npub, appNpub, reqId, reqs })
       if (!reqs || !reqs.length) return notFound()
       this.pendingNpubEvents.delete(npub)
 
@@ -1370,14 +1407,14 @@ export class NoauthBackend extends EventEmitter {
           const payload = await key.signer.decrypt(appUser, r.content)
           const data = JSON.parse(payload)
 
-          // found on relay, promise will be resolved by an 
+          // found on relay, promise will be resolved by an
           // event handler above
           if (data.id === reqId && data.method) return
         } catch {}
       }
 
       // not found on relay
-      notFound()  
+      notFound()
     })
   }
 
@@ -1493,9 +1530,10 @@ export class NoauthBackend extends EventEmitter {
 
       await dbi.removePending(id)
       this.updateUI()
+      return undefined
     } else {
       console.log('confirming req', id, allow, remember, options)
-      req.cb(allow ? DECISION.ALLOW : DECISION.DISALLOW, remember, options)
+      return req.cb(allow ? DECISION.ALLOW : DECISION.DISALLOW, remember, options)
     }
   }
 
@@ -1663,8 +1701,13 @@ export class NoauthBackend extends EventEmitter {
   }
 
   public async onPush(event: any) {
-    console.log('push', { data: event.data })
-    // noop - we just need browser to launch this worker
+    try {
+      const data = event.data?.json()
+      console.log('push', JSON.stringify(data))
+      this.pushNpubs.push(nip19.npubEncode(data.pubkey))
+    } catch (e) {
+      console.log('Failed to process push event', e)
+    }
     // FIXME use event.waitUntil and and unblock after we
     // show a notification to avoid annoying the browser
   }

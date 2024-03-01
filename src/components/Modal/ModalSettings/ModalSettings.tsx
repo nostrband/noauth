@@ -28,10 +28,8 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
     return null
   }
 
-  const onClose = () => handleCloseModal()
-
   return (
-    <Modal open={isModalOpened} onClose={onClose} title="Settings">
+    <Modal open={isModalOpened} onClose={handleCloseModal} title="Settings">
       <Stack gap={'1rem'}>
         <PasswordSetting isSynced={isSynced} />
         <ExportKeySetting />
