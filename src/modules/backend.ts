@@ -61,7 +61,7 @@ interface Key {
 
 interface Pending {
   req: DbPending
-  cb: (allow: DECISION, remember: boolean, options?: any) => void
+  cb: (allow: DECISION, remember: boolean, options?: any) => Promise<string | undefined>
   notified?: boolean
 }
 
@@ -118,10 +118,14 @@ class Watcher {
 }
 
 class Nip46Backend extends NDKNip46Backend {
-  private allowCb: (params: IAllowCallbackParams) => Promise<DECISION>
+  private allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
   private npub: string = ''
 
-  public constructor(ndk: NDK, signer: NDKSigner, allowCb: (params: IAllowCallbackParams) => Promise<DECISION>) {
+  public constructor(
+    ndk: NDK,
+    signer: NDKSigner,
+    allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
+  ) {
     super(ndk, signer, () => Promise.resolve(true))
     this.allowCb = allowCb
     signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
@@ -144,7 +148,7 @@ class Nip46Backend extends NDKNip46Backend {
       return
     }
 
-    const decision = await this.allowCb({
+    const [decision, resultCb] = await this.allowCb({
       backend: this,
       npub: this.npub,
       id,
@@ -170,6 +174,10 @@ class Nip46Backend extends NDKNip46Backend {
         this.debug('unsupported method', { method, params })
       }
     }
+
+    // pass results back to UI
+    console.log("response", { method, response })
+    resultCb?.(response)
 
     if (response) {
       this.debug(`sending response to ${remotePubkey}`, response)
@@ -852,19 +860,18 @@ export class NoauthBackend extends EventEmitter {
     this.subscribeToAppPerms()
 
     // seed new key with profile, relays etc
-    if (!nsec)
-      this.publishNewKeyInfo(npub)
+    if (!nsec) this.publishNewKeyInfo(npub)
 
     return this.keyInfo(dbKey)
   }
 
   private async publishNewKeyInfo(npub: string) {
     const { type, data: pubkey } = nip19.decode(npub)
-    if (type !== 'npub') throw new Error("Bad npub")
+    if (type !== 'npub') throw new Error('Bad npub')
 
-    const signer = this.keys.find(k => k.npub === npub)?.signer
-    const key = this.enckeys.find(k => k.npub === npub)
-    if (!key || !signer) throw new Error("Key not found")
+    const signer = this.keys.find((k) => k.npub === npub)?.signer
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key || !signer) throw new Error('Key not found')
     const name = key.name?.split('@')[0]
     const nip05 = name?.includes('@') ? name : `${name}@${DOMAIN}`
 
@@ -877,7 +884,7 @@ export class NoauthBackend extends EventEmitter {
         nip05,
       }),
       tags: [],
-      created_at: Math.floor(Date.now() / 1000)
+      created_at: Math.floor(Date.now() / 1000),
     })
     profile.sig = await profile.sign(signer)
 
@@ -887,13 +894,12 @@ export class NoauthBackend extends EventEmitter {
       kind: 3,
       content: '',
       tags: [],
-      created_at: Math.floor(Date.now() / 1000)
+      created_at: Math.floor(Date.now() / 1000),
     })
     if (NSEC_APP_NPUB) {
       try {
         const { type, data: nsecAppNpub } = nip19.decode(NSEC_APP_NPUB)
-        if (type === 'npub')
-          contacts.tags.push(['p', nsecAppNpub])
+        if (type === 'npub') contacts.tags.push(['p', nsecAppNpub])
       } catch {}
     }
     const relays: any = {}
@@ -909,13 +915,12 @@ export class NoauthBackend extends EventEmitter {
       kind: 10002,
       content: '',
       tags: [],
-      created_at: Math.floor(Date.now() / 1000)
+      created_at: Math.floor(Date.now() / 1000),
     })
-    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS])
-      nip65.tags.push(['r', r])
+    for (const r of [...OUTBOX_RELAYS, ...SEED_RELAYS]) nip65.tags.push(['r', r])
     nip65.sig = await nip65.sign(signer)
 
-    console.log("seed key events", { profile, contacts, nip65 })
+    console.log('seed key events', { profile, contacts, nip65 })
 
     // publish in background
     const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
@@ -1059,19 +1064,19 @@ export class NoauthBackend extends EventEmitter {
     method,
     remotePubkey,
     params,
-  }: IAllowCallbackParams): Promise<DECISION> {
+  }: IAllowCallbackParams): Promise<[DECISION, ((result: string | undefined) => void) | undefined]> {
     // same reqs usually come on reconnects
     if (this.doneReqIds.includes(id)) {
       console.log('request already done', id)
       // FIXME maybe repeat the reply, but without the Notification?
-      return DECISION.IGNORE
+      return [DECISION.IGNORE, undefined]
     }
 
     const appNpub = nip19.npubEncode(remotePubkey)
     const connected = !!this.apps.find((a) => a.appNpub === appNpub)
     if (!connected && method !== 'connect') {
       console.log('ignoring request before connect', method, id, appNpub, npub)
-      return DECISION.IGNORE
+      return [DECISION.IGNORE, undefined]
     }
 
     const req: DbPending = {
@@ -1086,7 +1091,7 @@ export class NoauthBackend extends EventEmitter {
     const self = this
     return new Promise(async (ok) => {
       // called when it's decided whether to allow this or not
-      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any) => {
+      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any, resultCb?: (result: string | undefined) => void) => {
         // confirm
         console.log(Date.now(), decision, npub, method, options, params)
 
@@ -1163,7 +1168,7 @@ export class NoauthBackend extends EventEmitter {
 
         // release this promise to send reply
         // to this req
-        ok(decision)
+        ok([decision, resultCb])
 
         // notify UI that it was confirmed
         // if (!PERF_TEST)
@@ -1192,7 +1197,7 @@ export class NoauthBackend extends EventEmitter {
       // have perm?
       if (dec !== DECISION.ASK) {
         // reply immediately
-        onAllow(false, dec, false)
+        onAllow(false, dec, false, {})
 
         // notify
         this.emit(`done-${req.id}`, req)
@@ -1206,7 +1211,9 @@ export class NoauthBackend extends EventEmitter {
         // put to a list of pending requests
         this.confirmBuffer.push({
           req,
-          cb: (decision, remember, options) => onAllow(true, decision, remember, options),
+          cb: (decision, remember, options) => new Promise(ok => {
+            onAllow(true, decision, remember, options, ok)
+          })
         })
 
         // notify those who are waiting for this req
@@ -1523,9 +1530,10 @@ export class NoauthBackend extends EventEmitter {
 
       await dbi.removePending(id)
       this.updateUI()
+      return undefined
     } else {
       console.log('confirming req', id, allow, remember, options)
-      req.cb(allow ? DECISION.ALLOW : DECISION.DISALLOW, remember, options)
+      return req.cb(allow ? DECISION.ALLOW : DECISION.DISALLOW, remember, options)
     }
   }
 
