@@ -102,7 +102,7 @@ export const ModalAppDetails = () => {
         url,
         name,
         icon,
-        updateTimestamp: Date.now()
+        updateTimestamp: Date.now(),
       }
       await swicCall('updateApp', updatedApp)
       notify(`App successfully updated!`, 'success')
@@ -161,7 +161,7 @@ export const ModalAppDetails = () => {
         />
 
         <Button varianttype="secondary" type="submit" fullWidth disabled={!isFormValid || isLoading}>
-          Save changes {isLoading && <LoadingSpinner />}
+          Save changes {isLoading && <LoadingSpinner mode="secondary" />}
         </Button>
       </Stack>
     </Modal>

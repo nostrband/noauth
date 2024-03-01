@@ -5,51 +5,58 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Typography, useTheme } from '@mui/material'
+import { Slide, Typography, useTheme } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { FormInputType, schema } from './const'
+import { get, useForm } from 'react-hook-form'
+import { schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { usePassword } from '@/hooks/usePassword'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
-import { CheckmarkIcon } from '@/assets'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { Container, HeadingContainer } from './styled'
+import { Container, HeadingContainer, InputsContainer, Subtitle } from './styled'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { dbi } from '@/modules/db'
+import useStepper from '@/hooks/useStepper'
+import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 
-const FORM_DEFAULT_VALUES: FormInputType = {
+const FORM_DEFAULT_VALUES = {
   username: '',
   nsec: '',
   password: '',
   rePassword: '',
 }
 
+const steps = ['User info fields', 'Password fields']
+
 export const ModalImportKeys = () => {
+  const theme = useTheme()
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.IMPORT_KEYS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.IMPORT_KEYS)
+
+  const { hidePassword, inputProps } = usePassword()
   const { hidePassword: hideNsec, inputProps: nsecInputProps } = usePassword()
   const { hidePassword: hideConfirmPassword, inputProps: confirmPasswordInputProps } = usePassword()
-  const { hidePassword, inputProps } = usePassword()
-  const theme = useTheme()
 
+  const { activeStep, handleBack, handleNext, isLastStep, handleReset: handleResetStepper } = useStepper(steps)
   const {
     handleSubmit,
     reset,
     register,
     formState: { errors },
     watch,
-  } = useForm<FormInputType>({
+    trigger,
+  } = useForm({
     defaultValues: FORM_DEFAULT_VALUES,
     resolver: yupResolver(schema),
-    mode: 'onSubmit',
+    mode: 'onChange',
   })
+
   const [isLoading, setIsLoading] = useState(false)
   const [nameNpub, setNameNpub] = useState('')
   const [isTakenByNsec, setIsTakenByNsec] = useState(false)
@@ -115,12 +122,13 @@ export const ModalImportKeys = () => {
     setNameNpub('')
     setIsTakenByNsec(false)
     setIsBadNsec(false)
-  }, [reset, hideNsec, hidePassword, hideConfirmPassword, resetPasswordValidation])
+    handleResetStepper()
+  }, [reset, hideNsec, hidePassword, hideConfirmPassword, resetPasswordValidation, handleResetStepper])
 
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
 
-  const submitHandler = async (values: FormInputType) => {
+  const submitHandler = async (values: any) => {
     hideNsec()
     hidePassword()
     hideConfirmPassword()
@@ -141,32 +149,45 @@ export const ModalImportKeys = () => {
     }
   }
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       isModalOpened && cleanUpStates()
-    }
-  }, [isModalOpened, cleanUpStates])
+    },
+    [isModalOpened, cleanUpStates]
+  )
 
-  const getNameHelperText = () => {
-    if (!enteredUsername) return "Don't worry, username can be changed later."
-    if (isTakenByNsec) return 'Name matches your key'
-    if (isBadNsec) return 'Invalid nsec'
-    if (nameNpub) return 'Already taken'
-    if (!isValidName) return 'Invalid name'
-    return (
-      <>
-        <CheckmarkIcon /> Available
-      </>
+  const { color: nameHelperTextColor, value: nameHelperText } = useMemo(() => {
+    const nameError = get(errors, 'username') || {}
+    return getNameHelperTextProps(
+      enteredUsername,
+      nameNpub,
+      isValidName,
+      isTakenByNsec,
+      isBadNsec,
+      nameError?.message,
+      theme
     )
-  }
+  }, [enteredUsername, errors, isBadNsec, isTakenByNsec, isValidName, nameNpub, theme])
 
-  const getNsecHelperText = () => {
-    if (isBadNsec) return 'Invalid nsec'
-    return 'Keys stay on your device.'
-  }
+  const { color: nsecHelperTextColor, value: nsecHelperText } = useMemo(() => {
+    const nsecError = get(errors, 'nsec') || {}
+    return getNsecHelperTextProps(isBadNsec, nsecError?.message, theme)
+  }, [errors, isBadNsec, theme])
 
-  const nameHelperText = getNameHelperText()
-  const nsecHelperText = getNsecHelperText()
+  const handleNextStep = async () => {
+    const isStepValid = await trigger(['username', 'nsec'])
+    if (
+      !isStepValid ||
+      nameNpub ||
+      isTakenByNsec ||
+      isBadNsec ||
+      !enteredUsername.trim() ||
+      !enteredNsec.trim() ||
+      !isValidName
+    )
+      return
+    handleNext()
+  }
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
@@ -175,79 +196,86 @@ export const ModalImportKeys = () => {
           <Typography fontWeight={600} variant="h5">
             Import key
           </Typography>
-          <Typography noWrap variant="body2" color={'GrayText'}>
-            Bring your existing Nostr keys to Nsec.app
-          </Typography>
+          <Subtitle>Bring your existing Nostr keys to Nsec.app</Subtitle>
         </HeadingContainer>
-        <Input
-          label="Choose a username"
-          fullWidth
-          placeholder="Enter a Username"
-          endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
-          {...register('username')}
-          error={!!errors.username}
-          helperText={nameHelperText}
-          helperTextProps={{
-            sx: {
-              '&.helper_text': {
-                color:
-                  enteredUsername && isValidName && (isTakenByNsec || !nameNpub)
-                    ? theme.palette.success.main
-                    : enteredUsername && (nameNpub || !isValidName)
-                      ? theme.palette.error.main
-                      : theme.palette.textSecondaryDecorate.main,
-              },
-            },
-          }}
-        />
-        <Input
-          label="Paste your private key"
-          placeholder="nsec1..."
-          fullWidth
-          {...register('nsec')}
-          error={!!errors.nsec}
-          {...nsecInputProps}
-          helperText={nsecHelperText}
-          helperTextProps={{
-            sx: {
-              '&.helper_text': {
-                color: isBadNsec ? theme.palette.error.main : theme.palette.textSecondaryDecorate.main,
-              },
-            },
-          }}
-        />
-        <Input
-          label="Password"
-          fullWidth
-          {...inputProps}
-          placeholder="Enter a password"
-          {...register('password')}
-          error={!!errors.password}
-        />
-        <Input
-          label="Confirm Password"
-          {...register('rePassword')}
-          error={!!errors.rePassword}
-          fullWidth
-          {...confirmPasswordInputProps}
-          placeholder="Confirm password"
-        />
-        {!errors?.rePassword?.message && (
-          <PasswordValidationStatus
-            isSignUp={true}
-            boxProps={{ sx: { padding: '0 0.5rem' } }}
-            isPasswordInvalid={isPasswordInvalid}
-            passwordStrength={passwordStrength}
-          />
+
+        {activeStep === 0 && (
+          <Slide direction="right" in>
+            <InputsContainer>
+              <Input
+                label="Choose a username"
+                fullWidth
+                placeholder="Enter a Username"
+                endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
+                {...register('username')}
+                error={!!errors.username}
+                helperText={nameHelperText}
+                helperTextColor={nameHelperTextColor}
+              />
+              <Input
+                label="Paste your private key"
+                placeholder="nsec1..."
+                fullWidth
+                {...register('nsec')}
+                error={!!errors.nsec}
+                {...nsecInputProps}
+                helperText={nsecHelperText}
+                helperTextColor={nsecHelperTextColor}
+              />
+            </InputsContainer>
+          </Slide>
         )}
-        {!!errors?.rePassword?.message && (
-          <Typography variant="body2" color={'red'}>
-            {errors.rePassword.message}
-          </Typography>
+
+        {activeStep === 1 && (
+          <Slide in exit direction="left">
+            <InputsContainer>
+              <Input
+                label="Password"
+                fullWidth
+                {...inputProps}
+                placeholder="Enter a password"
+                {...register('password')}
+                error={!!errors.password}
+              />
+              <Input
+                label="Confirm Password"
+                {...register('rePassword')}
+                error={!!errors.rePassword}
+                fullWidth
+                {...confirmPasswordInputProps}
+                placeholder="Confirm password"
+              />
+              {!errors.rePassword?.message && (
+                <PasswordValidationStatus
+                  isSignUp={true}
+                  boxProps={{ sx: { padding: '0 0.5rem' } }}
+                  isPasswordInvalid={isPasswordInvalid}
+                  passwordStrength={passwordStrength}
+                />
+              )}
+              {!!errors.rePassword?.message && (
+                <Typography variant="body2" color={'red'} padding={'0 0.5rem'}>
+                  {errors.rePassword.message}
+                </Typography>
+              )}
+            </InputsContainer>
+          </Slide>
         )}
-        <Button type="submit" disabled={isLoading}>
-          Import key {isLoading && <LoadingSpinner />}
-        </Button>
+        {isLastStep && (
+          <Button type="submit" disabled={isLoading}>
+            Import key {isLoading && <LoadingSpinner />}
+          </Button>
+        )}
+        {!isLastStep && (
+          <Button type="button" onClick={handleNextStep}>
+            Next
+          </Button>
+        )}
+        {activeStep !== 0 && (
+          <Button type="button" varianttype="secondary" onClick={handleBack}>
+            Back
+          </Button>
+        )}
       </Container>
     </Modal>
   )

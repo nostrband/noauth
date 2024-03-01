@@ -107,7 +107,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   return (
     <Modal open={isModalOpened} onClose={onClose} title="Settings">
       <Stack gap={'1rem'}>
-        <StyledSettingContainer onSubmit={handleSubmit}>
+        <StyledSettingContainer onSubmit={handleSubmit} component={'form'}>
           <Stack direction={'row'} justifyContent={'space-between'} alignItems={'start'}>
             <SectionTitle>Cloud sync</SectionTitle>
             {isSynced && (
@@ -142,7 +142,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
           <Typography variant="body2" color={'GrayText'}>
             Export your key encrypted with your password (NIP49)
           </Typography>
-          <StyledButton type="submit" fullWidth onClick={exportKey}>
+          <StyledButton type="button" fullWidth onClick={exportKey}>
             Export
           </StyledButton>
         </StyledSettingContainer>
