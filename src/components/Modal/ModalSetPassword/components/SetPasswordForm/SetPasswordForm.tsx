@@ -45,7 +45,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
     if (isPasswordInvalid) return
     try {
       const { password } = values
-      await swicCall('saveKey', npub, password)
+      await swicCall('setPassword', npub, password)
       dbi.addSynced(npub)
       notify('Password has been successfully set', 'success')
       onClose()

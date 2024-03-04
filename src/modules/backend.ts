@@ -30,7 +30,8 @@ import {
 // import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { NostrPowEvent, minePow } from './pow'
-import { encrypt as encryptNip49 } from './nip49'
+import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
+import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
 //import { PrivateKeySigner } from './signer'
 
@@ -838,7 +839,7 @@ export class NoauthBackend extends EventEmitter {
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
 
-    if (passphrase) await this.saveKey(npub, passphrase)
+    if (passphrase) await this.uploadKey(npub, passphrase)
 
     // assign nip05 before adding the key
     if (!existingName && name && !name.includes('@')) {
@@ -1450,7 +1451,7 @@ export class NoauthBackend extends EventEmitter {
     return k
   }
 
-  private async saveKey(npub: string, passphrase: string) {
+  private async uploadKey(npub: string, passphrase: string) {
     const info = this.enckeys.find((k) => k.npub === npub)
     if (!info) throw new Error(`Key ${npub} not found`)
     const sk = await this.keysModule.decryptKeyLocal({
@@ -1463,6 +1464,37 @@ export class NoauthBackend extends EventEmitter {
       passphrase,
     })
     await this.sendKeyToServer(npub, enckey, pwh)
+  }
+
+  private async setPassword(npub: string, passphrase: string, existingPassphrase: string) {
+    const info = this.enckeys.find((k) => k.npub === npub)
+    if (!info) throw new Error(`Key ${npub} not found`)
+
+    // check existing password locally
+    if (info.ncryptsec) {
+      try {
+        const sk = decryptNip49(info.ncryptsec, existingPassphrase)
+        const decNpub = getPublicKey(bytesToHex(sk))
+        sk.fill(0) // clear
+        if (decNpub !== npub) throw new Error("Wrong password")
+      } catch {
+        throw new Error("Wrong password")
+      }
+    }
+
+    // decrypt sk
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey,
+    })
+
+    // encrypt with new password
+    info.ncryptsec = encryptNip49(Buffer.from(sk, 'hex'), passphrase, 16, 0x01)
+    await dbi.editNcryptsec(npub, info.ncryptsec)
+
+    // upload key to server using new password
+    await this.uploadKey(npub, passphrase)
   }
 
   private async fetchKey(npub: string, passphrase: string, nip05: string) {
@@ -1634,8 +1666,8 @@ export class NoauthBackend extends EventEmitter {
         result = await this.redeemToken(args[0], args[1])
       } else if (method === 'importKey') {
         result = await this.importKey(args[0], args[1], args[2])
-      } else if (method === 'saveKey') {
-        result = await this.saveKey(args[0], args[1])
+      } else if (method === 'setPassword') {
+        result = await this.setPassword(args[0], args[1], args[2])
       } else if (method === 'fetchKey') {
         result = await this.fetchKey(args[0], args[1], args[2])
       } else if (method === 'confirm') {
