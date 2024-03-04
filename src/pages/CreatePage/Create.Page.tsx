@@ -96,7 +96,7 @@ const CreatePage = () => {
       setIsLoading(true)
       const key: any = await swicCall('generateKey', name, password)
       const appUrl = getReferrerAppUrl()
-      await dbi.addSynced(key.npub)
+      await dbi.setSynced(key.npub)
       console.log('Created', key.npub, 'app', appUrl)
       setCreated(true)
       setIsLoading(false)

@@ -22,18 +22,13 @@ export const StyledButton = styled(Button)(({ theme }) => {
   }
 })
 
-export const StyledSynchedText = styled((props: TypographyProps) => <Typography variant="caption" {...props} />)(({
-  theme,
-}) => {
+export const StyledSynchedText = styled((props: TypographyProps & { synced?: 'true' }) => (
+  <Typography variant="caption" {...props} />
+))(({ theme, synced }) => {
   return {
-    color: theme.palette.success.main,
-  }
-})
-
-export const StyledSynchText = styled((props: TypographyProps) => <Typography variant="caption" {...props} />)(({
-  theme,
-}) => {
-  return {
-    color: theme.palette.error.main,
+    color: synced ? theme.palette.success.main : theme.palette.error.main,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   }
 })

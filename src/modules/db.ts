@@ -109,6 +109,16 @@ export const dbi = {
       return
     }
   },
+  editNcryptsec: async (npub: string, ncryptsec: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        ncryptsec,
+      })
+    } catch (error) {
+      console.log(`db editName error: ${error}`)
+      return
+    }
+  },
   getApp: async (appNpub: string) => {
     try {
       return await db.apps.get(appNpub)
@@ -248,11 +258,11 @@ export const dbi = {
       return false
     }
   },
-  addSynced: async (npub: string) => {
+  setSynced: async (npub: string) => {
     try {
-      await db.syncHistory.add({ npub })
+      await db.syncHistory.put({ npub })
     } catch (error) {
-      console.log(`db addSynced error: ${error}`)
+      console.log(`db setSynced error: ${error}`)
       return false
     }
   },

@@ -140,7 +140,7 @@ export const ModalImportKeys = () => {
       setIsLoading(true)
       const k: any = await swicCall('importKey', username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
-      dbi.addSynced(k.npub)
+      dbi.setSynced(k.npub)
       navigate(`/key/${k.npub}`)
       cleanUpStates()
     } catch (error: any) {
