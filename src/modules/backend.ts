@@ -119,7 +119,9 @@ class Watcher {
 }
 
 class Nip46Backend extends NDKNip46Backend {
-  private allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
+  private allowCb: (
+    params: IAllowCallbackParams
+  ) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
   private npub: string = ''
 
   public constructor(
@@ -177,7 +179,7 @@ class Nip46Backend extends NDKNip46Backend {
     }
 
     // pass results back to UI
-    console.log("response", { method, response })
+    console.log('response', { method, response })
     resultCb?.(response)
 
     if (response) {
@@ -856,12 +858,17 @@ export class NoauthBackend extends EventEmitter {
 
     const sub = await this.swg.registration.pushManager.getSubscription()
     if (sub) await this.sendSubscriptionToServer(npub, sub)
+    console.log('subscribed', npub)
 
     // async fetching of perms from relays
     this.subscribeToAppPerms()
+    console.log('synched apps', npub)
 
     // seed new key with profile, relays etc
-    if (!nsec) this.publishNewKeyInfo(npub)
+    if (!nsec) {
+      this.publishNewKeyInfo(npub)
+      console.log('published profile', npub)
+    }
 
     return this.keyInfo(dbKey)
   }
@@ -925,9 +932,21 @@ export class NoauthBackend extends EventEmitter {
 
     // publish in background
     const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
-    profile.publish(relayset)
-    contacts.publish(relayset)
-    nip65.publish(relayset)
+    try {
+      await profile.publish(relayset)
+    } catch (e) {
+      console.log('failed to publish profile', e)
+    }
+    try {
+      await contacts.publish(relayset)
+    } catch (e) {
+      console.log('failed to publish contacts', e)
+    }
+    try {
+      await nip65.publish(relayset)
+    } catch (e) {
+      console.log('failed to publish relays', e)
+    }
   }
 
   private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
@@ -1092,7 +1111,13 @@ export class NoauthBackend extends EventEmitter {
     const self = this
     return new Promise(async (ok) => {
       // called when it's decided whether to allow this or not
-      const onAllow = async (manual: boolean, decision: DECISION, remember: boolean, options?: any, resultCb?: (result: string | undefined) => void) => {
+      const onAllow = async (
+        manual: boolean,
+        decision: DECISION,
+        remember: boolean,
+        options?: any,
+        resultCb?: (result: string | undefined) => void
+      ) => {
         // confirm
         console.log(Date.now(), decision, npub, method, options, params)
 
@@ -1212,9 +1237,10 @@ export class NoauthBackend extends EventEmitter {
         // put to a list of pending requests
         this.confirmBuffer.push({
           req,
-          cb: (decision, remember, options) => new Promise(ok => {
-            onAllow(true, decision, remember, options, ok)
-          })
+          cb: (decision, remember, options) =>
+            new Promise((ok) => {
+              onAllow(true, decision, remember, options, ok)
+            }),
         })
 
         // notify those who are waiting for this req
@@ -1476,9 +1502,9 @@ export class NoauthBackend extends EventEmitter {
         const sk = decryptNip49(info.ncryptsec, existingPassphrase)
         const decNpub = nip19.npubEncode(getPublicKey(bytesToHex(sk)))
         sk.fill(0) // clear
-        if (decNpub !== npub) throw new Error("Wrong password")
+        if (decNpub !== npub) throw new Error('Wrong password')
       } catch {
-        throw new Error("Wrong password")
+        throw new Error('Wrong password')
       }
     }
 
@@ -1658,6 +1684,7 @@ export class NoauthBackend extends EventEmitter {
   public async onMessage(event: any) {
     const { id, method, args } = event.data
     try {
+      const start = Date.now()
       //console.log("UI message", id, method, args)
       let result = undefined
       if (method === 'generateKey') {
@@ -1695,6 +1722,7 @@ export class NoauthBackend extends EventEmitter {
       } else {
         console.log('unknown method from UI ', method)
       }
+      console.log('done method', method, 'in', Date.now() - start)
       event.source.postMessage({
         id,
         result,
