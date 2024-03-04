@@ -1,8 +1,7 @@
+import React, { FC, useCallback, useEffect, useState } from 'react'
 import { Stack, Typography } from '@mui/material'
-import React, { FC, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { FormInputType, schema } from './const'
-import { Input } from '@/shared/Input/Input'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { Button } from '@/shared/Button/Button'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
@@ -11,6 +10,9 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
 import { dbi } from '@/modules/db'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { Input } from '@/shared/Input/Input'
+import { usePassword } from '@/hooks/usePassword'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -24,6 +26,9 @@ type SetPasswordFormProps = {
 export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
+  const [isLoading, setIsLoading] = useState(false)
+  const { hidePassword: hideNewPassword, inputProps: newPasswordProps } = usePassword()
+  const { hidePassword: hideRePassword, inputProps: rePasswordProps } = usePassword()
 
   const {
     handleSubmit,
@@ -39,24 +44,35 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
 
   const enteredPassword = watch('password')
 
+  const resetPasswordInputs = useCallback(() => {
+    hideNewPassword()
+    hideRePassword()
+  }, [hideNewPassword, hideRePassword])
+
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
   const submitHandler = async (values: FormInputType) => {
     if (isPasswordInvalid) return
+    setIsLoading(true)
+    resetPasswordInputs()
     try {
       const { password } = values
       await swicCall('setPassword', npub, password)
       dbi.addSynced(npub)
+      setIsLoading(false)
       notify('Password has been successfully set', 'success')
       onClose()
-    } catch (error) {
-      notify('Failed to set a password', 'error')
+    } catch (error: any) {
+      notify(error.toString() || 'Failed to set a password', 'error')
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
     reset()
     resetPasswordValidation()
+    setIsLoading(false)
+    resetPasswordInputs()
     // eslint-disable-next-line
   }, [])
 
@@ -68,6 +84,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
         {...register('password')}
         error={!!errors.password}
         fullWidth
+        {...newPasswordProps}
       />
       <Input
         label="Confirm Password"
@@ -75,6 +92,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
         {...register('rePassword')}
         error={!!errors.rePassword}
         fullWidth
+        {...rePasswordProps}
       />
       {Object.values(errors).length === 0 && (
         <PasswordValidationStatus
@@ -88,7 +106,9 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
           {Object.values(errors)[0].message}
         </Typography>
       )}
-      <Button type="submit">Submit</Button>
+      <Button type="submit" disabled={isLoading}>
+        Submmit {isLoading && <LoadingSpinner />}
+      </Button>
     </Stack>
   )
 }
