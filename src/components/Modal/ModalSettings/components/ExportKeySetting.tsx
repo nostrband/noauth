@@ -26,13 +26,13 @@ export const ExportKeySetting = () => {
   return (
     <StyledSettingContainer>
       <Stack direction={'row'} justifyContent={'space-between'}>
-        <SectionTitle>Export key</SectionTitle>
+        <SectionTitle>Export</SectionTitle>
       </Stack>
       <Typography variant="body2" color={'GrayText'}>
-        Export your key encrypted with your password (NIP49)
+        Export your key encrypted with your password (NIP-49)
       </Typography>
       <StyledButton type="button" fullWidth onClick={exportKey}>
-        Export
+        Export key
       </StyledButton>
     </StyledSettingContainer>
   )

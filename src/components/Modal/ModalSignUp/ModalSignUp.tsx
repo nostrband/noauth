@@ -99,7 +99,7 @@ export const ModalSignUp = () => {
         notify(`Account created for "${k.name}"`, 'success')
         reset()
         handleResetStepper()
-        dbi.addSynced(k.npub)
+        dbi.setSynced(k.npub)
       } else {
         notify(`Failed to assign name "${username}", try again`, 'error')
       }

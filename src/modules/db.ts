@@ -258,11 +258,11 @@ export const dbi = {
       return false
     }
   },
-  addSynced: async (npub: string) => {
+  setSynced: async (npub: string) => {
     try {
-      await db.syncHistory.add({ npub })
+      await db.syncHistory.put({ npub })
     } catch (error) {
-      console.log(`db addSynced error: ${error}`)
+      console.log(`db setSynced error: ${error}`)
       return false
     }
   },

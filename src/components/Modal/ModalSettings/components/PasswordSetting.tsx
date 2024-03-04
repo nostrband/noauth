@@ -37,9 +37,14 @@ export const PasswordSetting: FC<PasswordSettingProps> = ({ isSynced }) => {
       </Stack>
 
       {isSynced && (
-        <StyledButton type="button" fullWidth onClick={handleOpenSetPasswordModal}>
-          Change password
-        </StyledButton>
+        <Stack gap={'1rem'}>
+          <Typography variant="body2" color={'GrayText'}>
+            Your password is used for key encryption and cloud sync
+          </Typography>
+          <StyledButton type="button" fullWidth onClick={handleOpenSetPasswordModal}>
+            Change password
+          </StyledButton>
+        </Stack>
       )}
       {!isSynced && (
         <Stack gap={'1rem'}>

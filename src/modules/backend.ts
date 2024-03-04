@@ -1474,7 +1474,7 @@ export class NoauthBackend extends EventEmitter {
     if (info.ncryptsec) {
       try {
         const sk = decryptNip49(info.ncryptsec, existingPassphrase)
-        const decNpub = getPublicKey(bytesToHex(sk))
+        const decNpub = nip19.npubEncode(getPublicKey(bytesToHex(sk)))
         sk.fill(0) // clear
         if (decNpub !== npub) throw new Error("Wrong password")
       } catch {
