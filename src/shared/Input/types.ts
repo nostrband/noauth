@@ -6,4 +6,5 @@ export type AppInputProps = InputBaseProps & {
   helperTextProps?: FormHelperTextProps
   containerProps?: BoxProps
   label?: string
+  helperTextColor?: string
 }

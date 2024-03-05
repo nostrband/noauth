@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { call, getAppIconTitle, getDomain, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomain, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
 import { Avatar, Box, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -14,6 +14,7 @@ import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { DbPending } from '@/modules/db'
 import { IPendingsByAppNpub } from '@/pages/KeyPage/hooks/useTriggerConfirmModal'
+import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -35,6 +36,7 @@ type PendingRequest = DbPending & { checked: boolean }
 
 export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs }) => {
   const keys = useAppSelector(selectKeys)
+  const notify = useEnqueueSnackbar()
 
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EVENT)
@@ -109,13 +111,17 @@ export const ModalConfirmEvent: FC<ModalConfirmEventProps> = ({ confirmEventReqs
   const selectedPendingRequests = pendingRequests.filter((pr) => pr.checked)
 
   async function confirmPending(allow: boolean) {
-    selectedPendingRequests.forEach((req) => {
-      call(async () => {
+    for (const req of selectedPendingRequests) {
+      try {
         const remember = selectedActionType !== ACTION_TYPE.ONCE
-        await swicCall('confirm', req.id, allow, remember)
-        console.log('confirmed', req.id, selectedActionType, allow)
-      })
-    })
+        const result = await swicCall('confirm', req.id, allow, remember)
+        console.log('confirmed', { id: req.id, selectedActionType, allow, result })
+      } catch (e) {
+        console.log(`Error: ${e}`)
+        notify('Error: '+e, 'error')
+        return
+      }
+    }
     if (!isPopup) closeModalAfterRequest()
     closePopup()
   }

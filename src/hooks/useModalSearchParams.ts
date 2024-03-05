@@ -31,13 +31,22 @@ export const useModalSearchParams = () => {
     const enumKey = getEnumParam(modal)
     searchParams.delete(enumKey)
     extraOptions?.onClose && extraOptions?.onClose(searchParams)
-    // console.log({ searchParams })
     setSearchParams(searchParams, { replace: !!extraOptions?.replace })
   }
 
   const createHandleCloseReplace = (modal: MODAL_PARAMS_KEYS, extraOptions: IExtraCloseOptions = {}) => {
     return createHandleClose(modal, { ...extraOptions, replace: true })
   }
+
+  const createHandleCloseBack =
+    (from: MODAL_PARAMS_KEYS, to: MODAL_PARAMS_KEYS, extraOptions: IExtraCloseOptions = {}) =>
+    () => {
+      const enumKey = getEnumParam(from)
+      searchParams.delete(enumKey)
+      setSearchParams(searchParams, { replace: true })
+      extraOptions?.onClose && extraOptions?.onClose(searchParams)
+      handleOpen(to)
+    }
 
   const handleOpen = useCallback(
     (modal: MODAL_PARAMS_KEYS, extraOptions?: IExtraOptions) => {
@@ -79,6 +88,7 @@ export const useModalSearchParams = () => {
     getModalOpened,
     createHandleClose,
     createHandleCloseReplace,
+    createHandleCloseBack,
     handleOpen,
   }
 }

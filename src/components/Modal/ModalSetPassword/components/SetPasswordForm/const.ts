@@ -1,9 +1,7 @@
 import * as yup from 'yup'
 
 export const schema = yup.object().shape({
-  username: yup.string().required('Required field'),
-  nsec: yup.string().required('Required field'),
-  password: yup.string().required('Required field'),
+  password: yup.string().required('Please fill out all fields'),
   rePassword: yup
     .string()
     .required('Please fill out all fields')

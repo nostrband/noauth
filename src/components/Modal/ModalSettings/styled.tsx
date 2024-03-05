@@ -1,14 +1,14 @@
 import { Button } from '@/shared/Button/Button'
 import { Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 
-export const StyledSettingContainer = styled((props: StackProps) => (
-  <Stack gap={'0.75rem'} component={'form'} {...props} />
-))(({ theme }) => ({
-  padding: '1rem',
-  borderRadius: '1rem',
-  background: theme.palette.background.default,
-  color: theme.palette.text.primary,
-}))
+export const StyledSettingContainer = styled((props: StackProps) => <Stack gap={'0.75rem'} {...props} />)(
+  ({ theme }) => ({
+    padding: '1rem',
+    borderRadius: '1rem',
+    background: theme.palette.background.default,
+    color: theme.palette.text.primary,
+  })
+)
 
 export const StyledButton = styled(Button)(({ theme }) => {
   return {
@@ -22,18 +22,13 @@ export const StyledButton = styled(Button)(({ theme }) => {
   }
 })
 
-export const StyledSynchedText = styled((props: TypographyProps) => <Typography variant="caption" {...props} />)(({
-  theme,
-}) => {
+export const StyledSynchedText = styled((props: TypographyProps & { synced?: 'true' }) => (
+  <Typography variant="caption" {...props} />
+))(({ theme, synced }) => {
   return {
-    color: theme.palette.success.main,
-  }
-})
-
-export const StyledSynchText = styled((props: TypographyProps) => <Typography variant="caption" {...props} />)(({
-  theme,
-}) => {
-  return {
-    color: theme.palette.error.main,
+    color: synced ? theme.palette.success.main : theme.palette.error.main,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   }
 })

@@ -11,6 +11,7 @@ export enum MODAL_PARAMS_KEYS {
   ACTIVITY = 'activity',
   APP_DETAILS = 'app-details',
   EDIT_NAME = 'edit-name',
+  SET_PASSWORD = 'set-password',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

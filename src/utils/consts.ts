@@ -4,7 +4,9 @@ export const DOMAIN = process.env.REACT_APP_DOMAIN
 export const RELAY = process.env.REACT_APP_RELAY || 'wss://relay.nsec.app'
 export const NIP46_RELAYS = [RELAY]
 export const OUTBOX_RELAYS = ['wss://relay.nostr.band', 'wss://nos.lol', 'wss://purplepag.es']
+export const SEED_RELAYS = ['wss://relay.damus.io', 'wss://nostr.mom', 'wss://relay.primal.net']
 export const BROADCAST_RELAY = 'wss://nostr.mutinywallet.com'
+export const NSEC_APP_NPUB = process.env.REACT_APP_NSEC_APP_NPUB
 
 export const APP_TAG = 'nsec.app/perm'
 
