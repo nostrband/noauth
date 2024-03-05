@@ -1651,6 +1651,8 @@ export class NoauthBackend extends EventEmitter {
         console.log("Deleted name didn't exist")
       }
     }
+
+    name = name.trim().toLocaleLowerCase()
     if (name) {
       await this.sendNameToServer(npub, name)
     }
