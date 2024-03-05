@@ -134,6 +134,24 @@ class Nip46Backend extends NDKNip46Backend {
     signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
   }
 
+  // override ndk's implementation to add 'since' tag
+  // which is needed for strfry which doesn't
+  // always delete ephemeral events properly
+  public async start() {
+    this.localUser = await this.signer.user()
+
+    const sub = this.ndk.subscribe(
+      {
+        kinds: [24133 as number],
+        '#p': [this.localUser.hexpubkey],
+        since: Math.floor(Date.now() / 1000 - 10),
+      },
+      { closeOnEose: false }
+    )
+
+    sub.on('event', (e) => this.handleIncomingEvent(e))
+  }
+
   public async processEvent(event: NDKEvent) {
     this.handleIncomingEvent(event)
   }
