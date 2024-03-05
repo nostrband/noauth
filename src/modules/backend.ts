@@ -307,8 +307,6 @@ export class NoauthBackend extends EventEmitter {
       if (p.timestamp < Date.now() - REQ_TTL) await dbi.removePending(p.id)
     }
 
-    const sub = await this.swg.registration.pushManager.getSubscription()
-
     // start keys, only pushed ones, or all of them if
     // there was no push
     console.log('pushNpubs', JSON.stringify(this.pushNpubs))
@@ -325,7 +323,15 @@ export class NoauthBackend extends EventEmitter {
         }
       }
 
-      // ensure we're subscribed on the server
+      // ensure we're subscribed on the server, re-create the
+      // subscription endpoint if we have permissions granted
+      let sub = await this.swg.registration.pushManager.getSubscription()
+      if (!sub && Notification && Notification.permission === 'granted') {
+        const enabled = await this.enablePush()
+        if (enabled)
+          sub = await this.swg.registration.pushManager.getSubscription()
+      }
+
       if (sub) {
         // subscribe in the background to avoid blocking
         // the request processing
