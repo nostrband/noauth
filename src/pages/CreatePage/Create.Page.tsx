@@ -17,7 +17,6 @@ import { usePassword } from '@/hooks/usePassword'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { FormInputType, schema } from './const'
-import { dbi } from '@/modules/db'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',

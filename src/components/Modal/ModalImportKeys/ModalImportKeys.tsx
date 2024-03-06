@@ -20,7 +20,6 @@ import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Container, HeadingContainer, InputsContainer, Subtitle } from './styled'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
-import { dbi } from '@/modules/db'
 import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 
