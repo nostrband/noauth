@@ -134,6 +134,24 @@ class Nip46Backend extends NDKNip46Backend {
     signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
   }
 
+  // override ndk's implementation to add 'since' tag
+  // which is needed for strfry which doesn't
+  // always delete ephemeral events properly
+  public async start() {
+    this.localUser = await this.signer.user()
+
+    const sub = this.ndk.subscribe(
+      {
+        kinds: [24133 as number],
+        '#p': [this.localUser.hexpubkey],
+        since: Math.floor(Date.now() / 1000 - 10),
+      },
+      { closeOnEose: false }
+    )
+
+    sub.on('event', (e) => this.handleIncomingEvent(e))
+  }
+
   public async processEvent(event: NDKEvent) {
     this.handleIncomingEvent(event)
   }
@@ -289,8 +307,6 @@ export class NoauthBackend extends EventEmitter {
       if (p.timestamp < Date.now() - REQ_TTL) await dbi.removePending(p.id)
     }
 
-    const sub = await this.swg.registration.pushManager.getSubscription()
-
     // start keys, only pushed ones, or all of them if
     // there was no push
     console.log('pushNpubs', JSON.stringify(this.pushNpubs))
@@ -307,7 +323,15 @@ export class NoauthBackend extends EventEmitter {
         }
       }
 
-      // ensure we're subscribed on the server
+      // ensure we're subscribed on the server, re-create the
+      // subscription endpoint if we have permissions granted
+      let sub = await this.swg.registration.pushManager?.getSubscription()
+      if (!sub && Notification && Notification.permission === 'granted') {
+        const enabled = await this.enablePush()
+        if (enabled)
+          sub = await this.swg.registration.pushManager.getSubscription()
+      }
+
       if (sub) {
         // subscribe in the background to avoid blocking
         // the request processing
@@ -838,6 +862,7 @@ export class NoauthBackend extends EventEmitter {
     // we have to gracefully proceed somehow
 
     await dbi.addKey(dbKey)
+
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
 
@@ -856,7 +881,7 @@ export class NoauthBackend extends EventEmitter {
       }
     }
 
-    const sub = await this.swg.registration.pushManager.getSubscription()
+    const sub = await this.swg.registration.pushManager?.getSubscription()
     if (sub) await this.sendSubscriptionToServer(npub, sub)
     console.log('subscribed', npub)
 
@@ -1490,6 +1515,7 @@ export class NoauthBackend extends EventEmitter {
       passphrase,
     })
     await this.sendKeyToServer(npub, enckey, pwh)
+    await dbi.setSynced(npub)
   }
 
   private async setPassword(npub: string, passphrase: string, existingPassphrase: string) {
@@ -1633,6 +1659,8 @@ export class NoauthBackend extends EventEmitter {
         console.log("Deleted name didn't exist")
       }
     }
+
+    name = name.trim().toLocaleLowerCase()
     if (name) {
       await this.sendNameToServer(npub, name)
     }
@@ -1658,7 +1686,7 @@ export class NoauthBackend extends EventEmitter {
       applicationServerKey: WEB_PUSH_PUBKEY,
     }
 
-    const pushSubscription = await this.swg.registration.pushManager.subscribe(options)
+    const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
     console.log('push endpoint', JSON.stringify(pushSubscription))
 
     if (!pushSubscription) {

@@ -18,7 +18,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { FormInputType, schema } from './const'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { useDebounce } from 'use-debounce'
-import { dbi } from '@/modules/db'
 import useStepper from '@/hooks/useStepper'
 import { InputsContainer } from './styled'
 import { getNameHelperTextProps } from './utils'
@@ -99,7 +98,6 @@ export const ModalSignUp = () => {
         notify(`Account created for "${k.name}"`, 'success')
         reset()
         handleResetStepper()
-        dbi.setSynced(k.npub)
       } else {
         notify(`Failed to assign name "${username}", try again`, 'error')
       }
@@ -109,7 +107,7 @@ export const ModalSignUp = () => {
         navigate(`/key/${k.npub}`)
       }, 300)
     } catch (error: any) {
-      notify(error?.message || 'Something went wrong!', 'error')
+      notify(error?.message || 'Something went wrong!' + error, 'error')
       setIsLoading(false)
     }
   }

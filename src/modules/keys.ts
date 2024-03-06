@@ -21,25 +21,29 @@ const ALGO = 'aes-256-cbc'
 const IV_SIZE = 16
 
 // valid passwords are a limited ASCII only, see notes below
-const ASCII_REGEX = /^[A-Za-z0-9!@#$%^&*()\-_]{6,}$/
+//const ASCII_REGEX = /^[A-Za-z0-9!@#$%^&*()\-_]{6,}$/
+const PASS_REGEX = /^.{6,}$/
 
 const ALGO_LOCAL = 'AES-CBC'
 const KEY_SIZE_LOCAL = 256
 
 export function isValidPassphase(passphrase: string): boolean {
-  return ASCII_REGEX.test(passphrase)
+  return PASS_REGEX.test(passphrase.normalize('NFKC'))
 }
 
 export function isWeakPassphase(passphrase: string): boolean {
+  passphrase = passphrase.normalize('NFKC')
   const BIG_LETTER_REGEX = /[A-Z]+/
   const SMALL_LETTER_REGEX = /[a-z]+/
   const NUMBER_REGEX = /[0-9]+/
   const PUNCT_REGEX = /[!@#$%^&*()\-_]+/
+  const OTHER_REGEX = /[^A-Za-z0-9!@#$%^&*()\-_]+/
   const big = BIG_LETTER_REGEX.test(passphrase) ? 1 : 0
   const small = SMALL_LETTER_REGEX.test(passphrase) ? 1 : 0
   const number = NUMBER_REGEX.test(passphrase) ? 1 : 0
   const punct = PUNCT_REGEX.test(passphrase) ? 1 : 0
-  const base = big * 26 + small * 26 + number * 10 + punct * 12
+  const other = OTHER_REGEX.test(passphrase) ? 1 : 0
+  const base = big * 26 + small * 26 + number * 10 + punct * 12 + other * 100
   const compl = Math.pow(base, passphrase.length)
   const thresh = Math.pow(11, 14)
   // console.log({ big, small, number, punct, base, compl, thresh });
@@ -58,10 +62,9 @@ export class Keys {
 
     // https://nodejs.org/api/crypto.html#using-strings-as-inputs-to-cryptographic-apis
     // https://github.com/ricmoo/scrypt-js#encoding-notes
-    // We could use string.normalize() to make sure all JS implementations
-    // are compatible, but since we're looking to make this thing a standard
-    // then the simplest way is to exclude unicode and only work with ASCII
-    if (!isValidPassphase(passphrase)) throw new Error('Password must be 6+ ASCII chars')
+    passphrase = passphrase.normalize('NFKC')
+
+    if (!isValidPassphase(passphrase)) throw new Error('Password must be 6+ chars')
 
     return new Promise((ok, fail) => {
       // NOTE: we should use Argon2 or scrypt later, for now
@@ -69,6 +72,7 @@ export class Keys {
       pbkdf2(passphrase, salt, ITERATIONS, HASH_SIZE, HASH_ALGO, (err, key) => {
         if (err) fail(err)
         else {
+          // convert password key to a hash using kdf
           pbkdf2(key, passphrase, ITERATIONS_PWH, HASH_SIZE, HASH_ALGO, (err, hash) => {
             if (err) fail(err)
             else
@@ -93,6 +97,7 @@ export class Keys {
     // Those lazy-asses from Safari still don't allow one
     // to store keys in IndexedDB, so for them we have to
     // store nsecs in plaintext
+    // FIXME instead, store the localkey in plaintext
     if (this.isSafari()) return {}
 
     return await this.subtle.generateKey(

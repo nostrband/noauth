@@ -9,7 +9,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
-import { dbi } from '@/modules/db'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { usePassword } from '@/hooks/usePassword'
@@ -58,7 +57,6 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
     try {
       const { password } = values
       await swicCall('setPassword', npub, password)
-      dbi.setSynced(npub)
       setIsLoading(false)
       notify('Password has been successfully set', 'success')
       onClose()

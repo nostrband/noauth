@@ -17,7 +17,6 @@ import { usePassword } from '@/hooks/usePassword'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { FormInputType, schema } from './const'
-import { dbi } from '@/modules/db'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -96,7 +95,6 @@ const CreatePage = () => {
       setIsLoading(true)
       const key: any = await swicCall('generateKey', name, password)
       const appUrl = getReferrerAppUrl()
-      await dbi.setSynced(key.npub)
       console.log('Created', key.npub, 'app', appUrl)
       setCreated(true)
       setIsLoading(false)

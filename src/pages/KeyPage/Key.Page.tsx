@@ -38,6 +38,7 @@ const KeyPage = () => {
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
   const key = keys.find((k) => k.npub === npub)
+  const isPasswordSet = !!key?.ncryptsec
 
   const getUsername = useCallback(() => {
     if (!key || !key?.name) return ''
@@ -117,7 +118,7 @@ const KeyPage = () => {
       <ModalConfirmConnect />
       <ModalConfirmEvent confirmEventReqs={prepareEventPendings} />
       <ModalEditName />
-      <ModalSetPassword isSynced={isSynced} />
+      <ModalSetPassword isPasswordSet={isPasswordSet} />
     </>
   )
 }

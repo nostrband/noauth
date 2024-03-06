@@ -14,7 +14,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { DOMAIN } from '@/utils/consts'
 import { fetchNip05, fetchNpubNames } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
-import { dbi } from '@/modules/db'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 const FORM_DEFAULT_VALUES = {
@@ -80,7 +79,6 @@ export const ModalLogin = () => {
       console.log('fetch', npub, name)
       const k: any = await swicCall('fetchKey', npub, passphrase, name)
       notify(`Fetched ${k.npub}`, 'success')
-      dbi.setSynced(k.npub)
       cleanUpStates()
       setTimeout(() => {
         // give frontend time to read the new key first

@@ -6,18 +6,18 @@ import { ChangePasswordForm } from './components/ChangePasswordForm/ChangePasswo
 import { SetPasswordForm } from './components/SetPasswordForm/SetPasswordForm'
 
 type ModalSetPasswordProps = {
-  isSynced: boolean
+  isPasswordSet: boolean
 }
 
-export const ModalSetPassword: FC<ModalSetPasswordProps> = ({ isSynced }) => {
+export const ModalSetPassword: FC<ModalSetPasswordProps> = ({ isPasswordSet }) => {
   const { getModalOpened, createHandleCloseBack } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.SET_PASSWORD)
   const handleCloseModal = createHandleCloseBack(MODAL_PARAMS_KEYS.SET_PASSWORD, MODAL_PARAMS_KEYS.SETTINGS)
-  const title = isSynced ? 'Change password' : 'Set password'
+  const title = isPasswordSet ? 'Change password' : 'Set password'
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} title={title} withCloseButton={false}>
-      {isSynced ? <ChangePasswordForm onClose={handleCloseModal} /> : <SetPasswordForm onClose={handleCloseModal} />}
+      {isPasswordSet ? <ChangePasswordForm onClose={handleCloseModal} /> : <SetPasswordForm onClose={handleCloseModal} />}
     </Modal>
   )
 }

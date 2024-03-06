@@ -9,7 +9,6 @@ import { Button } from '@/shared/Button/Button'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
-import { dbi } from '@/modules/db'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { usePassword } from '@/hooks/usePassword'
@@ -63,7 +62,6 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onClose }) => 
       if (!existingPassword.trim() || !password.trim()) throw new Error('Please fill out all fields!')
 
       await swicCall('setPassword', npub, password, existingPassword)
-      dbi.setSynced(npub)
       setIsLoading(false)
       notify('Password has been successfully updated', 'success')
       onClose()
