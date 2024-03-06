@@ -5,7 +5,7 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Slide, Typography, useTheme } from '@mui/material'
+import { Box, Slide, Typography, useTheme } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { get, useForm } from 'react-hook-form'
 import { schema } from './const'
@@ -191,7 +191,7 @@ export const ModalImportKeys = () => {
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
-      <Container component={'form'} onSubmit={handleSubmit(submitHandler)}>
+      <Container component={'form'} overflow={'hidden'} onSubmit={handleSubmit(submitHandler)}>
         <HeadingContainer>
           <Typography fontWeight={600} variant="h5">
             Import key
@@ -199,9 +199,9 @@ export const ModalImportKeys = () => {
           <Subtitle>Bring your existing Nostr keys to Nsec.app</Subtitle>
         </HeadingContainer>
 
-        {activeStep === 0 && (
-          <Slide direction="right" in>
-            <InputsContainer>
+        <Box>
+          <Slide direction="right" in={activeStep === 0}>
+            <InputsContainer show={activeStep === 0}>
               <Input
                 label="Choose a username"
                 fullWidth
@@ -211,6 +211,8 @@ export const ModalImportKeys = () => {
                 error={!!errors.username}
                 helperText={nameHelperText}
                 helperTextColor={nameHelperTextColor}
+                autoComplete="username"
+                id="username"
               />
               <Input
                 label="Paste your private key"
@@ -221,14 +223,13 @@ export const ModalImportKeys = () => {
                 {...nsecInputProps}
                 helperText={nsecHelperText}
                 helperTextColor={nsecHelperTextColor}
+                autoComplete="off"
               />
             </InputsContainer>
           </Slide>
-        )}
 
-        {activeStep === 1 && (
-          <Slide in exit direction="left">
-            <InputsContainer>
+          <Slide in={activeStep === 1} exit direction="left">
+            <InputsContainer show={activeStep === 1}>
               <Input
                 label="Password"
                 fullWidth
@@ -236,6 +237,8 @@ export const ModalImportKeys = () => {
                 placeholder="Enter a password"
                 {...register('password')}
                 error={!!errors.password}
+                autoComplete="new-password"
+                id="new-password"
               />
               <Input
                 label="Confirm Password"
@@ -244,6 +247,8 @@ export const ModalImportKeys = () => {
                 fullWidth
                 {...confirmPasswordInputProps}
                 placeholder="Confirm password"
+                autoComplete="confirm-password"
+                id="confirm-password"
               />
               {!errors.rePassword?.message && (
                 <PasswordValidationStatus
@@ -260,7 +265,7 @@ export const ModalImportKeys = () => {
               )}
             </InputsContainer>
           </Slide>
-        )}
+        </Box>
         {isLastStep && (
           <Button type="submit" disabled={isLoading}>
             Import key {isLoading && <LoadingSpinner />}

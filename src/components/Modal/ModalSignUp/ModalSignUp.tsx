@@ -3,7 +3,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Slide, Stack, Typography, useTheme } from '@mui/material'
+import { Box, Slide, Stack, Typography, useTheme } from '@mui/material'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
 import { swicCall } from '@/modules/swic'
@@ -143,7 +143,13 @@ export const ModalSignUp = () => {
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} withCloseButton={false}>
-      <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
+      <Stack
+        paddingTop={'1rem'}
+        gap={'1rem'}
+        component={'form'}
+        overflow={'hidden'}
+        onSubmit={handleSubmit(submitHandler)}
+      >
         <Stack gap={'0.2rem'} padding={'0 1rem'} alignSelf={'flex-start'}>
           <Typography fontWeight={600} variant="h5">
             Sign up
@@ -153,9 +159,9 @@ export const ModalSignUp = () => {
           </Typography>
         </Stack>
 
-        {activeStep === 0 && (
-          <Slide direction="right" in>
-            <InputsContainer>
+        <Box>
+          <Slide direction="right" in={activeStep === 0}>
+            <InputsContainer show={activeStep === 0}>
               <Input
                 label="Username"
                 fullWidth
@@ -165,14 +171,14 @@ export const ModalSignUp = () => {
                 error={!!errors.username}
                 helperText={nameHelperText}
                 helperTextColor={nameHelperTextColor}
+                autoComplete="username"
+                id="username"
               />
             </InputsContainer>
           </Slide>
-        )}
 
-        {activeStep === 1 && (
-          <Slide direction="left" in>
-            <InputsContainer>
+          <Slide direction="left" in={activeStep === 1}>
+            <InputsContainer show={activeStep === 1}>
               <Input
                 label="Password"
                 fullWidth
@@ -180,6 +186,8 @@ export const ModalSignUp = () => {
                 placeholder="Enter a password"
                 {...register('password')}
                 error={!!errors.password}
+                autoComplete="new-password"
+                id="new-password"
               />
               <Input
                 label="Confirm Password"
@@ -188,6 +196,8 @@ export const ModalSignUp = () => {
                 fullWidth
                 {...confirmPasswordInputProps}
                 placeholder="Confirm password"
+                autoComplete="confirm-password"
+                id="confirm-password"
               />
               {!errors?.rePassword?.message && (
                 <PasswordValidationStatus
@@ -204,7 +214,7 @@ export const ModalSignUp = () => {
               )}
             </InputsContainer>
           </Slide>
-        )}
+        </Box>
 
         {isLastStep && (
           <Button fullWidth type="submit" disabled={isLoading}>

@@ -44,9 +44,11 @@ export const Container = styled((props: StackProps) => <Stack {...props} />)(() 
 }))
 
 export const InputsContainer = styled(
-  forwardRef<HTMLDivElement, StackProps>((props, ref) => <Stack {...props} ref={ref} />)
-)(() => ({
+  forwardRef<HTMLDivElement, StackProps & { show: boolean }>((props, ref) => <Stack {...props} ref={ref} />)
+)(({ show = false }) => ({
   gap: '1rem',
+  height: show ? 'auto' : '0',
+  maxHeight: show ? 'initial' : '0',
   '@media screen and (max-width: 485px)': {
     gap: '0.5rem',
   },
