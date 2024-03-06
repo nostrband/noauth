@@ -325,7 +325,7 @@ export class NoauthBackend extends EventEmitter {
 
       // ensure we're subscribed on the server, re-create the
       // subscription endpoint if we have permissions granted
-      let sub = await this.swg.registration.pushManager.getSubscription()
+      let sub = await this.swg.registration.pushManager?.getSubscription()
       if (!sub && Notification && Notification.permission === 'granted') {
         const enabled = await this.enablePush()
         if (enabled)
@@ -862,6 +862,7 @@ export class NoauthBackend extends EventEmitter {
     // we have to gracefully proceed somehow
 
     await dbi.addKey(dbKey)
+
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
 
@@ -880,7 +881,7 @@ export class NoauthBackend extends EventEmitter {
       }
     }
 
-    const sub = await this.swg.registration.pushManager.getSubscription()
+    const sub = await this.swg.registration.pushManager?.getSubscription()
     if (sub) await this.sendSubscriptionToServer(npub, sub)
     console.log('subscribed', npub)
 
@@ -1514,6 +1515,7 @@ export class NoauthBackend extends EventEmitter {
       passphrase,
     })
     await this.sendKeyToServer(npub, enckey, pwh)
+    await dbi.setSynced(npub)
   }
 
   private async setPassword(npub: string, passphrase: string, existingPassphrase: string) {
@@ -1684,7 +1686,7 @@ export class NoauthBackend extends EventEmitter {
       applicationServerKey: WEB_PUSH_PUBKEY,
     }
 
-    const pushSubscription = await this.swg.registration.pushManager.subscribe(options)
+    const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
     console.log('push endpoint', JSON.stringify(pushSubscription))
 
     if (!pushSubscription) {

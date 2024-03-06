@@ -10,7 +10,7 @@ export const useBackgroundSigning = () => {
 
   const checkBackgroundSigning = useCallback(async () => {
     if (!swr) return undefined
-    const isBackgroundEnable = await swr.pushManager.getSubscription()
+    const isBackgroundEnable = await swr.pushManager?.getSubscription()
     setShowWarning(!isBackgroundEnable)
   }, [])
 

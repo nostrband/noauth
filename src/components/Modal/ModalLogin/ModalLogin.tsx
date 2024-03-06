@@ -80,7 +80,6 @@ export const ModalLogin = () => {
       console.log('fetch', npub, name)
       const k: any = await swicCall('fetchKey', npub, passphrase, name)
       notify(`Fetched ${k.npub}`, 'success')
-      dbi.setSynced(k.npub)
       cleanUpStates()
       setTimeout(() => {
         // give frontend time to read the new key first

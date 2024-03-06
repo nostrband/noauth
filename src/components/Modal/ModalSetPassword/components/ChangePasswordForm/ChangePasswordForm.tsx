@@ -63,7 +63,6 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onClose }) => 
       if (!existingPassword.trim() || !password.trim()) throw new Error('Please fill out all fields!')
 
       await swicCall('setPassword', npub, password, existingPassword)
-      dbi.setSynced(npub)
       setIsLoading(false)
       notify('Password has been successfully updated', 'success')
       onClose()
