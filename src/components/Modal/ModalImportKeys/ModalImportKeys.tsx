@@ -176,8 +176,7 @@ export const ModalImportKeys = () => {
     const isStepValid = await trigger(['username', 'nsec'])
     if (
       !isStepValid ||
-      nameNpub ||
-      isTakenByNsec ||
+      (nameNpub && !isTakenByNsec) || 
       isBadNsec ||
       !enteredUsername.trim() ||
       !enteredNsec.trim() ||
