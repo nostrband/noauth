@@ -26,7 +26,7 @@ export const getNameHelperTextProps = (
   if (isTakenByNsec)
     return {
       value: 'Name matches your key',
-      color: theme.palette.error.main,
+      color: theme.palette.success.main,
     }
   if (isBadNsec)
     return {
