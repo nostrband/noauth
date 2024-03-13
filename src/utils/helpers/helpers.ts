@@ -165,23 +165,59 @@ export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
   return name ? name[0].toLocaleUpperCase() : appNpub.substring(4, 7)
 }
 
-export function getReqActionName(req: DbPending | DbHistory) {
-  const action = ACTIONS[req.method]
-  if (req.method === 'sign_event') {
-    const kind = getSignReqKind(req)
-    if (kind !== undefined) return `${action} of kind ${kind}`
+function getActionName(method: string, kind?: number) {
+  const action = ACTIONS[method]
+  if (method === 'sign_event') {
+    if (kind !== undefined) {
+      switch (kind) {
+        case 0: return 'Update your profile'
+        case 1: return 'Publish note'
+        case 3: return 'Update your contact list'
+        case 4: return 'Send direct message'
+        case 5: return 'Delete event'
+        case 6: return 'Publish repost'
+        case 7: return 'Publish reaction'
+        case 10002: return 'Update your relay list'
+      }
+      return `${action} of kind ${kind}`
+    }
   }
   return action
 }
 
+export function getReqActionName(req: DbPending | DbHistory) {
+  const kind = req.method === 'sign_event' ? getSignReqKind(req) : undefined
+  return getActionName(req.method, kind)
+  // const action = ACTIONS[req.method]
+  // if (req.method === 'sign_event') {
+  //   const kind = getSignReqKind(req)
+  //   if (kind !== undefined) {
+  //     switch (kind) {
+  //       case 0: return 'Update your profile'
+  //       case 1: return 'Publish notes'
+  //       case 3: return 'Update your contact list'
+  //       case 4: return 'Send direct messages'
+  //       case 5: return 'Delete event'
+  //       case 6: return 'Publish reposts'
+  //       case 7: return 'Publish reactions'
+  //       case 10002: return 'Update your relay list'
+  //     }
+  //     return `${action} of kind ${kind}`
+  //   }
+  // }
+  // return action
+}
+
 export function getPermActionName(req: DbPerm) {
   const method = req.perm.split(':')[0]
-  const action = ACTIONS[method]
-  if (method === 'sign_event') {
-    const kind = req.perm.split(':')[1]
-    if (kind !== undefined) return `${action} of kind ${kind}`
-  }
-  return action
+  const kind = method === 'sign_event' ? Number(req.perm.split(':')[1]) : undefined
+  return getActionName(method, kind)
+  // const action = ACTIONS[method]
+  // if (method === 'sign_event') {
+  //   const kind = req.perm.split(':')[1]
+  //   if (kind !== undefined) return `${action} of kind ${kind}`
+  // }
+  // return action
 }
 
 export const isEmptyString = (str = '') => {

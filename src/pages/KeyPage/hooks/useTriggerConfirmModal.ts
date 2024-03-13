@@ -51,12 +51,17 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
         continue
       }
 
+      let perms = ''
+      try {
+        perms = JSON.parse(req.params)[2]
+      } catch {}
       shownConnectModals.current[req.id] = true
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
         search: {
           appNpub: req.appNpub,
           reqId: req.id,
           popup: isPopup ? 'true' : '',
+          perms
         },
       })
       break

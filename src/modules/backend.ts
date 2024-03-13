@@ -1708,6 +1708,12 @@ export class NoauthBackend extends EventEmitter {
     return dbKey.ncryptsec || ''
   }
 
+  private async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
+    const key = this.keys.find(k => k.npub === npub)
+    if (!key) throw new Error("Npub not found")
+    return key.signer.decrypt(new NDKUser({ pubkey: peerPubkey }), ciphertext)
+  }
+
   public async onMessage(event: any) {
     const { id, method, args } = event.data
     try {
@@ -1746,6 +1752,8 @@ export class NoauthBackend extends EventEmitter {
         result = await this.fetchPendingRequests(args[0], args[1])
       } else if (method === 'exportKey') {
         result = await this.exportKey(args[0])
+      } else if (method === 'nip04Decrypt') {
+        result = await this.nip04Decrypt(args[0], args[1], args[2])
       } else {
         console.log('unknown method from UI ', method)
       }

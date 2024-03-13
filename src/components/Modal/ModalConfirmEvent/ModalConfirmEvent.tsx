@@ -19,8 +19,8 @@ import {
 } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { printPrettyJson } from './utils'
 import { AppLink } from '@/shared/AppLink/AppLink'
+import { getReqDetails } from '@/utils/helpers/helpers-frontend'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -52,6 +52,7 @@ export const ModalConfirmEvent: FC = () => {
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.ALWAYS)
   const [isLoaded, setIsLoaded] = useState(false)
   const [showJsonParams, setShowJsonParams] = useState(false)
+  const [details, setDetails] = useState('')
 
   const currentAppPendingReqs = useMemo(
     () => pendings.filter((pr) => pr.appNpub === appNpub) || [],
@@ -81,6 +82,8 @@ export const ModalConfirmEvent: FC = () => {
   const currentPendingRequest = currentAppPendingReqs.find((pr) => pr.id === pendingReqId)
 
   useEffect(() => {
+    // reset
+    setShowJsonParams(false)
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
       // wait for SW to start
@@ -92,6 +95,16 @@ export const ModalConfirmEvent: FC = () => {
       setIsLoaded(true)
     }
   }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
+
+  useEffect(() => {
+    const load = async () => {
+      if (currentPendingRequest)
+        setDetails(await getReqDetails(currentPendingRequest))
+      else
+        setDetails('')
+    }
+    load()
+  }, [currentPendingRequest])
 
   if (isModalOpened && !currentPendingRequest) {
     closeModalAfterRequest()
@@ -151,7 +164,6 @@ export const ModalConfirmEvent: FC = () => {
     })
   }
 
-  const { params = '' } = currentPendingRequest || {}
   const actionName = currentPendingRequest ? getReqActionName(currentPendingRequest) : ''
 
   const handleToggleShowJsonParams = () => setShowJsonParams((prevState) => !prevState)
@@ -185,9 +197,9 @@ export const ModalConfirmEvent: FC = () => {
         <Stack gap={'0.5rem'}>
           <Box padding={'0.5rem'} display={'flex'} alignItems={'center'} gap={'0.5rem'}>
             <StyledActionName>{actionName}</StyledActionName>
-            <AppLink title="More info" onClick={handleToggleShowJsonParams} />
+            {details && <AppLink title="More info" onClick={handleToggleShowJsonParams} />}
           </Box>
-          {showJsonParams && <StyledPre>{printPrettyJson(params)}</StyledPre>}
+          {showJsonParams && <StyledPre>{details}</StyledPre>}
         </Stack>
 
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
