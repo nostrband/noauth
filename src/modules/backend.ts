@@ -328,8 +328,7 @@ export class NoauthBackend extends EventEmitter {
       let sub = await this.swg.registration.pushManager?.getSubscription()
       if (!sub && Notification && Notification.permission === 'granted') {
         const enabled = await this.enablePush()
-        if (enabled)
-          sub = await this.swg.registration.pushManager.getSubscription()
+        if (enabled) sub = await this.swg.registration.pushManager.getSubscription()
       }
 
       if (sub) {

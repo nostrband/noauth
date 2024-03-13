@@ -32,20 +32,6 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
   const excludeConnectPendings = filteredPendingReqs.filter((pr) => pr.method !== 'connect')
   const connectPendings = filteredPendingReqs.filter((pr) => pr.method === 'connect')
 
-  const prepareEventPendings = excludeConnectPendings.reduce<IPendingsByAppNpub>((acc, current) => {
-    const isConnected = npubConnectPerms.some((cp) => cp.appNpub === current.appNpub)
-    if (!acc[current.appNpub]) {
-      acc[current.appNpub] = {
-        pending: [current],
-        isConnected,
-      }
-      return acc
-    }
-    acc[current.appNpub].pending.push(current)
-    acc[current.appNpub].isConnected = isConnected
-    return acc
-  }, {})
-
   const shownConnectModals = useRef<IShownConfirmModals>({})
   const shownConfirmEventModals = useRef<IShownConfirmModals>({})
 
@@ -85,38 +71,38 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
   ])
 
   const handleOpenConfirmEventModal = useCallback(() => {
-    if (
-      !filteredPendingReqs.length ||
-      connectPendings.length ||
-      isConfirmEventModalOpened ||
-      isConfirmConnectModalOpened
-    )
-      return undefined
+    const isNotAllowed =
+      !filteredPendingReqs.length || connectPendings.length || isConfirmEventModalOpened || isConfirmConnectModalOpened
 
-    for (let i = 0; i < Object.keys(prepareEventPendings).length; i++) {
-      const appNpub = Object.keys(prepareEventPendings)[i]
+    if (isNotAllowed) return undefined
 
-      if (shownConfirmEventModals.current[appNpub] || !prepareEventPendings[appNpub].isConnected) {
+    for (let i = 0; i < excludeConnectPendings.length; i++) {
+      const req = excludeConnectPendings[i]
+      const isAppConnnected = npubConnectPerms.some((cp) => cp.appNpub === req.appNpub)
+      const isShown = !!shownConfirmEventModals.current[req.id]
+      if (isShown || !isAppConnnected) {
         continue
       }
 
-      shownConfirmEventModals.current[appNpub] = true
+      shownConfirmEventModals.current[req.id] = true
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
         search: {
-          appNpub,
+          appNpub: req.appNpub,
           popup: isPopup ? 'true' : '',
+          reqId: req.id,
         },
       })
       break
     }
   }, [
-    connectPendings.length,
-    filteredPendingReqs.length,
-    handleOpen,
-    prepareEventPendings,
-    isPopup,
+    filteredPendingReqs,
+    connectPendings,
     isConfirmEventModalOpened,
     isConfirmConnectModalOpened,
+    excludeConnectPendings,
+    npubConnectPerms,
+    handleOpen,
+    isPopup,
   ])
 
   useEffect(() => {
@@ -126,8 +112,4 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
   useEffect(() => {
     handleOpenConfirmConnectModal()
   }, [handleOpenConfirmConnectModal])
-
-  return {
-    prepareEventPendings,
-  }
 }
