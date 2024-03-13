@@ -48,11 +48,10 @@ const KeyPage = () => {
   const username = getUsername()
 
   const filteredApps = apps.filter((a) => a.npub === npub)
-  const { prepareEventPendings } = useTriggerConfirmModal(npub, pending, perms)
+  useTriggerConfirmModal(npub, pending, perms)
 
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
-  // console.log({ isKeyExists, isPopup })
 
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
@@ -116,7 +115,7 @@ const KeyPage = () => {
       <ModalSettings isSynced={isSynced} />
       <ModalExplanation />
       <ModalConfirmConnect />
-      <ModalConfirmEvent confirmEventReqs={prepareEventPendings} />
+      <ModalConfirmEvent />
       <ModalEditName />
       <ModalSetPassword isPasswordSet={isPasswordSet} />
     </>
