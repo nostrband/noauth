@@ -166,13 +166,26 @@ export const dbi = {
     try {
       const permUpdateTimestamp = timestamp || Date.now()
       await db.apps.where({ appNpub, npub }).modify({
-        permUpdateTimestamp
+        permUpdateTimestamp,
       })
       return permUpdateTimestamp
     } catch (error) {
       console.log(`db updatePermTimestamp error: ${error}`)
     }
     return 0
+  },
+  getAppLastActiveRecord: async (app: DbApp) => {
+    try {
+      const records = await db.history
+        .where('npub')
+        .equals(app.npub)
+        .and((item) => item.appNpub === app.appNpub)
+        .sortBy('timestamp')
+      const lastActive = records.shift()
+      return lastActive?.timestamp || Date.now()
+    } catch (error) {
+      console.log(`db getAppLastActiveRecord error: ${error}`)
+    }
   },
   addPerm: async (perm: DbPerm) => {
     try {

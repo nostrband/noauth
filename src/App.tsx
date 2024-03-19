@@ -25,6 +25,7 @@ function App() {
     const keys: DbKey[] = await dbi.listKeys()
 
     dispatch(setKeys({ keys }))
+
     const loadProfiles = async () => {
       const newKeys = []
 
@@ -44,11 +45,19 @@ function App() {
     loadProfiles()
 
     const apps = await dbi.listApps()
-    dispatch(
-      setApps({
-        apps,
-      })
-    )
+    const loadApps = async () => {
+      const updatedApps = []
+      for (const app of apps) {
+        const lastActive = await dbi.getAppLastActiveRecord(app)
+        updatedApps.push({ ...app, lastActive })
+      }
+      dispatch(
+        setApps({
+          apps: updatedApps,
+        })
+      )
+    }
+    loadApps()
 
     const perms = await dbi.listPerms()
     dispatch(setPerms({ perms }))
@@ -56,7 +65,7 @@ function App() {
     const pending = await dbi.listPending()
     dispatch(setPending({ pending }))
 
-    // all updates from backend reloaded, 
+    // all updates from backend reloaded,
     // backend replies can be delivered now
     await swicCheckpoint()
 

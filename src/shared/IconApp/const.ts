@@ -3,7 +3,7 @@ import { APP_NSEC_SIZE } from '@/utils/consts'
 const SIZE_VALUE = {
   [APP_NSEC_SIZE.BIG]: 70,
   [APP_NSEC_SIZE.LARGE]: 56,
-  [APP_NSEC_SIZE.MEDIUM]: 40,
+  [APP_NSEC_SIZE.MEDIUM]: 48,
   [APP_NSEC_SIZE.SMALL]: 36,
   [APP_NSEC_SIZE.EXTRA_SMALL]: 30,
 }
