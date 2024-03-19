@@ -1,0 +1,88 @@
+import { NDKEvent } from "@nostr-dev-kit/ndk"
+import { nip19 } from "nostr-tools"
+import { Key } from "./types"
+import { NostrPowEvent, minePow } from "./pow"
+
+export async function sha256(swg: ServiceWorkerGlobalScope, s: string) {
+  return Buffer.from(await swg.crypto.subtle.digest('SHA-256', Buffer.from(s))).toString('hex')
+}
+
+export async function sendPost({
+  url,
+  method,
+  headers,
+  body,
+}: {
+  url: string
+  method: string
+  headers: any
+  body: string
+}) {
+  const r = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body,
+  })
+  if (r.status !== 200 && r.status !== 201) {
+    console.log('Fetch error', url, method, r.status)
+    const body = await r.json()
+    throw new Error('Failed to fetch ' + url, { cause: { body, status: r.status } })
+  }
+
+  return await r.json()
+}
+
+export async function sendPostAuthd({
+  swg,
+  key,
+  url,
+  method = 'GET',
+  body = '',
+  pow = 0,
+}: {
+  swg: ServiceWorkerGlobalScope
+  key: Key
+  url: string
+  method: string
+  body: string
+  pow?: number
+}) {
+  const { data: pubkey } = nip19.decode(key.npub)
+
+  const authEvent = new NDKEvent(key.ndk, {
+    pubkey: pubkey as string,
+    kind: 27235,
+    created_at: Math.floor(Date.now() / 1000),
+    content: '',
+    tags: [
+      ['u', url],
+      ['method', method],
+    ],
+  })
+  if (body) authEvent.tags.push(['payload', await sha256(swg, body)])
+
+  // generate pow on auth evevnt
+  if (pow) {
+    const start = Date.now()
+    const powEvent: NostrPowEvent = authEvent.rawEvent()
+    const minedEvent = minePow(powEvent, pow)
+    console.log('mined pow of', pow, 'in', Date.now() - start, 'ms', minedEvent)
+    authEvent.tags = minedEvent.tags
+  }
+
+  authEvent.sig = await authEvent.sign(key.signer)
+
+  const auth = swg.btoa(JSON.stringify(authEvent.rawEvent()))
+
+  return await sendPost({
+    url,
+    method,
+    headers: {
+      Authorization: `Nostr ${auth}`,
+    },
+    body,
+  })
+}

@@ -73,11 +73,12 @@ export function permListToPerms(perms: string): string[] {
       // @ts-ignore
       case 'sign_event':
         // don't let global sign_event perm
-        if (kv[1] === '')
-          continue
-        // fallthrough
+        if (kv[1] === '') continue
+      // fallthrough
       case 'nip04_decrypt':
       case 'nip04_encrypt':
+      case 'nip44_decrypt':
+      case 'nip44_encrypt':
         r.push(p)
         break
     }
@@ -92,6 +93,8 @@ export function isPackagePerm(perm: string, reqPerm: string) {
       case 'get_public_key':
       case 'nip04_decrypt':
       case 'nip04_encrypt':
+      case 'nip44_decrypt':
+      case 'nip44_encrypt':
       case 'sign_event:0':
       case 'sign_event:1':
       case 'sign_event:3':
@@ -170,14 +173,22 @@ function getActionName(method: string, kind?: number) {
   if (method === 'sign_event') {
     if (kind !== undefined) {
       switch (kind) {
-        case 0: return 'Update your profile'
-        case 1: return 'Publish note'
-        case 3: return 'Update your contact list'
-        case 4: return 'Send direct message'
-        case 5: return 'Delete event'
-        case 6: return 'Publish repost'
-        case 7: return 'Publish reaction'
-        case 10002: return 'Update your relay list'
+        case 0:
+          return 'Update your profile'
+        case 1:
+          return 'Publish note'
+        case 3:
+          return 'Update your contact list'
+        case 4:
+          return 'Send direct message'
+        case 5:
+          return 'Delete event'
+        case 6:
+          return 'Publish repost'
+        case 7:
+          return 'Publish reaction'
+        case 10002:
+          return 'Update your relay list'
       }
       return `${action} of kind ${kind}`
     }
