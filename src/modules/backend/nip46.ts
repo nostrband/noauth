@@ -93,7 +93,7 @@ export class Nip46Backend extends NDKNip46Backend {
     }
 
     // wtf?
-    if (response === undefined) {
+    if (!error && response === undefined) {
       error = 'Empty response'
     }
 

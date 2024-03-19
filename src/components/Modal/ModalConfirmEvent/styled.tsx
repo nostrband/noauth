@@ -71,7 +71,8 @@ export const StyledPre = styled('pre')(({ theme }) => ({
 }))
 
 export const StyledActionName = styled((props: TypographyProps) => <Typography {...props} variant="body1" />)(() => ({
-  fontWeight: 500,
+  fontWeight: 600,
+  fontSize: '18px',
   flex: 1,
   display: '-webkit-box',
   WebkitLineClamp: 2,

@@ -79,8 +79,6 @@ export const ModalConfirmEvent: FC = () => {
   const redirectUri = searchParams.get('redirect_uri') || ''
   const done = searchParams.get('done') === 'true'
 
-  const currentPendingRequest = currentAppPendingReqs.find((pr) => pr.id === pendingReqId)
-
   useEffect(() => {
     // reset
     setShowJsonParams(false)
@@ -96,6 +94,8 @@ export const ModalConfirmEvent: FC = () => {
     }
   }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
 
+  const currentPendingRequest = currentAppPendingReqs.find((pr) => pr.id === pendingReqId)
+
   useEffect(() => {
     const load = async () => {
       if (currentPendingRequest)
@@ -106,20 +106,9 @@ export const ModalConfirmEvent: FC = () => {
     load()
   }, [currentPendingRequest])
 
-  if (isModalOpened && !currentPendingRequest) {
-    closeModalAfterRequest()
+  if (isLoaded && isModalOpened && !currentPendingRequest) {
+    if (!isPopup) closeModalAfterRequest()
     return null
-  }
-
-  if (isLoaded) {
-    const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
-    const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-    if (isModalOpened && (!currentAppPendingReqs.length || !isNpubExists || !isAppNpubExists)) {
-      // if (isPopup) window.close()
-      // else closeModalAfterRequest()
-      if (!isPopup) closeModalAfterRequest()
-      return null
-    }
   }
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
@@ -197,7 +186,7 @@ export const ModalConfirmEvent: FC = () => {
         <Stack gap={'0.5rem'}>
           <Box padding={'0.5rem'} display={'flex'} alignItems={'center'} gap={'0.5rem'}>
             <StyledActionName>{actionName}</StyledActionName>
-            {details && <AppLink title="More info" onClick={handleToggleShowJsonParams} />}
+            {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
           </Box>
           {showJsonParams && <StyledPre>{details}</StyledPre>}
         </Stack>
