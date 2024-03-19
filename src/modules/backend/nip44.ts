@@ -192,17 +192,21 @@ export class Nip44EncryptHandlingStrategy implements IEventHandlingStrategy {
     const [recipientPubkey, payload] = params
     const recipientUser = new NDKUser({ hexpubkey: recipientPubkey })
 
-    if (
-      !(await backend.pubkeyAllowed({
-        id,
-        pubkey: remotePubkey,
-        method: 'encrypt',
-        params: payload,
-      }))
-    ) {
-      backend.debug(`encrypt request from ${remotePubkey} rejected`)
-      return undefined
-    }
+    // our implementation of pubkeyAllowed is noop,
+    // and 'method' enum doesn't accept nip44 names,
+    // so we just drop this, improve if/when we reimplement
+    // nip46 (bcs we've almost done it already, and ndk has issues)
+    // if (
+    //   !(await backend.pubkeyAllowed({
+    //     id,
+    //     pubkey: remotePubkey,
+    //     method: 'encrypt',
+    //     params: payload,
+    //   }))
+    // ) {
+    //   backend.debug(`encrypt request from ${remotePubkey} rejected`)
+    //   return undefined
+    // }
 
     return await backend.signer.encryptNip44(recipientUser, payload)
   }
@@ -218,17 +222,18 @@ export class Nip44DecryptHandlingStrategy implements IEventHandlingStrategy {
     const [senderPubkey, payload] = params
     const senderUser = new NDKUser({ hexpubkey: senderPubkey })
 
-    if (
-      !(await backend.pubkeyAllowed({
-        id,
-        pubkey: remotePubkey,
-        method: 'decrypt',
-        params: payload,
-      }))
-    ) {
-      backend.debug(`decrypt request from ${remotePubkey} rejected`)
-      return undefined
-    }
+    // see notes above
+    // if (
+    //   !(await backend.pubkeyAllowed({
+    //     id,
+    //     pubkey: remotePubkey,
+    //     method: 'decrypt',
+    //     params: payload,
+    //   }))
+    // ) {
+    //   backend.debug(`decrypt request from ${remotePubkey} rejected`)
+    //   return undefined
+    // }
 
     return await backend.signer.decryptNip44(senderUser, payload)
   }
