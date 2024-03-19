@@ -1046,7 +1046,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   }
 
   private async checkPendingRequest(npub: string, appNpub: string, reqId: string) {
-    console.log('checkPendingRequest', { npub, appNpub, reqId })
+    console.log('checkPendingRequest', { npub, appNpub, reqId, buffer: this.confirmBuffer })
     // already there - return immediately
     const req = this.confirmBuffer.find((r) => r.req.id === reqId)
     if (req) return true
