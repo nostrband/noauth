@@ -5,21 +5,28 @@ import type { NostrEvent } from '@nostr-dev-kit/ndk' // "./ndk-dist";
 import { NDKUser } from '@nostr-dev-kit/ndk' // "./ndk-dist";
 import type { NDKSigner } from '@nostr-dev-kit/ndk' // "./ndk-dist";
 import { Nip04 } from './nip04'
-//import { decrypt, encrypt } from "./ende";
+import { Nip44 } from './nip44'
 
-export class PrivateKeySigner implements NDKSigner {
+export interface Signer extends NDKSigner {
+  encryptNip44(recipient: NDKUser, value: string): Promise<string>
+  decryptNip44(sender: NDKUser, value: string): Promise<string>
+}
+
+export class PrivateKeySigner implements Signer {
   private _user: NDKUser | undefined
   privateKey?: string
   private nip04: Nip04
+  private nip44: Nip44
 
   public constructor(privateKey?: string) {
     if (privateKey) {
       this.privateKey = privateKey
       this._user = new NDKUser({
-        hexpubkey: getPublicKey(this.privateKey),
+        pubkey: getPublicKey(this.privateKey),
       })
     }
     this.nip04 = new Nip04()
+    this.nip44 = new Nip44()
   }
 
   public static generate() {
@@ -52,9 +59,8 @@ export class PrivateKeySigner implements NDKSigner {
       throw Error('Attempted to encrypt without a private key')
     }
 
-    const recipientHexPubKey = recipient.hexpubkey
+    const recipientHexPubKey = recipient.pubkey
     return await this.nip04.encrypt(this.privateKey, recipientHexPubKey, value)
-    //        return await encrypt(recipientHexPubKey, value, this.privateKey);
   }
 
   public async decrypt(sender: NDKUser, value: string): Promise<string> {
@@ -62,9 +68,25 @@ export class PrivateKeySigner implements NDKSigner {
       throw Error('Attempted to decrypt without a private key')
     }
 
-    const senderHexPubKey = sender.hexpubkey
-    //        console.log("nip04_decrypt", value)
+    const senderHexPubKey = sender.pubkey
     return await this.nip04.decrypt(this.privateKey, senderHexPubKey, value)
-    //        return await decrypt(this.privateKey, senderHexPubKey, value) as string;
+  }
+
+  public async encryptNip44(recipient: NDKUser, value: string): Promise<string> {
+    if (!this.privateKey) {
+      throw Error('Attempted to encrypt without a private key')
+    }
+
+    const recipientHexPubKey = recipient.pubkey
+    return await this.nip44.encrypt(this.privateKey, recipientHexPubKey, value)
+  }
+
+  public async decryptNip44(sender: NDKUser, value: string): Promise<string> {
+    if (!this.privateKey) {
+      throw Error('Attempted to decrypt without a private key')
+    }
+
+    const senderHexPubKey = sender.pubkey
+    return await this.nip44.decrypt(this.privateKey, senderHexPubKey, value)
   }
 }

@@ -1,12 +1,10 @@
-import { Event, generatePrivateKey, getPublicKey, nip19, verifySignature } from 'nostr-tools'
+import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
 import { DbApp, dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, {
   NDKEvent,
   NDKNip46Backend,
-  NDKPrivateKeySigner,
   NDKRelaySet,
-  NDKSigner,
   NDKSubscription,
   NDKSubscriptionCacheUsage,
   NDKUser,
@@ -15,8 +13,6 @@ import {
   NOAUTHD_URL,
   WEB_PUSH_PUBKEY,
   NIP46_RELAYS,
-  MIN_POW,
-  MAX_POW,
   KIND_RPC,
   DOMAIN,
   REQ_TTL,
@@ -27,22 +23,18 @@ import {
   NSEC_APP_NPUB,
   SEED_RELAYS,
 } from '../utils/consts'
-// import { Nip04 } from './nip04'
 import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
-import { NostrPowEvent, minePow } from './pow'
-import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
+import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
-//import { PrivateKeySigner } from './signer'
+import { Watcher } from './backend/watcher'
+import { DECISION, IAllowCallbackParams, Key } from './backend/types'
+import { Nip46Backend } from './backend/nip46'
+import { sha256 } from './backend/utils'
+import { Api, KeyStore } from './backend/api'
+import { PrivateKeySigner } from './backend/signer'
 
 //const PERF_TEST = false
-
-enum DECISION {
-  ASK = '',
-  ALLOW = 'allow',
-  DISALLOW = 'disallow',
-  IGNORE = 'ignore',
-}
 
 export interface KeyInfo {
   npub: string
@@ -51,165 +43,13 @@ export interface KeyInfo {
   locked: boolean
 }
 
-interface Key {
-  npub: string
-  ndk: NDK
-  backoff: number
-  signer: NDKSigner
-  backend: NDKNip46Backend
-  watcher: Watcher
-}
-
 interface Pending {
   req: DbPending
   cb: (allow: DECISION, remember: boolean, options?: any) => Promise<string | undefined>
   notified?: boolean
 }
 
-interface IAllowCallbackParams {
-  backend: Nip46Backend
-  npub: string
-  id: string
-  method: string
-  remotePubkey: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  params?: any
-}
-
-class Watcher {
-  private ndk: NDK
-  private signer: NDKSigner
-  private onReply: (id: string) => void
-  private sub?: NDKSubscription
-
-  constructor(ndk: NDK, signer: NDKSigner, onReply: (id: string) => void) {
-    this.ndk = ndk
-    this.signer = signer
-    this.onReply = onReply
-  }
-
-  async start() {
-    this.sub = this.ndk.subscribe(
-      {
-        kinds: [KIND_RPC],
-        authors: [(await this.signer.user()).pubkey],
-        since: Math.floor(Date.now() / 1000 - 10),
-      },
-      {
-        closeOnEose: false,
-        cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
-      }
-    )
-    this.sub.on('event', async (e: NDKEvent) => {
-      const peer = e.tags.find((t) => t.length >= 2 && t[0] === 'p')
-      console.log('watcher got event', { e, peer })
-      if (!peer) return
-      const decryptedContent = await this.signer.decrypt(new NDKUser({ pubkey: peer[1] }), e.content)
-      const parsedContent = JSON.parse(decryptedContent)
-      const { id, method, params, result, error } = parsedContent
-      console.log('watcher got', { peer, id, method, params, result, error })
-      if (method || result === 'auth_url') return
-      this.onReply(id)
-    })
-  }
-
-  stop() {
-    this.sub!.stop()
-  }
-}
-
-class Nip46Backend extends NDKNip46Backend {
-  private allowCb: (
-    params: IAllowCallbackParams
-  ) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
-  private npub: string = ''
-
-  public constructor(
-    ndk: NDK,
-    signer: NDKSigner,
-    allowCb: (params: IAllowCallbackParams) => Promise<[DECISION, ((result: string | undefined) => void) | undefined]>
-  ) {
-    super(ndk, signer, () => Promise.resolve(true))
-    this.allowCb = allowCb
-    signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
-  }
-
-  // override ndk's implementation to add 'since' tag
-  // which is needed for strfry which doesn't
-  // always delete ephemeral events properly
-  public async start() {
-    this.localUser = await this.signer.user()
-
-    const sub = this.ndk.subscribe(
-      {
-        kinds: [24133 as number],
-        '#p': [this.localUser.hexpubkey],
-        since: Math.floor(Date.now() / 1000 - 10),
-      },
-      { closeOnEose: false }
-    )
-
-    sub.on('event', (e) => this.handleIncomingEvent(e))
-  }
-
-  public async processEvent(event: NDKEvent) {
-    this.handleIncomingEvent(event)
-  }
-
-  protected async handleIncomingEvent(event: NDKEvent) {
-    const { id, method, params } = (await this.rpc.parseEvent(event)) as any
-    const remotePubkey = event.pubkey
-    let response: string | undefined
-
-    this.debug('incoming event', { id, method, params })
-
-    // validate signature explicitly
-    if (!verifySignature(event.rawEvent() as Event)) {
-      this.debug('invalid signature', event.rawEvent())
-      return
-    }
-
-    const [decision, resultCb] = await this.allowCb({
-      backend: this,
-      npub: this.npub,
-      id,
-      method,
-      remotePubkey,
-      params,
-    })
-    console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params })
-    if (decision === DECISION.IGNORE) return
-
-    const allow = decision === DECISION.ALLOW
-    const strategy = this.handlers[method]
-    if (allow) {
-      if (strategy) {
-        try {
-          response = await strategy.handle(this, id, remotePubkey, params)
-          console.log(Date.now(), 'req', id, 'method', method, 'result', response)
-        } catch (e: any) {
-          this.debug('error handling event', e, { id, method, params })
-          this.rpc.sendResponse(id, remotePubkey, 'error', undefined, e.message)
-        }
-      } else {
-        this.debug('unsupported method', { method, params })
-      }
-    }
-
-    // pass results back to UI
-    console.log('response', { method, response })
-    resultCb?.(response)
-
-    if (response) {
-      this.debug(`sending response to ${remotePubkey}`, response)
-      this.rpc.sendResponse(id, remotePubkey, response)
-    } else {
-      this.rpc.sendResponse(id, remotePubkey, 'error', undefined, 'Not authorized')
-    }
-  }
-}
-
-export class NoauthBackend extends EventEmitter {
+export class NoauthBackend extends EventEmitter implements KeyStore {
   readonly swg: ServiceWorkerGlobalScope
   private keysModule: Keys
   private enckeys: DbKey[] = []
@@ -227,10 +67,14 @@ export class NoauthBackend extends EventEmitter {
     enableOutboxModel: false,
   })
   private pushNpubs: string[] = []
+  private api: Api
 
   public constructor(swg: ServiceWorkerGlobalScope) {
     super()
     this.swg = swg
+
+    this.api = new Api(this.swg, this)
+
     this.keysModule = new Keys(swg.crypto.subtle)
     this.ndk.connect()
 
@@ -334,7 +178,7 @@ export class NoauthBackend extends EventEmitter {
       if (sub) {
         // subscribe in the background to avoid blocking
         // the request processing
-        for (const k of this.enckeys) this.sendSubscriptionToServer(k.npub, sub)
+        for (const k of this.enckeys) this.api.sendSubscriptionToServer(k.npub, sub)
       }
 
       // sync app perms
@@ -520,10 +364,6 @@ export class NoauthBackend extends EventEmitter {
     return !!this.enckeys.find((k) => k.npub === npub)
   }
 
-  private async sha256(s: string) {
-    return Buffer.from(await this.swg.crypto.subtle.digest('SHA-256', Buffer.from(s))).toString('hex')
-  }
-
   private async fetchNpubName(npub: string) {
     const url = `${NOAUTHD_URL}/name?npub=${npub}`
     const r = await fetch(url)
@@ -531,210 +371,10 @@ export class NoauthBackend extends EventEmitter {
     return d?.names?.length ? (d.names[0] as string) : ''
   }
 
-  private async sendPost({ url, method, headers, body }: { url: string; method: string; headers: any; body: string }) {
-    const r = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-      body,
-    })
-    if (r.status !== 200 && r.status !== 201) {
-      console.log('Fetch error', url, method, r.status)
-      const body = await r.json()
-      throw new Error('Failed to fetch ' + url, { cause: { body, status: r.status } })
-    }
-
-    return await r.json()
-  }
-
-  private async sendPostAuthd({
-    npub,
-    url,
-    method = 'GET',
-    body = '',
-    pow = 0,
-  }: {
-    npub: string
-    url: string
-    method: string
-    body: string
-    pow?: number
-  }) {
-    const { data: pubkey } = nip19.decode(npub)
-
+  public getKey(npub: string) {
     const key = this.keys.find((k) => k.npub === npub)
-    if (!key) throw new Error('Unknown key')
-
-    const authEvent = new NDKEvent(key.ndk, {
-      pubkey: pubkey as string,
-      kind: 27235,
-      created_at: Math.floor(Date.now() / 1000),
-      content: '',
-      tags: [
-        ['u', url],
-        ['method', method],
-      ],
-    })
-    if (body) authEvent.tags.push(['payload', await this.sha256(body)])
-
-    // generate pow on auth evevnt
-    if (pow) {
-      const start = Date.now()
-      const powEvent: NostrPowEvent = authEvent.rawEvent()
-      const minedEvent = minePow(powEvent, pow)
-      console.log('mined pow of', pow, 'in', Date.now() - start, 'ms', minedEvent)
-      authEvent.tags = minedEvent.tags
-    }
-
-    authEvent.sig = await authEvent.sign(key.signer)
-
-    const auth = this.swg.btoa(JSON.stringify(authEvent.rawEvent()))
-
-    return await this.sendPost({
-      url,
-      method,
-      headers: {
-        Authorization: `Nostr ${auth}`,
-      },
-      body,
-    })
-  }
-
-  private async sendSubscriptionToServer(npub: string, pushSubscription: PushSubscription) {
-    const body = JSON.stringify({
-      npub,
-      relays: NIP46_RELAYS,
-      pushSubscription,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/subscribe`
-
-    return this.sendPostAuthd({
-      npub,
-      url,
-      method,
-      body,
-    })
-  }
-
-  private async sendKeyToServer(npub: string, enckey: string, pwh: string) {
-    const body = JSON.stringify({
-      npub,
-      data: enckey,
-      pwh,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/put`
-
-    return this.sendPostAuthd({
-      npub,
-      url,
-      method,
-      body,
-    })
-  }
-
-  private async fetchKeyFromServer(npub: string, pwh: string) {
-    const body = JSON.stringify({
-      npub,
-      pwh,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/get`
-
-    return await this.sendPost({
-      url,
-      method,
-      headers: {},
-      body,
-    })
-  }
-
-  private async sendNameToServer(npub: string, name: string) {
-    const body = JSON.stringify({
-      npub,
-      name,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/name`
-
-    // mas pow should be 21 or something like that
-    let pow = MIN_POW
-    while (pow <= MAX_POW) {
-      console.log('Try name', name, 'pow', pow)
-      try {
-        return await this.sendPostAuthd({
-          npub,
-          url,
-          method,
-          body,
-          pow,
-        })
-      } catch (e: any) {
-        console.log('error', e.cause)
-        if (e.cause && e.cause.body && e.cause.body.minPow > pow) pow = e.cause.body.minPow
-        else throw e
-      }
-    }
-    throw new Error('Too many requests, retry later')
-  }
-
-  private async sendDeleteNameToServer(npub: string, name: string) {
-    const body = JSON.stringify({
-      npub,
-      name,
-    })
-
-    const method = 'DELETE'
-    const url = `${NOAUTHD_URL}/name`
-
-    return this.sendPostAuthd({
-      npub,
-      url,
-      method,
-      body,
-    })
-  }
-
-  private async sendTransferNameToServer(npub: string, name: string, newNpub: string) {
-    const body = JSON.stringify({
-      npub,
-      name,
-      newNpub,
-    })
-
-    const method = 'PUT'
-    const url = `${NOAUTHD_URL}/name`
-
-    return this.sendPostAuthd({
-      npub,
-      url,
-      method,
-      body,
-    })
-  }
-
-  private async sendTokenToServer(npub: string, token: string) {
-    const body = JSON.stringify({
-      npub,
-      token,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/created`
-
-    return this.sendPostAuthd({
-      npub,
-      url,
-      method,
-      body,
-    })
+    if (!key) throw new Error('Key not found')
+    return key
   }
 
   private notify() {
@@ -871,7 +511,7 @@ export class NoauthBackend extends EventEmitter {
     if (!existingName && name && !name.includes('@')) {
       console.log('adding key', npub, name)
       try {
-        await this.sendNameToServer(npub, name)
+        await this.api.sendNameToServer(npub, name)
       } catch (e) {
         console.log('create name failed', e)
         // clear it
@@ -881,7 +521,7 @@ export class NoauthBackend extends EventEmitter {
     }
 
     const sub = await this.swg.registration.pushManager?.getSubscription()
-    if (sub) await this.sendSubscriptionToServer(npub, sub)
+    if (sub) await this.api.sendSubscriptionToServer(npub, sub)
     console.log('subscribed', npub)
 
     // async fetching of perms from relays
@@ -973,7 +613,7 @@ export class NoauthBackend extends EventEmitter {
     }
   }
 
-  private getDecision(backend: Nip46Backend, req: DbPending): DECISION {
+  private getDecision(backend: NDKNip46Backend, req: DbPending): DECISION {
     if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
     const reqPerm = getReqPerm(req)
@@ -1008,7 +648,7 @@ export class NoauthBackend extends EventEmitter {
     const app = this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
     if (!app && !deleted) throw new Error('App not found')
 
-    const id = await this.sha256(`nsec.app_${npub}_${appNpub}`)
+    const id = await sha256(this.swg, `nsec.app_${npub}_${appNpub}`)
     let data
     if (app) {
       const perms = this.perms.filter((p) => p.appNpub === appNpub && p.npub === npub)
@@ -1310,7 +950,7 @@ export class NoauthBackend extends EventEmitter {
     // init relay objects but dont wait until we connect
     ndk.connect()
 
-    const signer = new NDKPrivateKeySigner(sk) // PrivateKeySigner
+    const signer = new PrivateKeySigner(sk)
     const backend = new Nip46Backend(ndk, signer, this.allowPermitCallback.bind(this)) // , () => Promise.resolve(true)
     const watcher = new Watcher(ndk, signer, (id) => {
       // drop pending request
@@ -1322,15 +962,6 @@ export class NoauthBackend extends EventEmitter {
 
     // new method
     // backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
-
-    // // assign our own permission callback
-    // for (const method in backend.handlers) {
-    //   backend.handlers[method] = new EventHandlingStrategyWrapper(
-    //     backend,
-    //     method,
-    //     backend.handlers[method]
-    //   )
-    // }
 
     // start
     backend.start()
@@ -1492,7 +1123,7 @@ export class NoauthBackend extends EventEmitter {
 
   private async redeemToken(npub: string, token: string) {
     console.log('redeeming token', npub, token)
-    await this.sendTokenToServer(npub, token)
+    await this.api.sendTokenToServer(npub, token)
   }
 
   private async importKey(name: string, nsec: string, passphrase: string) {
@@ -1513,7 +1144,7 @@ export class NoauthBackend extends EventEmitter {
       key: sk,
       passphrase,
     })
-    await this.sendKeyToServer(npub, enckey, pwh)
+    await this.api.sendKeyToServer(npub, enckey, pwh)
     await dbi.setSynced(npub)
   }
 
@@ -1552,7 +1183,7 @@ export class NoauthBackend extends EventEmitter {
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
     const { pwh } = await this.keysModule.generatePassKey(pubkey, passphrase)
-    const { data: enckey } = await this.fetchKeyFromServer(npub, pwh)
+    const { data: enckey } = await this.api.fetchKeyFromServer(npub, pwh)
 
     // key already exists?
     const key = this.enckeys.find((k) => k.npub === npub)
@@ -1652,7 +1283,7 @@ export class NoauthBackend extends EventEmitter {
     if (!key) throw new Error('Npub not found')
     if (key.name) {
       try {
-        await this.sendDeleteNameToServer(npub, key.name)
+        await this.api.sendDeleteNameToServer(npub, key.name)
       } catch (e: any) {
         if (e.cause && e.cause.status !== 404) throw e
         console.log("Deleted name didn't exist")
@@ -1661,7 +1292,7 @@ export class NoauthBackend extends EventEmitter {
 
     name = name.trim().toLocaleLowerCase()
     if (name) {
-      await this.sendNameToServer(npub, name)
+      await this.api.sendNameToServer(npub, name)
     }
     await dbi.editName(npub, name)
     key.name = name
@@ -1673,7 +1304,7 @@ export class NoauthBackend extends EventEmitter {
     if (!key) throw new Error('Npub not found')
     if (!name) throw new Error('Empty name')
     if (key.name !== name) throw new Error('Name changed, please reload')
-    await this.sendTransferNameToServer(npub, key.name, newNpub)
+    await this.api.sendTransferNameToServer(npub, key.name, newNpub)
     await dbi.editName(npub, '')
     key.name = ''
     this.updateUI()
@@ -1695,7 +1326,7 @@ export class NoauthBackend extends EventEmitter {
 
     // subscribe to all pubkeys
     for (const k of this.keys) {
-      await this.sendSubscriptionToServer(k.npub, pushSubscription)
+      await this.api.sendSubscriptionToServer(k.npub, pushSubscription)
     }
     console.log('push enabled')
 
@@ -1709,9 +1340,15 @@ export class NoauthBackend extends EventEmitter {
   }
 
   private async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
-    const key = this.keys.find(k => k.npub === npub)
-    if (!key) throw new Error("Npub not found")
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
     return key.signer.decrypt(new NDKUser({ pubkey: peerPubkey }), ciphertext)
+  }
+
+  private async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+    return key.signer.decryptNip44(new NDKUser({ pubkey: peerPubkey }), ciphertext)
   }
 
   public async onMessage(event: any) {
@@ -1754,6 +1391,8 @@ export class NoauthBackend extends EventEmitter {
         result = await this.exportKey(args[0])
       } else if (method === 'nip04Decrypt') {
         result = await this.nip04Decrypt(args[0], args[1], args[2])
+      } else if (method === 'nip44Decrypt') {
+        result = await this.nip44Decrypt(args[0], args[1], args[2])
       } else {
         console.log('unknown method from UI ', method)
       }

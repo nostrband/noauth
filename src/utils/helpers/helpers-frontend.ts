@@ -20,8 +20,12 @@ export async function getReqDetails(req: DbPending | DbHistory) {
       await swicWaitStarted()
       const text = await swicCall('nip04Decrypt', req.npub, paramsArray[0], paramsArray[1])
       return `Message with ${nip19.npubEncode(paramsArray[0])}: ${text}`
-    } else if (req.method === 'nip04_encrypt') {
-      return `Message with ${nip19.npubEncode(paramsArray[0])}: ${paramsArray[1]}`
+    } else if (req.method === 'nip44_decrypt') {
+      await swicWaitStarted()
+      const text = await swicCall('nip44Decrypt', req.npub, paramsArray[0], paramsArray[1])
+      return `Message (NIP-44) with ${nip19.npubEncode(paramsArray[0])}: ${text}`
+    } else if (req.method === 'nip04_encrypt' || req.method === 'nip44_encrypt') {
+      return `Message${req.method === 'nip44_encrypt' ? ' (NIP-44) ' : ' '}with ${nip19.npubEncode(paramsArray[0])}: ${paramsArray[1]}`
     } else {
       return ''
     }

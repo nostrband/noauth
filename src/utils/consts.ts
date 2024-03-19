@@ -34,6 +34,8 @@ export const ACTIONS: { [type: string]: string } = {
   connect: 'Connect',
   nip04_encrypt: 'Encrypt message',
   nip04_decrypt: 'Decrypt message',
+  nip44_encrypt: 'Encrypt message (NIP-44)',
+  nip44_decrypt: 'Decrypt message (NIP-44)',
 }
 
 export const APP_NSEC_SIZE = {
