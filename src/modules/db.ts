@@ -21,6 +21,7 @@ export interface DbApp {
   timestamp: number
   updateTimestamp: number
   permUpdateTimestamp: number
+  userAgent?: string
 }
 
 export interface DbPerm {
@@ -66,12 +67,12 @@ export interface DbSchema extends Dexie {
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(9).stores({
+db.version(10).stores({
   keys: 'npub',
   apps: 'appNpub,npub,name,timestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
-  history: 'id,npub,appNpub,timestamp,method,allowed',
+  history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
   requestHistory: 'id',
   syncHistory: 'npub',
 })
@@ -177,12 +178,11 @@ export const dbi = {
   getAppLastActiveRecord: async (app: DbApp) => {
     try {
       const records = await db.history
-        .where('npub')
-        .equals(app.npub)
-        .and((item) => item.appNpub === app.appNpub)
+        .where({ npub: app.npub, appNpub: app.appNpub })
+        .reverse()
         .sortBy('timestamp')
       const lastActive = records.shift()
-      return lastActive?.timestamp || Date.now()
+      return lastActive?.timestamp || 0
     } catch (error) {
       console.log(`db getAppLastActiveRecord error: ${error}`)
     }

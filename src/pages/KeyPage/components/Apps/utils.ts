@@ -1,4 +1,5 @@
 import { IAppGroup, IClientApp } from '@/types/general'
+import { getDomainPort } from '@/utils/helpers/helpers'
 
 export const groupAppsByURL = (apps: IClientApp[] = []): IAppGroup[] => {
   const filteredApps = apps
@@ -9,10 +10,11 @@ export const groupAppsByURL = (apps: IClientApp[] = []): IAppGroup[] => {
         acc[appNpub] = [app]
         return acc
       }
-      if (!acc[url]) {
-        acc[url] = [app]
+      const domain = getDomainPort(url)
+      if (!acc[domain]) {
+        acc[domain] = [app]
       }
-      acc[url].push(app)
+      acc[domain].push(app)
       return acc
     },
     {} as Record<string, IClientApp[]>
@@ -29,7 +31,7 @@ export const groupAppsByURL = (apps: IClientApp[] = []): IAppGroup[] => {
         ...firstAppOfGroup,
         lastActive,
         size,
-        apps: size === 1 ? [firstAppOfGroup] : groupApps.sort((a, b) => b.updateTimestamp - a.updateTimestamp),
+        apps: size === 1 ? [firstAppOfGroup] : groupApps.sort((a, b) => b.lastActive - a.lastActive),
       }
       return appGroup
     })

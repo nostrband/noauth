@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getAppIconTitle, getDomain, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
 import { Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -70,7 +70,7 @@ export const ModalConfirmEvent: FC = () => {
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
-  const appDomain = getDomain(url)
+  const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`

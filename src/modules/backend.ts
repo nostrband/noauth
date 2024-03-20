@@ -428,6 +428,7 @@ export class NoauthBackend extends EventEmitter {
         name: data.name || '',
         icon: data.icon || '',
         url: data.url || '',
+        userAgent: data.userAgent || '',
         // choose older creation timestamp
         timestamp: app ? Math.min(app.timestamp, data.timestamp) : data.timestamp,
         updateTimestamp: data.updateTimestamp,
@@ -1021,6 +1022,7 @@ export class NoauthBackend extends EventEmitter {
         timestamp: app.timestamp,
         updateTimestamp: app.updateTimestamp,
         permUpdateTimestamp: app.permUpdateTimestamp,
+        userAgent: app.userAgent,
         perms,
       }
     } else {
@@ -1074,6 +1076,7 @@ export class NoauthBackend extends EventEmitter {
       url: appUrl,
       updateTimestamp: Date.now(),
       permUpdateTimestamp: Date.now(),
+      userAgent: navigator?.userAgent || '',
     })
 
     // reload
@@ -1172,6 +1175,7 @@ export class NoauthBackend extends EventEmitter {
               url: options.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
+              userAgent: navigator?.userAgent || '',
             })
 
             // reload

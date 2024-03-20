@@ -3,7 +3,7 @@ import { IconButton, Stack, Typography, useMediaQuery } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from './styled'
 import { IAppGroup } from '@/types/general'
-import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
 import { formatDistanceToNow } from 'date-fns'
 import { ItemApp } from './ItemApp'
 import { DbApp, DbPerm } from '@/modules/db'
@@ -11,11 +11,11 @@ import { IconApp } from '@/shared/IconApp/IconApp'
 
 type AppGroupProps = IAppGroup & { perms: DbPerm[] }
 
-export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, size, perms = [], lastActive }) => {
+export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, size, timestamp, perms = [], lastActive }) => {
   const matches = useMediaQuery('(max-width:320px)')
 
   const [expanded, setExpanded] = useState(false)
-  const appDomain = getDomain(url)
+  const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
@@ -30,7 +30,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
     return perms.filter((perm) => perm.appNpub === app.appNpub)
   }
 
-  const lastActiveDate = formatDistanceToNow(new Date(lastActive), {
+  const lastActiveDate = formatDistanceToNow(new Date(Math.max(lastActive, timestamp)), {
     addSuffix: true,
   })
 
@@ -66,7 +66,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
       <StyledAccordionDetails>
         <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
           {apps.map((a) => (
-            <ItemApp {...a} key={a.appNpub} perms={getAppPerms(a)} />
+            <ItemApp noIcon {...a} key={a.appNpub} perms={getAppPerms(a)} />
           ))}
         </Stack>
       </StyledAccordionDetails>
