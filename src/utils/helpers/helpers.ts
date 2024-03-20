@@ -153,6 +153,53 @@ export const getDomain = (url: string) => {
   }
 }
 
+export const getDomainPort = (url: string) => {
+  try {
+    return new URL(url).host
+  } catch {
+    return ''
+  }
+}
+
+export const getAppDevice = (ua: string) => {
+  const Firefox = /Firefox\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Seamonkey = /Seamonkey\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Chrome = /Chrome\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Chromium = /Chromium\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Safari = /Safari\/[\d]+\.[\d]+(\.[\d]+)?/
+  const OPR = /OPR\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Opera = /Opera\/[\d]+\.[\d]+(\.[\d]+)?/
+  const Edge = /Edg.*\/[\d]+\.[\d]+(\.[\d]+)?/
+
+  let browser
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent#which_part_of_the_user_agent_contains_the_information_you_are_looking_for
+  // NOTE: order matters!
+  if (ua.match(Seamonkey)) browser = 'Seamonkey'
+  else if (ua.match(Firefox)) browser = 'Firefox'
+  else if (ua.match(Chromium)) browser = 'Chromium'
+  else if (ua.match(Safari) && !ua.match(Chrome)) browser = 'Safari'
+  else if (ua.match(Edge)) browser = 'Edge'
+  else if (ua.match(Chrome)) browser = 'Chrome'
+  else if (ua.match(OPR) || ua.match(Opera)) browser = 'Opera'
+
+  let os
+  const Android = /Android/
+  const Linux = /Linux/
+  const Windows = /Windows/
+  const iOS = /iPhone OS/
+  const Mac = /Mac OS/
+  if (ua.match(Android)) os = 'Android'
+  else if (ua.match(Linux)) os = 'Linux'
+  else if (ua.match(iOS)) os = 'iOS'
+  else if (ua.match(Mac)) os = 'Mac'
+  else if (ua.match(Windows)) os = 'Windows'
+
+  if (os && browser) return `${browser}, ${os}`
+  else if (browser) return browser
+  else if (os) return os
+  return ''
+}
+
 export const getReferrerAppUrl = () => {
   // console.log('referrer', window.document.referrer)
   if (!window.document.referrer) return ''

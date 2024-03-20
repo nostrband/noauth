@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { DbApp, DbKey, DbPerm, DbPending } from '../../modules/db'
+import { DbKey, DbPerm, DbPending } from '../../modules/db'
+import { IClientApp } from '@/types/general'
 
 export interface IContentState {
   keys: DbKey[]
-  apps: DbApp[]
+  apps: IClientApp[]
   perms: DbPerm[]
   pending: DbPending[]
 }

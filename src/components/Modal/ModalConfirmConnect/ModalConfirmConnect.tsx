@@ -4,7 +4,7 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import {
   askNotificationPermission,
   getAppIconTitle,
-  getDomain,
+  getDomainPort,
   getPermActionName,
   getReferrerAppUrl,
   getShortenNpub,
@@ -59,7 +59,7 @@ export const ModalConfirmConnect = () => {
   const { name, url = '', icon = '' } = triggerApp || {}
 
   const appUrl = url || searchParams.get('appUrl') || getReferrerAppUrl()
-  const appDomain = getDomain(appUrl)
+  const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')

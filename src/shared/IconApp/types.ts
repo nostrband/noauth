@@ -12,6 +12,7 @@ export type IconAppProps = {
 export type IconAppBase = {
   picture: string
   alt?: string
+  getAppTitle?: (title: string) => string
 }
 
 export type IIconApp = Omit<IconAppProps, 'isNotLoaded'> & IconAppBase
