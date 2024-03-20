@@ -74,6 +74,31 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
       )
       break
     }
+    case EXPLANATION_MODAL_KEYS.HOW: {
+      title = 'How Nsec.app works?'
+      explanationText = (
+        <>
+          Nsec.app stores your nsec keys and gives permissioned access to apps.
+          <br />
+          <br />
+          Your username (name@nsec.app) is a NIP-05 name assigned to your public key,
+          it can be used to login to Nostr apps. You don't really need a username 
+          on Nostr, it's just there for convenience.
+          <br />
+          <br />
+          Your password is used to encrypt your keys and sync them across devices. 
+          This way you can manage connected apps on any device. You can also export your 
+          nsec encrypted with your password (NIP-49).
+          <br />
+          <br />
+          Since your keys are located in your device, nsec.app website needs permission to
+          send you push notifications - our server sends a push message to wake up 
+          your keys when apps make their requests.
+          <br />
+        </>
+      )
+      break
+    }
   }
   return (
     <Modal

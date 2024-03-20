@@ -11,6 +11,7 @@ import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
 import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
+import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -112,6 +113,7 @@ function App() {
     <>
       <AppRoutes />
       <ModalInitial />
+      <ModalExplanation />
       <ModalImportKeys />
       <ModalSignUp />
       <ModalLogin />

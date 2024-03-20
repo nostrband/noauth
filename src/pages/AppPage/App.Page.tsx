@@ -2,12 +2,10 @@ import { useParams } from 'react-router'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppByAppNpub, selectKeys, selectPermsByNpubAndAppNpub } from '@/store'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { formatTimestampDate } from '@/utils/helpers/date'
 import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { getAppDevice, getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
-import { ACTION_TYPE } from '@/utils/consts'
 import { Permissions } from './components/Permissions/Permissions'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
@@ -35,8 +33,6 @@ const AppPage = () => {
   const { open, handleClose, handleShow } = useToggleConfirm()
   const { handleOpen: handleOpenModal } = useModalSearchParams()
 
-  const connectPerm = perms.find((perm) => perm.perm === 'connect' || perm.perm === ACTION_TYPE.BASIC)
-
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
 
   if (!isNpubExists || !currentApp) {
@@ -49,7 +45,6 @@ const AppPage = () => {
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-  const isAppNameExists = !!name || !!appDomain
   const appDevice = getAppDevice(userAgent)
 
   const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {

@@ -5,7 +5,7 @@ import { getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from
 import { Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
+import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { FC, useEffect, useMemo, useState } from 'react'
 import {
@@ -35,7 +35,6 @@ const ACTION_LABELS = {
 }
 
 export const ModalConfirmEvent: FC = () => {
-  const keys = useAppSelector(selectKeys)
   const notify = useEnqueueSnackbar()
 
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
