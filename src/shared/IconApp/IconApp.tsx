@@ -5,7 +5,16 @@ import { IIconApp } from './types'
 
 const failedCache = new Map<string, boolean>()
 
-export const IconApp: FC<IIconApp> = ({ picture = '', alt, isRounded, isSmall, onClick, size, ...rest }) => {
+export const IconApp: FC<IIconApp> = ({
+  picture = '',
+  alt,
+  isRounded,
+  isSmall,
+  onClick,
+  size,
+  getAppTitle,
+  ...rest
+}) => {
   const c = failedCache.get(picture)
   const [isFailed, setIsFailed] = useState(c !== undefined ? c : true)
 
@@ -35,7 +44,7 @@ export const IconApp: FC<IIconApp> = ({ picture = '', alt, isRounded, isSmall, o
         <StyledAppImg size={size} alt={alt} isSmall={isSmall} src={isFailed ? '' : picture}>
           {isFailed && (
             <div className="MuiAvatar-root MuiAvatar-square MuiAvatar-colorDefault">
-              {alt.substring(0, 1).toUpperCase()}
+              {getAppTitle && typeof getAppTitle === 'function' ? getAppTitle(alt) : alt.substring(0, 1).toUpperCase()}
             </div>
           )}
         </StyledAppImg>

@@ -5,7 +5,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { formatTimestampDate } from '@/utils/helpers/date'
 import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { getAppIconTitle, getDomain, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppDevice, getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
 import { ACTION_TYPE } from '@/utils/consts'
 import { Permissions } from './components/Permissions/Permissions'
@@ -21,6 +21,7 @@ import MoreIcon from '@mui/icons-material/MoreVertRounded'
 import { ModalAppDetails } from '@/components/Modal/ModalAppDetails/ModalAppDetails'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { HeadingContainer, AppInfoContainer, AppNameContainer } from './styled'
+import { formatDistanceToNow } from 'date-fns'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -42,16 +43,20 @@ const AppPage = () => {
     return <Navigate to={`/key/${npub}`} />
   }
 
-  const { icon = '', name = '', url = '' } = currentApp || {}
-  const appDomain = getDomain(url)
+  const { icon = '', name = '', url = '', userAgent = '' } = currentApp || {}
+  const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
+  const appDevice = getAppDevice(userAgent)
 
-  const { timestamp } = connectPerm || {}
-  const connectedOn = connectPerm && timestamp ? `Connected at ${formatTimestampDate(timestamp)}` : 'Not connected'
+  const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {
+    addSuffix: true,
+  })
+
+  const connectedOn = `Connected ${connectDate}`
 
   const handleDeleteApp = async () => {
     try {
@@ -78,11 +83,11 @@ const AppPage = () => {
                 <Typography className="app_name" variant="h4" noWrap>
                   {appName}
                 </Typography>
-                {isAppNameExists && (
+                {/* {isAppNameExists && (
                   <Typography noWrap display={'block'} variant="body1" color={'GrayText'}>
                     {shortAppNpub}
                   </Typography>
-                )}
+                )} */}
               </AppNameContainer>
 
               <IconButton onClick={handleShowAppDetailsModal}>
@@ -92,6 +97,9 @@ const AppPage = () => {
 
             <Typography variant="body2" noWrap>
               {connectedOn}
+            </Typography>
+            <Typography variant="body2" noWrap>
+              {appDevice && `${appDevice}`}
             </Typography>
           </Box>
         </HeadingContainer>
