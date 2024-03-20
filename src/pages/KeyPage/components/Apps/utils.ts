@@ -12,7 +12,7 @@ export const groupAppsByURL = (apps: IClientApp[] = []): IAppGroup[] => {
       }
       const domain = getDomainPort(url)
       if (!acc[domain]) {
-        acc[domain] = [app]
+        acc[domain] = []
       }
       acc[domain].push(app)
       return acc
