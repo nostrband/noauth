@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { IClientApp } from '@/types/general'
 import { IconApp } from '@/shared/IconApp/IconApp'
 
-type ItemAppProps = IClientApp & { perms: DbPerm[]; noIcon?: boolean }
+type ItemAppProps = IClientApp & { perms: DbPerm[]; groupedApp?: boolean }
 
 export const ItemApp: FC<ItemAppProps> = ({
   npub,
@@ -20,7 +20,7 @@ export const ItemApp: FC<ItemAppProps> = ({
   userAgent = '',
   perms = [],
   lastActive = 0,
-  noIcon = false,
+  groupedApp = false,
 }) => {
   const matches = useMediaQuery('(max-width:320px)')
 
@@ -42,7 +42,7 @@ export const ItemApp: FC<ItemAppProps> = ({
 
   return (
     <StyledItemAppContainer component={Link} to={`/key/${npub}/app/${appNpub}`}>
-      {!noIcon && (
+      {!groupedApp && (
         <IconApp
           picture={appIcon}
           alt={appAvatarTitle}
@@ -52,13 +52,13 @@ export const ItemApp: FC<ItemAppProps> = ({
       )}
       <Stack>
         <Typography noWrap display={'block'} variant="body1">
-          {appName}
+          {groupedApp ? (appDevice || appName) : (appName)}
         </Typography>
         <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
           {getPermsType()}
         </Typography>
         <Typography noWrap display={'block'} variant="caption" color={'GrayText'}>
-          Active: {lastActiveDate} {appDevice && `(${appDevice})`}
+          Active: {lastActiveDate}
         </Typography>
       </Stack>
     </StyledItemAppContainer>

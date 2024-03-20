@@ -66,7 +66,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
       <StyledAccordionDetails>
         <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
           {apps.map((a) => (
-            <ItemApp noIcon {...a} key={a.appNpub} perms={getAppPerms(a)} />
+            <ItemApp groupedApp {...a} key={a.appNpub} perms={getAppPerms(a)} />
           ))}
         </Stack>
       </StyledAccordionDetails>
