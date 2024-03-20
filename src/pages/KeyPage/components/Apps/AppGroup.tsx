@@ -58,7 +58,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
               {size} connections
             </Typography>
             <Typography noWrap display={'block'} variant="caption" color={'GrayText'}>
-              Last active: {lastActiveDate}
+              Active: {lastActiveDate}
             </Typography>
           </Stack>
         </Stack>
