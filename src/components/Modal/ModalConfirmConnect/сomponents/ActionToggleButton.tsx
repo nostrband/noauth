@@ -10,7 +10,7 @@ export const ActionToggleButton: FC<ActionToggleButtonProps> = (props) => {
   const { title, description = '' } = props
   return (
     <StyledToggleButton {...props}>
-      <Typography variant="body2" noWrap className="title">
+      <Typography variant="body1" noWrap className="title">
         {title}
       </Typography>
       <Typography className="description" variant="caption" color={'GrayText'}>
