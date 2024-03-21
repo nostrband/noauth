@@ -5,16 +5,15 @@ import {
   askNotificationPermission,
   getAppIconTitle,
   getDomainPort,
-  getPermActionName,
   getReferrerAppUrl,
   getShortenNpub,
   permListToPerms,
 } from '@/utils/helpers/helpers'
-import { Avatar, Box, Checkbox, List, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
-import { StyledActionsListContainer, StyledButton, StyledToggleButtonsGroup } from './styled'
+import { StyledActionsListContainer, StyledButton, StyledClearAllButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useEffect, useState } from 'react'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
@@ -23,6 +22,9 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
+import { AppLink } from '@/shared/AppLink/AppLink'
+import { IconApp } from '@/shared/IconApp/IconApp'
+import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
 
 type RequestedPerm = DbPerm & { checked: boolean }
 
@@ -54,6 +56,7 @@ export const ModalConfirmConnect = () => {
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
     permsParam ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
   )
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
@@ -91,6 +94,7 @@ export const ModalConfirmConnect = () => {
       sp.delete('token')
       sp.delete('redirect_uri')
       sp.delete('perms')
+      setShowAdvancedOptions(false)
     },
   })
 
@@ -109,6 +113,14 @@ export const ModalConfirmConnect = () => {
     }
   }, [isModalOpened, isPopup, npub, appNpub, pendingReqId])
 
+  useEffect(() => {
+    return () => {
+      if (isModalOpened) {
+        // modal closed
+        setShowAdvancedOptions(false)
+      }
+    }
+  }, [isModalOpened])
   if (isLoaded) {
     const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
     // NOTE: app doesn't exist yet!
@@ -127,7 +139,7 @@ export const ModalConfirmConnect = () => {
     return setSelectedActionType(value)
   }
 
-  const handleChangeCheckbox = (reqId: string) => () => {
+  const handleChangeCheckbox = (reqId: string) => {
     const newRequestedPerms = requestedPerms.map((req) => {
       if (req.id === reqId) return { ...req, checked: !req.checked }
       return req
@@ -226,6 +238,10 @@ export const ModalConfirmConnect = () => {
 
   const hasReqPerms = requestedPerms.length > 0
 
+  const handleUnselectPerms = () => {
+    setRequestedPerms((prevPerms) => prevPerms.map((rp) => ({ ...rp, checked: false })))
+  }
+
   return (
     <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
       <Stack gap={'1rem'} paddingTop={'1rem'}>
@@ -240,17 +256,9 @@ export const ModalConfirmConnect = () => {
             apps.
           </Typography>
         )}
+
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
-          <Avatar
-            variant="rounded"
-            sx={{
-              width: 56,
-              height: 56,
-            }}
-            src={appIcon}
-          >
-            {appAvatarTitle}
-          </Avatar>
+          <IconApp picture={appIcon} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
           <Box overflow={'auto'}>
             <Typography variant="h5" fontWeight={600} noWrap>
               {appName}
@@ -260,23 +268,7 @@ export const ModalConfirmConnect = () => {
             </Typography>
           </Box>
         </Stack>
-        {hasReqPerms && (
-          <StyledActionsListContainer marginBottom={'1rem'}>
-            <SectionTitle>Requested permissions</SectionTitle>
-            <List>
-              {requestedPerms.map((req) => {
-                return (
-                  <ListItem key={req.id}>
-                    <ListItemIcon>
-                      <Checkbox checked={req.checked} onChange={handleChangeCheckbox(req.id)} />
-                    </ListItemIcon>
-                    <ListItemText>{getPermActionName(req)}</ListItemText>
-                  </ListItem>
-                )
-              })}
-            </List>
-          </StyledActionsListContainer>
-        )}
+
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
           <ActionToggleButton
             value={hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC}
@@ -287,12 +279,24 @@ export const ModalConfirmConnect = () => {
                 : 'Read your public key, sign notes, reactions, zaps, etc'
             }
           />
-          <ActionToggleButton
-            value={ACTION_TYPE.CUSTOM}
-            title="On demand"
-            description="Confirm permissions later when this app executes an action"
-          />
         </StyledToggleButtonsGroup>
+
+        {hasReqPerms && (
+          <Stack gap={'0.5rem'}>
+            <Stack alignItems={'center'}>
+              <AppLink title="Advanced options" onClick={() => setShowAdvancedOptions((prevShow) => !prevShow)} />
+            </Stack>
+
+            {showAdvancedOptions && (
+              <StyledActionsListContainer marginBottom={'0.5rem'}>
+                <SectionTitle>Requested permissions</SectionTitle>
+                <RequestedPermissions requestedPerms={requestedPerms} onChangeCheckbox={handleChangeCheckbox} />
+                <StyledClearAllButton onClick={handleUnselectPerms}>Clear all</StyledClearAllButton>
+              </StyledActionsListContainer>
+            )}
+          </Stack>
+        )}
+
         <Stack direction={'row'} gap={'1rem'}>
           <StyledButton onClick={disallow} varianttype="secondary">
             Ignore
