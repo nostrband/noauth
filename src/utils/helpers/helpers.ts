@@ -176,6 +176,16 @@ export function isPackagePerm(perm: string, reqPerm: string) {
   return false
 }
 
+export function getUsablePermList() {
+  return [
+    'sign_event',
+    'nip04_encrypt',
+    'nip04_decrypt',
+    'nip44_encrypt',
+    'nip44_decrypt',
+  ]
+}
+
 export async function fetchNip05(value: string, origin?: string) {
   try {
     const [username, domain] = value.toLocaleLowerCase().split('@')
