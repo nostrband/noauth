@@ -29,7 +29,7 @@ export const StyledActionsListContainer = styled((props: StackProps) => <Stack {
   borderRadius: '1rem',
 }))
 
-export const StyledClearAllButton = styled(Button)(() => ({
+export const StyledSelectButton = styled(Button)(({ theme }) => ({
   alignSelf: 'center',
   padding: '6px 24px',
 }))

@@ -13,17 +13,20 @@ type RequestedPermissionsProps = {
 export const RequestedPermissions: FC<RequestedPermissionsProps> = ({ requestedPerms, onChangeCheckbox }) => {
   return (
     <List>
-      {requestedPerms.map((req) => {
-        return (
-          <ItemRequestedPermission
-            key={req.id}
-            requestedPerm={req}
-            onChange={() => {
-              onChangeCheckbox(req.id)
-            }}
-          />
-        )
-      })}
+      {requestedPerms
+        // these are default, don't show them
+        .filter((r) => r.perm !== 'connect' && r.perm !== 'get_public_key')
+        .map((req) => {
+          return (
+            <ItemRequestedPermission
+              key={req.id}
+              requestedPerm={req}
+              onChange={() => {
+                onChangeCheckbox(req.id)
+              }}
+            />
+          )
+        })}
     </List>
   )
 }
