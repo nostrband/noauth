@@ -1,18 +1,18 @@
-import React, { ChangeEvent, FC, FormEvent, useEffect, useState } from 'react'
+import { FC, FormEvent, useEffect, useState } from 'react'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getUsablePermList, isEmptyString } from '@/utils/helpers/helpers'
-import { MenuItem, Select, SelectChangeEvent, Stack, Typography } from '@mui/material'
-import { Input } from '@/shared/Input/Input'
+import { getActionName, getUsablePermList } from '@/utils/helpers/helpers'
+import { MenuItem, SelectChangeEvent, Stack } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectApps } from '@/store'
 import { useParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { KINDS } from '@/utils/consts'
+import { StyledPlaceholder, StyledSelect } from './styled'
 
 export const ModalAddPermission: FC = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -24,34 +24,37 @@ export const ModalAddPermission: FC = () => {
   const notify = useEnqueueSnackbar()
 
   const [type, setType] = useState('')
-  const [param, setParam] = useState('')
+  const [param, setParam] = useState<number | undefined>()
+
   const [isLoading, setIsLoading] = useState(false)
 
   const permOptions = getUsablePermList()
+  const isSignEvent = type === 'sign_event'
 
   const handleSelectType = (e: SelectChangeEvent<string>) => {
+    const type = e.target.value
     setType(e.target.value)
+    if (type !== 'sign_event') setParam(undefined)
   }
 
-  const handleChangeParam = (e: ChangeEvent<HTMLInputElement>) => {
-    setParam(e.target.value)
+  const handleSelectParam = (e: SelectChangeEvent<number>) => {
+    setParam(e.target.value as number)
   }
 
   const resetStates = () => {
     setType('')
-    setParam('')
+    setParam(undefined)
     setIsLoading(false)
   }
 
-  const isFormValid = !isEmptyString(param) && !!type
+  const isFormValid = isSignEvent ? !!type && param !== undefined : !!type
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!isFormValid) throw new Error('Please fill out all fields!')
     setIsLoading(true)
     try {
-      const kindOrParam = type === 'sign_event' ? Number(param) : param
-      const permission = `${type}:${kindOrParam}`
+      const permission = isSignEvent ? `${type}:${param}` : type
       await swicCall('addPerm', appNpub, npub, permission)
       setIsLoading(false)
       notify('Permission successfully added!', 'success')
@@ -76,35 +79,37 @@ export const ModalAddPermission: FC = () => {
     return null
   }
 
+  const renderTypeValue = (value: string) => {
+    if (!value) return <StyledPlaceholder>Select a permission type</StyledPlaceholder>
+    return getActionName(value)
+  }
+
+  const renderParamValue = (value: number) => {
+    if (value === undefined) return <StyledPlaceholder>Select an additional param</StyledPlaceholder>
+    return KINDS[value].name
+  }
+
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} title="Add a permission" fixedHeight="50%">
       <Stack gap={'1rem'} minHeight={'40%'} component={'form'} onSubmit={handleSubmit}>
-        <Select
-          onChange={handleSelectType}
-          value={type}
-          input={<Input fullWidth label="Type" />}
-          endAdornment={<ArrowDropDownIcon htmlColor="white" />}
-          displayEmpty
-          renderValue={(value: string) =>
-            value || (
-              <Typography variant="body2" color={'GrayText'}>
-                Select a permission type
-              </Typography>
-            )
-          }
-        >
-          {permOptions.map((permOption) => {
-            return <MenuItem value={permOption}>{permOption}</MenuItem>
-          })}
-        </Select>
+        <StyledSelect onChange={handleSelectType} value={type} renderValue={renderTypeValue} label="Type">
+          {permOptions.map((permOption) => (
+            <MenuItem value={permOption}>{getActionName(permOption)}</MenuItem>
+          ))}
+        </StyledSelect>
 
-        <Input
-          fullWidth
-          placeholder="Enter a additional param"
-          label="Additional param"
-          onChange={handleChangeParam}
-          value={param}
-        />
+        {isSignEvent && (
+          <StyledSelect
+            onChange={handleSelectParam}
+            value={param}
+            renderValue={renderParamValue}
+            label="Additional param"
+          >
+            {Object.keys(KINDS).map((key) => (
+              <MenuItem value={KINDS[key].kind}>{KINDS[key].name}</MenuItem>
+            ))}
+          </StyledSelect>
+        )}
 
         <Button type="submit" fullWidth sx={{ marginTop: '1rem' }} disabled={!isFormValid || isLoading}>
           Add {isLoading && <LoadingSpinner />}

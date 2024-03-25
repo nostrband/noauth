@@ -45,3 +45,43 @@ export const APP_NSEC_SIZE = {
   SMALL: 'small',
   EXTRA_SMALL: 'extra-small',
 } as const
+
+export const KINDS: {
+  [key: string]: {
+    kind: number
+    name: string
+  }
+} = {
+  0: {
+    kind: 0,
+    name: 'Update your profile',
+  },
+  1: {
+    kind: 1,
+    name: 'Publish note',
+  },
+  3: {
+    kind: 3,
+    name: 'Update your contact list',
+  },
+  4: {
+    kind: 4,
+    name: 'Send direct message',
+  },
+  5: {
+    kind: 5,
+    name: 'Delete event',
+  },
+  6: {
+    kind: 6,
+    name: 'Publish repost',
+  },
+  7: {
+    kind: 7,
+    name: 'Publish reaction',
+  },
+  10002: {
+    kind: 10002,
+    name: 'Update your relay list',
+  },
+}
