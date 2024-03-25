@@ -86,6 +86,71 @@ export function permListToPerms(perms: string): string[] {
   return [...new Set(r)]
 }
 
+export function packageToPerms(pack: string) {
+  if (pack === ACTION_TYPE.BASIC) {
+    return [
+      'connect',
+      'get_public_key',
+      'nip04_decrypt',
+      'nip04_encrypt',
+      'nip44_decrypt',
+      'nip44_encrypt',
+      'sign_event:0',
+      'sign_event:1',
+      'sign_event:3',
+      'sign_event:6',
+      'sign_event:7',
+      'sign_event:9734',
+      'sign_event:10002',
+      'sign_event:30023',
+      'sign_event:10000',
+      'sign_event:27235',
+    ]
+  }
+  return undefined
+}
+
+export function formatPermSummary(perms: string[]) {
+  const encrypt = perms.includes('nip04_encrypt') || perms.includes('nip44_encrypt')
+  const decrypt = perms.includes('nip04_decrypt') || perms.includes('nip44_decrypt')
+  const dms = perms.includes('sign_event:4') || perms.includes('sign_event:1059')
+  const profile = perms.includes('sign_event:0')
+  const contacts = perms.includes('sign_event:3')
+  const relays = perms.includes('sign_event:10002')
+
+  const important = []
+  if (encrypt && decrypt) important.push('encrypt and decrypt data (DMs)')
+  if (dms) important.push('send direct messages')
+  if (profile) important.push('update your profile')
+  if (contacts) important.push('update your contacts')
+  if (relays) important.push('update your relays')
+
+  const kinds = []
+  for (const p of perms) {
+    if (
+      p.startsWith('sign_event:') &&
+      p !== 'sign_event:0' &&
+      p !== 'sign_event:4' &&
+      p !== 'sign_event:3' &&
+      p !== 'sign_event:10002'
+    )
+      kinds.push(p.split(':')[1])
+  }
+
+  let t = ''
+  if (important.length > 0) {
+    t += important.join(', ')
+  }
+  if (kinds.length > 0) {
+    if (t) t += ", sign kinds: "
+    else t = "sign kinds: "
+    t += kinds.join(', ')
+  }
+
+  if (t) t = t[0].toUpperCase() + t.substring(1)
+  return t
+}
+
 export function isPackagePerm(perm: string, reqPerm: string) {
   if (perm === ACTION_TYPE.BASIC) {
     switch (reqPerm) {
@@ -109,6 +174,16 @@ export function isPackagePerm(perm: string, reqPerm: string) {
     }
   }
   return false
+}
+
+export function getUsablePermList() {
+  return [
+    'sign_event',
+    'nip04_encrypt',
+    'nip04_decrypt',
+    'nip44_encrypt',
+    'nip44_decrypt',
+  ]
 }
 
 export async function fetchNip05(value: string, origin?: string) {

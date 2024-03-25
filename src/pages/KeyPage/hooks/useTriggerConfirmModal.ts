@@ -61,7 +61,7 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
           appNpub: req.appNpub,
           reqId: req.id,
           popup: isPopup ? 'true' : '',
-          perms
+          perms: perms || '',
         },
       })
       break

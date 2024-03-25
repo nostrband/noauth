@@ -22,6 +22,19 @@ const StyledCheckbox = styled(
     )
   })
 )(() => ({
-  '& .MuiSvgIcon-root': { fontSize: '1.5rem' },
   marginLeft: '-10px',
+  '@media screen and (max-width: 485px)': {
+    '& svg': {
+      width: '24px',
+      height: '24px',
+    },
+    padding: '7px',
+  },
+  '@media screen and (max-width: 320px)': {
+    '& svg': {
+      width: '20px',
+      height: '20px',
+    },
+    padding: '6px',
+  },
 }))
