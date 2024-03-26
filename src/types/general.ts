@@ -8,3 +8,8 @@ export type IAppGroup = IClientApp & {
   apps: IClientApp[]
   size: number
 }
+
+export type IKind = {
+  kind: number
+  name: string
+}

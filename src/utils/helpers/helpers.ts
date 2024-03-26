@@ -142,8 +142,8 @@ export function formatPermSummary(perms: string[]) {
     t += important.join(', ')
   }
   if (kinds.length > 0) {
-    if (t) t += ", sign kinds: "
-    else t = "sign kinds: "
+    if (t) t += ', sign kinds: '
+    else t = 'sign kinds: '
     t += kinds.join(', ')
   }
 
@@ -177,13 +177,7 @@ export function isPackagePerm(perm: string, reqPerm: string) {
 }
 
 export function getUsablePermList() {
-  return [
-    'sign_event',
-    'nip04_encrypt',
-    'nip04_decrypt',
-    'nip44_encrypt',
-    'nip44_decrypt',
-  ]
+  return ['sign_event', 'nip04_encrypt', 'nip04_decrypt', 'nip44_encrypt', 'nip44_decrypt']
 }
 
 export async function fetchNip05(value: string, origin?: string) {
@@ -290,7 +284,7 @@ export const getAppIconTitle = (name: string | undefined, appNpub: string) => {
   return name ? name[0].toLocaleUpperCase() : appNpub.substring(4, 7)
 }
 
-function getActionName(method: string, kind?: number) {
+export function getActionName(method: string, kind?: number) {
   const action = ACTIONS[method]
   if (method === 'sign_event') {
     if (kind !== undefined) {

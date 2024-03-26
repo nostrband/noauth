@@ -1,3 +1,5 @@
+import { IKind } from '@/types/general'
+
 export const NOAUTHD_URL = process.env.REACT_APP_NOAUTHD_URL
 export const WEB_PUSH_PUBKEY = process.env.REACT_APP_WEB_PUSH_PUBKEY
 export const DOMAIN = process.env.REACT_APP_DOMAIN
@@ -45,3 +47,38 @@ export const APP_NSEC_SIZE = {
   SMALL: 'small',
   EXTRA_SMALL: 'extra-small',
 } as const
+
+export const KINDS: IKind[] = [
+  {
+    kind: 0,
+    name: 'Update your profile',
+  },
+  {
+    kind: 1,
+    name: 'Publish note',
+  },
+  {
+    kind: 3,
+    name: 'Update your contact list',
+  },
+  {
+    kind: 4,
+    name: 'Send direct message',
+  },
+  {
+    kind: 5,
+    name: 'Delete event',
+  },
+  {
+    kind: 6,
+    name: 'Publish repost',
+  },
+  {
+    kind: 7,
+    name: 'Publish reaction',
+  },
+  {
+    kind: 10002,
+    name: 'Update your relay list',
+  },
+]
