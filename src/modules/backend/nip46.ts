@@ -1,8 +1,19 @@
-import NDK, { NDKEvent, NDKNip46Backend } from "@nostr-dev-kit/ndk"
+import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend } from "@nostr-dev-kit/ndk"
 import { Event, nip19, verifySignature } from "nostr-tools"
 import { DECISION, IAllowCallbackParams } from "./types"
 import { Signer } from "./signer"
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from "./nip44"
+
+class ConnectEventHandlingStrategy implements IEventHandlingStrategy {
+  async handle(
+      backend: NDKNip46Backend,
+      id: string,
+      remotePubkey: string,
+      params: string[]
+  ): Promise<string | undefined> {
+    return 'ack';
+  }
+}
 
 export class Nip46Backend extends NDKNip46Backend {
 
@@ -22,6 +33,8 @@ export class Nip46Backend extends NDKNip46Backend {
     this.allowCb = allowCb
     signer.user().then((u) => (this.npub = nip19.npubEncode(u.pubkey)))
 
+    // NDK's connect doesn't work for us
+    this.handlers['connect'] = new ConnectEventHandlingStrategy()
     this.handlers['nip44_encrypt'] = new Nip44EncryptHandlingStrategy()
     this.handlers['nip44_decrypt'] = new Nip44DecryptHandlingStrategy()
   }

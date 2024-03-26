@@ -1,5 +1,7 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
+import { DbConnectToken } from '@/modules/db'
+import { swicCall } from '@/modules/swic'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
@@ -10,7 +12,7 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
 import { Stack, Typography } from '@mui/material'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 export const ModalConnectApp = () => {
@@ -19,7 +21,8 @@ export const ModalConnectApp = () => {
   const timerRef = useRef<NodeJS.Timeout>()
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
-  const bunkerStr = getBunkerLink(npub)
+
+  const [token, setToken] = useState<DbConnectToken | undefined>()
 
   const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
@@ -30,10 +33,23 @@ export const ModalConnectApp = () => {
   })
 
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
+
+  useEffect(() => {
+    const load = async () => {
+      if (isModalOpened && isNpubExists && (!token || token.expiry < Date.now())) {
+        const t = await swicCall('getConnectToken', npub) as DbConnectToken
+        setToken(t)
+      }
+    }
+    load()
+  }, [npub, token, isModalOpened, isNpubExists])
+
   if (isModalOpened && !isNpubExists) {
     handleCloseModal()
     return null
   }
+
+  const bunkerStr = getBunkerLink(npub, token?.token)
 
   const handleShareBunker = async () => {
     const shareData = {
@@ -58,15 +74,16 @@ export const ModalConnectApp = () => {
   }
 
   return (
-    <Modal open={isModalOpened} title="Share your profile" onClose={handleCloseModal}>
+    <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
       <Stack gap={'1rem'} alignItems={'center'}>
-        <Typography variant="caption">Please, copy this code and paste it into the app to log in</Typography>
+        <Typography variant="body2">Please, copy this string and paste it into the app to log in.</Typography>
+        <Typography variant="body2" color={'red'}>Do not share it publicly!</Typography>
         <Input
           sx={{
             gap: '0.5rem',
           }}
           fullWidth
-          value={bunkerStr}
+          value={token ? bunkerStr : 'Loading...'}
           endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
         />
         <AppLink
@@ -74,10 +91,7 @@ export const ModalConnectApp = () => {
           onClick={() => handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })}
         />
         <Button fullWidth onClick={handleShareBunker}>
-          Share it
-        </Button>
-        <Button fullWidth onClick={handleCloseModal}>
-          Done
+          Send
         </Button>
       </Stack>
     </Modal>
