@@ -39,9 +39,9 @@ export const StyledAutocomplete = styled(
             className="input"
             inputProps={inputProps}
             disabled={disabled}
-            label="Param"
+            label="Event kind"
             fullWidth
-            placeholder="Enter param"
+            placeholder="Kind number"
           />
         )
       }}

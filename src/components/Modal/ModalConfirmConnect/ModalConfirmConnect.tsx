@@ -24,7 +24,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
-import { AppLink } from '@/shared/AppLink/AppLink'
+// import { AppLink } from '@/shared/AppLink/AppLink'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
 
@@ -85,7 +85,7 @@ export const ModalConfirmConnect = () => {
         }) as Perm
     ) : []
     setPerms(perms)
-  }, [pendingReqId, permsParam, appNpub, npub])
+  }, [selectedActionType, pendingReqId, permsParam, appNpub, npub])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {

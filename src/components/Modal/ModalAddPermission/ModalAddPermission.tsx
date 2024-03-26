@@ -130,7 +130,7 @@ export const ModalAddPermission: FC = () => {
     // Add "xxx" option created dynamically
     if (option.inputValue) return option.name as string
     // Regular option
-    return `${option.kind}-${option.name as string}`
+    return `${option.kind} - ${option.name as string}`
   }
 
   return (
