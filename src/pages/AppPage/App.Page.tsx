@@ -28,6 +28,7 @@ const AppPage = () => {
   const { appNpub = '', npub = '' } = useParams()
   const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
   const perms = useAppSelector((state) => selectPermsByNpubAndAppNpub(state, npub, appNpub))
+  const sortedPerms = perms.sort((a, b) => (new Date(a.timestamp) < new Date(b.timestamp) ? 1 : -1))
 
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
@@ -102,7 +103,7 @@ const AppPage = () => {
           </Button>
         </Box>
 
-        <Permissions perms={perms} />
+        <Permissions perms={sortedPerms} />
 
         <Stack direction={'row'} alignItems={'center'} gap={'1rem'} width={'100%'}>
           <Button fullWidth onClick={() => handleOpenModal(MODAL_PARAMS_KEYS.ADD_PERMISSION)}>

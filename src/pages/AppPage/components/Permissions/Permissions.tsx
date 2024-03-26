@@ -9,7 +9,7 @@ type PermissionsProps = {
 }
 
 export const Permissions: FC<PermissionsProps> = ({ perms }) => {
-  const isMobile = useMediaQuery('(max-width:600px)')
+  const isMobile = useMediaQuery('(max-width:485px)')
 
   return (
     <>
