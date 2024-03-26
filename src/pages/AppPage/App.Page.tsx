@@ -20,6 +20,7 @@ import { ModalAppDetails } from '@/components/Modal/ModalAppDetails/ModalAppDeta
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { HeadingContainer, AppInfoContainer, AppNameContainer } from './styled'
 import { formatDistanceToNow } from 'date-fns'
+import { ModalAddPermission } from '@/components/Modal/ModalAddPermission/ModalAddPermission'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -27,6 +28,7 @@ const AppPage = () => {
   const { appNpub = '', npub = '' } = useParams()
   const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
   const perms = useAppSelector((state) => selectPermsByNpubAndAppNpub(state, npub, appNpub))
+  const sortedPerms = perms.sort((a, b) => (new Date(a.timestamp) < new Date(b.timestamp) ? 1 : -1))
 
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
@@ -78,11 +80,6 @@ const AppPage = () => {
                 <Typography className="app_name" variant="h4" noWrap>
                   {appName}
                 </Typography>
-                {/* {isAppNameExists && (
-                  <Typography noWrap display={'block'} variant="body1" color={'GrayText'}>
-                    {shortAppNpub}
-                  </Typography>
-                )} */}
               </AppNameContainer>
 
               <IconButton onClick={handleShowAppDetailsModal}>
@@ -105,11 +102,17 @@ const AppPage = () => {
             Delete app
           </Button>
         </Box>
-        <Permissions perms={perms} />
 
-        <Button fullWidth onClick={() => handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY)}>
-          Activity
-        </Button>
+        <Permissions perms={sortedPerms} />
+
+        <Stack direction={'row'} alignItems={'center'} gap={'1rem'} width={'100%'}>
+          <Button fullWidth onClick={() => handleOpenModal(MODAL_PARAMS_KEYS.ADD_PERMISSION)}>
+            Add permission
+          </Button>
+          <Button fullWidth onClick={() => handleOpenModal(MODAL_PARAMS_KEYS.ACTIVITY)}>
+            Activity
+          </Button>
+        </Stack>
       </Stack>
 
       <ConfirmModal
@@ -120,8 +123,10 @@ const AppPage = () => {
         onConfirm={handleDeleteApp}
         onClose={handleClose}
       />
+
       <ModalActivities appNpub={appNpub} />
       <ModalAppDetails />
+      <ModalAddPermission />
     </>
   )
 }
