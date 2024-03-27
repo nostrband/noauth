@@ -1,5 +1,5 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
-import { DbApp, dbi, DbKey, DbPending, DbPerm } from './db'
+import { DbApp, DbConnectToken, dbi, DbKey, DbPending, DbPerm } from './db'
 import { Keys } from './keys'
 import NDK, {
   NDKEvent,
@@ -22,8 +22,10 @@ import {
   APP_TAG,
   NSEC_APP_NPUB,
   SEED_RELAYS,
+  TOKEN_TTL,
+  TOKEN_SIZE,
 } from '../utils/consts'
-import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqParams, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
@@ -33,6 +35,7 @@ import { Nip46Backend } from './backend/nip46'
 import { sha256 } from './backend/utils'
 import { Api, KeyStore } from './backend/api'
 import { PrivateKeySigner } from './backend/signer'
+import { randomBytes } from 'crypto'
 
 //const PERF_TEST = false
 
@@ -56,6 +59,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private keys: Key[] = []
   private perms: DbPerm[] = []
   private apps: DbApp[] = []
+  private connectTokens: DbConnectToken[] = []
   private doneReqIds: string[] = []
   private confirmBuffer: Pending[] = []
   private accessBuffer: DbPending[] = []
@@ -144,6 +148,13 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     console.log('started perms', this.perms)
     this.apps = await dbi.listApps()
     console.log('started apps', this.apps)
+
+    const tokens = await dbi.listConnectTokens()
+    for (const t of tokens) {
+      if (t.timestamp < Date.now() - TOKEN_TTL) await dbi.removeConnectToken(t.token)
+    }
+    this.connectTokens = await dbi.listConnectTokens()
+    console.log('started connect tokens', this.connectTokens)
 
     // drop old pending reqs
     const pending = await dbi.listPending()
@@ -273,6 +284,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         icon: data.icon || '',
         url: data.url || '',
         userAgent: data.userAgent || '',
+        token: data.token || '',
         // choose older creation timestamp
         timestamp: app ? Math.min(app.timestamp, data.timestamp) : data.timestamp,
         updateTimestamp: data.updateTimestamp,
@@ -617,6 +629,18 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private getDecision(backend: NDKNip46Backend, req: DbPending): DECISION {
     if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
+    if (req.method === 'connect') {
+      const params = getReqParams(req)
+      if (params && params.length >= 2 && params[1]) {
+        const secret = params[1]
+        const token = this.connectTokens.find(t => t.token === secret)
+        if (!token || token.expiry < Date.now() || token.npub !== req.npub) {
+          console.log("unknown token", secret)
+          return DECISION.IGNORE
+        }
+      }
+    }
+
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
 
@@ -663,6 +687,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         updateTimestamp: app.updateTimestamp,
         permUpdateTimestamp: app.permUpdateTimestamp,
         userAgent: app.userAgent,
+        token: app.token,
         perms,
       }
     } else {
@@ -707,6 +732,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     appIcon?: string
     perms: string[]
   }) {
+    // used by create_account flow after keys are generated
+
     await dbi.addApp({
       appNpub: appNpub,
       npub: npub,
@@ -805,7 +832,11 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
           // add app on 'allow connect'
           if (method === 'connect' && allow) {
-            // if (!(await dbi.getApp(req.appNpub))) {
+
+            // save connect token that was used
+            const params = getReqParams(req)
+            const token = params && params.length >= 2 ? params[1] : ''
+
             await dbi.addApp({
               appNpub: req.appNpub,
               npub: req.npub,
@@ -816,10 +847,17 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
+              token: token || ''
             })
 
             // reload
             self.apps = await dbi.listApps()
+
+            // consume the token, reload
+            if (token) {
+              await dbi.removeConnectToken(token)
+              self.connectTokens = await dbi.listConnectTokens()
+            }
           }
         } else {
           // just send to db w/o waiting for it
@@ -1373,6 +1411,22 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     return key.signer.decryptNip44(new NDKUser({ pubkey: peerPubkey }), ciphertext)
   }
 
+  private async getConnectToken(npub: string, subNpub?: string) {
+    let t: DbConnectToken | undefined = await dbi.getConnectToken(npub, subNpub)
+    if (t) return t
+    t = {
+      npub,
+      subNpub,
+      timestamp: Date.now(),
+      expiry: Date.now() + TOKEN_TTL,
+      token: bytesToHex(randomBytes(TOKEN_SIZE))
+    }
+    await dbi.addConnectToken(t)
+    // update
+    this.connectTokens = await dbi.listConnectTokens()
+    return t
+  }
+
   public async onMessage(event: any) {
     const { id, method, args } = event.data
     try {
@@ -1417,6 +1471,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         result = await this.nip04Decrypt(args[0], args[1], args[2])
       } else if (method === 'nip44Decrypt') {
         result = await this.nip44Decrypt(args[0], args[1], args[2])
+      } else if (method === 'getConnectToken') {
+        result = await this.getConnectToken(args[0], args[1])
       } else {
         console.log('unknown method from UI ', method)
       }

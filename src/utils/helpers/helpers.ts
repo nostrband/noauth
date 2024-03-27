@@ -20,10 +20,9 @@ export const getProfileUsername = (profile: MetaEvent | null) => {
   return profile?.info?.name || profile?.info?.display_name
 }
 
-export const getBunkerLink = (npub = '') => {
-  if (!npub) return ''
+export const getBunkerLink = (npub: string, token = '') => {
   const { data: pubkey } = nip19.decode(npub)
-  return `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}`
+  return `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}${token ? `&secret=${token}` : ''}`
 }
 
 export async function askNotificationPermission() {
@@ -43,6 +42,13 @@ export async function askNotificationPermission() {
         })
     }
   })
+}
+
+export function getReqParams(req: DbPending): any {
+  try {
+    return JSON.parse(req.params)
+  } catch {}
+  return undefined
 }
 
 export function getSignReqKind(req: DbPending): number | undefined {

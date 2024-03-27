@@ -22,6 +22,7 @@ export interface DbApp {
   updateTimestamp: number
   permUpdateTimestamp: number
   userAgent?: string
+  token?: string
 }
 
 export interface DbPerm {
@@ -56,6 +57,14 @@ export interface DbSyncHistory {
   npub: string
 }
 
+export interface DbConnectToken {
+  npub: string
+  token: string
+  timestamp: number
+  expiry: number
+  subNpub?: string
+}
+
 export interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>
   apps: Dexie.Table<DbApp, string>
@@ -63,11 +72,12 @@ export interface DbSchema extends Dexie {
   pending: Dexie.Table<DbPending, string>
   history: Dexie.Table<DbHistory, string>
   syncHistory: Dexie.Table<DbSyncHistory, string>
+  connectTokens: Dexie.Table<DbConnectToken, string>
 }
 
 export const db = new Dexie('noauthdb') as DbSchema
 
-db.version(10).stores({
+db.version(12).stores({
   keys: 'npub',
   apps: 'appNpub,npub,name,timestamp',
   perms: 'id,npub,appNpub,perm,value,timestamp',
@@ -75,6 +85,7 @@ db.version(10).stores({
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
   requestHistory: 'id',
   syncHistory: 'npub',
+  connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]'
 })
 
 export const dbi = {
@@ -277,6 +288,40 @@ export const dbi = {
     } catch (error) {
       console.log(`db setSynced error: ${error}`)
       return false
+    }
+  },
+  addConnectToken: async (r: DbConnectToken) => {
+    try {
+      await db.connectTokens.add(r)
+    } catch (error) {
+      console.log(`db addConnectToken error: ${error}`)
+      return false
+    }
+  },
+  getConnectToken: async (npub: string, subNpub?: string) => {
+    try {
+      let req: { npub: string, subNpub?: string } = { npub }
+      if (subNpub) req = { ...req, subNpub }
+      const token = await db.connectTokens.get(req)
+      if (token && token.expiry > Date.now()) return token
+      return undefined
+    } catch (error) {
+      console.log(`db getConnectToken error: ${error}`)
+    }
+  },
+  listConnectTokens: async (): Promise<DbConnectToken[]> => {
+    try {
+      return await db.connectTokens.toArray()
+    } catch (error) {
+      console.log(`db connectTokens error: ${error}`)
+      return []
+    }
+  },
+  removeConnectToken: async (token: string) => {
+    try {
+      return await db.connectTokens.delete(token)
+    } catch (error) {
+      console.log(`db connectTokens error: ${error}`)
     }
   },
 }

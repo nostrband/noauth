@@ -3,7 +3,6 @@ import { AvatarProps, BoxProps } from '@mui/material'
 
 export type IconAppProps = {
   size?: AppNostrSize
-  isRounded?: boolean
   isSmall?: boolean
   onClick?: () => void
   isNotLoaded?: boolean
