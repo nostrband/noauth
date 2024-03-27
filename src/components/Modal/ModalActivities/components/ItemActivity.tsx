@@ -17,17 +17,22 @@ export const ItemActivity: FC<ItemActivityProps> = (req) => {
   const [details, setDetails] = useState('')
 
   const handleToggleShowDetails = () => {
+    if (!showMoreDetails && !details)
+      getReqDetails(req).then(setDetails)
     setShowMoreDetails((prevShow) => !prevShow)
   }
 
-  useEffect(() => {
-    const load = async () => {
-      const details = await getReqDetails(req)
-      setDetails(details)
-    }
-    load()
-    // eslint-disable-next-line
-  }, [req])
+  // with useeffect we send a series of calls to backend,
+  // and it's not pretty
+  // useEffect(() => {
+  //   const load = async () => {
+  //     const details = await getReqDetails(req)
+  //     setDetails(details)
+  //   }
+  //   if (showMoreDetails && !details)
+  //     load()
+  //   // eslint-disable-next-line
+  // }, [req, showMoreDetails])
 
   return (
     <Stack gap={'0.5rem'}>
