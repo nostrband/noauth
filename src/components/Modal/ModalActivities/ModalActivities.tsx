@@ -1,11 +1,11 @@
 import React, { FC } from 'react'
 import { Modal } from '@/shared/Modal/Modal'
-import { Box } from '@mui/material'
+import { Stack } from '@mui/material'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { HistoryDefaultValue, getActivityHistoryQuerier } from '../../utils'
-import { ItemActivity } from './ItemActivity'
+import { HistoryDefaultValue, getActivityHistoryQuerier } from './utils'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
+import { ItemActivity } from '@/components/Modal/ModalActivities/components/ItemActivity'
 
 type ModalActivitiesProps = {
   appNpub: string
@@ -20,11 +20,11 @@ export const ModalActivities: FC<ModalActivitiesProps> = ({ appNpub }) => {
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} fixedHeight="calc(100% - 5rem)" title="Activity history">
-      <Box overflow={'auto'}>
+      <Stack overflow={'auto'} gap={'0.5rem'}>
         {history.map((item) => {
           return <ItemActivity {...item} key={item.id} />
         })}
-      </Box>
+      </Stack>
     </Modal>
   )
 }

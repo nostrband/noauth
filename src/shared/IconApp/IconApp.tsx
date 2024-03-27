@@ -5,16 +5,7 @@ import { IIconApp } from './types'
 
 const failedCache = new Map<string, boolean>()
 
-export const IconApp: FC<IIconApp> = ({
-  picture = '',
-  alt,
-  isRounded,
-  isSmall,
-  onClick,
-  size,
-  getAppTitle,
-  ...rest
-}) => {
+export const IconApp: FC<IIconApp> = ({ picture = '', alt, isSmall, onClick, size, getAppTitle, ...rest }) => {
   const c = failedCache.get(picture)
   const [isFailed, setIsFailed] = useState(c !== undefined ? c : true)
 

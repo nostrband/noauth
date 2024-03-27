@@ -8,28 +8,22 @@ import { APP_NSEC_SIZE } from '@/utils/consts'
 
 const color = grey[500]
 
-const getVariantApp = (isRounded: boolean, size: AppNostrSize) => {
-  if (isRounded) {
-    return {
-      height: 34,
-      minWidth: 34,
-      maxWidth: 34,
-      borderRadius: '7px',
-    }
-  }
-
+const getVariantApp = (size: AppNostrSize) => {
   return APP_SIZE_VALUE[size]
 }
 
 export const StyledAppIcon = styled(
   forwardRef<HTMLAnchorElement, IBoxStyled>(function BoxDisplayName(props, ref) {
-    return <Box ref={ref} {...props} />
+    const exclude = new Set(['isNotLoaded'])
+    const omitProps = Object.fromEntries(Object.entries(props).filter((e) => !exclude.has(e[0])))
+
+    return <Box ref={ref} {...omitProps} />
   })
-)(({ theme, isNotLoaded, isRounded = false, size = APP_NSEC_SIZE.MEDIUM }) => ({
+)(({ theme, isNotLoaded, size = APP_NSEC_SIZE.MEDIUM }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,
   overflow: 'hidden',
-  ...getVariantApp(isRounded, size),
+  ...getVariantApp(size),
   transition: theme.transitions.create(['border-color', 'transition']),
   backgroundColor: isNotLoaded ? color : theme.palette.background.default,
   boxSizing: 'border-box',
@@ -39,7 +33,9 @@ export const StyledAppIcon = styled(
 }))
 
 export const StyledAppImg = styled(function BoxDisplayName(props: IAvatarStyled) {
-  return <Avatar variant="square" {...props} />
+  const exclude = new Set(['isSmall'])
+  const omitProps = Object.fromEntries(Object.entries(props).filter((e) => !exclude.has(e[0])))
+  return <Avatar variant="square" {...omitProps} />
 })(({ isSmall = false, size = APP_NSEC_SIZE.MEDIUM }) => ({
   position: 'absolute',
   left: 0,
