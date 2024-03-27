@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react'
+import { FC, useState } from 'react'
 import { DbHistory } from '@/modules/db'
 import { Box, Collapse, IconButton, Stack, Typography } from '@mui/material'
 import { StyledActivityItem, StyledDetails } from './styled'
