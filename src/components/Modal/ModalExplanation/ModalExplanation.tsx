@@ -70,6 +70,15 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
           <br />
           Some apps require bunker URL to connect to your keys. Paste it to the app and then confirm a connection
           request.
+          <br />
+          <br />
+          Do not share your bunker URL strings publicly! Only copy and paste them to the app you're connecting with. 
+          <br />
+          <br />
+          Don't worry, bunker URL strings expire
+          after several minutes or if already used to connect with some app, so even if shared publicly, they will 
+          probably be useless. If unsure, just find a connection with this bunker URL
+          and delete it.
         </>
       )
       break

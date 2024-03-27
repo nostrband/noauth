@@ -22,6 +22,9 @@ export const RELOAD_STORAGE_KEY = 'reload'
 
 export const REQ_TTL = 60000 // 1 min
 
+export const TOKEN_SIZE = 16
+export const TOKEN_TTL = 600000 // 10 minutes
+
 export enum ACTION_TYPE {
   BASIC = 'basic',
   ADVANCED = 'advanced',
