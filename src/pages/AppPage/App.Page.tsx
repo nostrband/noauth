@@ -12,7 +12,6 @@ import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { IOSBackButton } from '@/shared/IOSBackButton/IOSBackButton'
-import { ModalActivities } from './components/Activities/ModalActivities'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import MoreIcon from '@mui/icons-material/MoreVertRounded'
@@ -21,6 +20,7 @@ import { IconApp } from '@/shared/IconApp/IconApp'
 import { HeadingContainer, AppInfoContainer, AppNameContainer } from './styled'
 import { formatDistanceToNow } from 'date-fns'
 import { ModalAddPermission } from '@/components/Modal/ModalAddPermission/ModalAddPermission'
+import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivities'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)

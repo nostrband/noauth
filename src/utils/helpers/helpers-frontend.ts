@@ -1,6 +1,6 @@
-import { DbHistory, DbPending } from "@/modules/db"
-import { swicCall, swicWaitStarted } from "@/modules/swic"
-import { nip19 } from "nostr-tools"
+import { DbHistory, DbPending } from '@/modules/db'
+import { swicCall, swicWaitStarted } from '@/modules/swic'
+import { nip19 } from 'nostr-tools'
 
 function printPrettyJson(paramsArray: any[]) {
   try {
