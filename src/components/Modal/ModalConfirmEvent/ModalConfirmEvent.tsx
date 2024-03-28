@@ -6,7 +6,7 @@ import { Box, FormControlLabel, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
-import { FC, useEffect, useMemo, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { Container, StyledActionName, StyledAvatar, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
@@ -33,11 +33,16 @@ export const ModalConfirmEvent: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const pendingReqId = searchParams.get('reqId') || ''
-  const appNpub = searchParams.get('appNpub') || ''
   const isPopup = searchParams.get('popup') === 'true'
+  const redirectUri = searchParams.get('redirect_uri') || ''
+  const done = searchParams.get('done') === 'true'
+
   const { npub = '' } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const pendings = useAppSelector((state) => selectPendingsByNpub(state, npub))
+
+  const currentPendingRequest = pendings.find((pr) => pr.id === pendingReqId)
+  const appNpub = currentPendingRequest?.appNpub || ''
 
   const [isLoaded, setIsLoaded] = useState(false)
   const [remember, setRemember] = useState(true)
@@ -46,11 +51,6 @@ export const ModalConfirmEvent: FC = () => {
   const [details, setDetails] = useState('')
 
   const [isPending, setIsPending] = useState(false)
-
-  const currentAppPendingReqs = useMemo(
-    () => pendings.filter((pr) => pr.appNpub === appNpub) || [],
-    [pendings, appNpub]
-  )
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
     onClose: (sp) => {
@@ -71,8 +71,6 @@ export const ModalConfirmEvent: FC = () => {
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
-  const redirectUri = searchParams.get('redirect_uri') || ''
-  const done = searchParams.get('done') === 'true'
 
   useEffect(() => {
     // reset
@@ -84,15 +82,13 @@ export const ModalConfirmEvent: FC = () => {
     if (isPopup && pendingReqId) {
       // wait for SW to start
       swicWaitStarted().then(async () => {
-        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
+        await swicCall('checkPendingRequest', npub, pendingReqId)
         setIsLoaded(true)
       })
     } else {
       setIsLoaded(true)
     }
   }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
-
-  const currentPendingRequest = currentAppPendingReqs.find((pr) => pr.id === pendingReqId)
 
   useEffect(() => {
     const load = async () => {

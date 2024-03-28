@@ -17,6 +17,7 @@ import { usePassword } from '@/hooks/usePassword'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { FormInputType, schema } from './const'
+import { CreateConnectParams } from '@/modules/backend/types'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -93,25 +94,31 @@ const CreatePage = () => {
     try {
       const { password } = values
       setIsLoading(true)
-      const key: any = await swicCall('generateKey', name, password)
       const appUrl = getReferrerAppUrl()
-      console.log('Created', key.npub, 'app', appUrl)
+      const params: CreateConnectParams = {
+        name,
+        password,
+        appNpub,
+        perms,
+        appUrl
+      } 
+      const req: any = await swicCall('generateKeyConnect', params)
+      console.log('Created', req.npub, 'app', appUrl)
       setCreated(true)
       setIsLoading(false)
       resetPasswordValidation()
       resetForm()
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
         search: {
-          npub: key.npub,
-          appNpub,
-          appUrl,
+          npub: req.npub,
+          reqId: req.id,
           token,
           // needed for this screen itself
           name,
+          appNpub,
           // will close after all done
           popup: 'true',
-          redirect_uri,
-          perms
+          redirect_uri
         },
         replace: true,
       })
