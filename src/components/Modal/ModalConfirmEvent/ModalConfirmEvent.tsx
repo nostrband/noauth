@@ -7,7 +7,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
-import { FC, useEffect, useMemo, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import {
   Container,
   StyledActionName,
@@ -93,10 +93,8 @@ export const ModalConfirmEvent: FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (currentPendingRequest)
-        setDetails(await getReqDetails(currentPendingRequest))
-      else
-        setDetails('')
+      if (currentPendingRequest) setDetails(await getReqDetails(currentPendingRequest))
+      else setDetails('')
     }
     load()
   }, [currentPendingRequest])
