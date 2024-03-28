@@ -6,6 +6,7 @@ export const StyledButton = styled((props: AppButtonProps) => <Button {...props}
   fontWeight: 600,
   padding: '0.75rem 1rem',
   maxHeight: '41px',
+  minWidth: 'fit-content',
 }))
 
 export const StyledToggleButtonsGroup = styled((props: ToggleButtonGroupProps) => <ToggleButtonGroup {...props} />)(

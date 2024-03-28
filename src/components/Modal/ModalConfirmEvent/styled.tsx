@@ -1,15 +1,5 @@
 import { AppButtonProps, Button } from '@/shared/Button/Button'
-import {
-  Avatar,
-  AvatarProps,
-  Stack,
-  StackProps,
-  ToggleButtonGroup,
-  ToggleButtonGroupProps,
-  Typography,
-  TypographyProps,
-  styled,
-} from '@mui/material'
+import { Avatar, AvatarProps, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 
 export const Container = styled((props: StackProps) => <Stack {...props} />)(() => ({
   gap: '1rem',
@@ -25,23 +15,8 @@ export const StyledButton = styled((props: AppButtonProps) => <Button {...props}
   fontWeight: 600,
   padding: '0.75rem 1rem',
   maxHeight: '41px',
+  minWidth: 'fit-content',
 }))
-
-export const StyledToggleButtonsGroup = styled((props: ToggleButtonGroupProps) => <ToggleButtonGroup {...props} />)(
-  () => ({
-    gap: '0.75rem',
-    marginBottom: '1rem',
-    justifyContent: 'space-between',
-    '&.MuiToggleButtonGroup-root .MuiToggleButtonGroup-grouped:not(:first-of-type)': {
-      margin: '0',
-      border: 'initial',
-    },
-    '&.MuiToggleButtonGroup-root .MuiToggleButtonGroup-grouped': {
-      border: 'initial',
-      borderRadius: '1rem',
-    },
-  })
-)
 
 export const StyledHeadingContainer = styled((props: StackProps) => <Stack {...props} direction={'row'} />)(() => ({
   gap: '1rem',

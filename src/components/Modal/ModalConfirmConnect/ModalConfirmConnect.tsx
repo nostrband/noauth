@@ -28,11 +28,11 @@ import { nip19 } from 'nostr-tools'
 // import { AppLink } from '@/shared/AppLink/AppLink'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 type Perm = DbPerm & { checked: boolean }
 
 export const ModalConfirmConnect = () => {
-
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
@@ -50,7 +50,7 @@ export const ModalConfirmConnect = () => {
 
   // we need valid reqId
   const pendingReqId = searchParams.get('reqId') || ''
-  const req = pending.find(p => p.id === pendingReqId)
+  const req = pending.find((p) => p.id === pendingReqId)
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const triggerApp = apps.find((app) => app.appNpub === req?.appNpub)
 
@@ -63,7 +63,7 @@ export const ModalConfirmConnect = () => {
   // popup mode for auth_url
   const isPopup = searchParams.get('popup') === 'true'
 
-  // server token for create_account callback 
+  // server token for create_account callback
   const token = searchParams.get('token') || ''
 
   // perms requested by 'connect'/'create_account'
@@ -73,6 +73,8 @@ export const ModalConfirmConnect = () => {
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
     hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
   )
+
+  const [isPending, setIsPending] = useState(false)
 
   const { appNpub = '' } = req || {}
   const { name, url = '', icon = '' } = triggerApp || {}
@@ -84,19 +86,22 @@ export const ModalConfirmConnect = () => {
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
   useEffect(() => {
-    const list = selectedActionType === ACTION_TYPE.REQUESTED ? permListToPerms(permsParam) : packageToPerms(selectedActionType)
-    const perms = list ? list.map(
-      (p) =>
-        ({
-          id: p,
-          appNpub,
-          npub,
-          checked: true,
-          perm: p,
-          timestamp: Date.now(),
-          value: '1',
-        }) as Perm
-    ) : []
+    const list =
+      selectedActionType === ACTION_TYPE.REQUESTED ? permListToPerms(permsParam) : packageToPerms(selectedActionType)
+    const perms = list
+      ? list.map(
+          (p) =>
+            ({
+              id: p,
+              appNpub,
+              npub,
+              checked: true,
+              perm: p,
+              timestamp: Date.now(),
+              value: '1',
+            }) as Perm
+        )
+      : []
     setPerms(perms)
   }, [selectedActionType, pendingReqId, permsParam, req, npub, appNpub])
 
@@ -130,6 +135,7 @@ export const ModalConfirmConnect = () => {
       if (isModalOpened) {
         // modal closed
         setShowAdvancedOptions(false)
+        setIsPending(false)
       }
     }
   }, [isModalOpened])
@@ -159,6 +165,7 @@ export const ModalConfirmConnect = () => {
     if (!isPopup) return
     if (!redirectUri) return window.close()
 
+    setIsPending(false)
     // add done marker first
     searchParams.append('done', 'true')
     setSearchParams(searchParams)
@@ -186,8 +193,10 @@ export const ModalConfirmConnect = () => {
 
     if (pendingReqId) {
       const options = { perms: allowedPerms, appUrl }
-      await confirmPending(pendingReqId, true, true, options)
+      setIsPending(true)
+      await confirmPending(pendingReqId, true, true, options).finally(() => setIsPending(false))
     } else {
+      setIsPending(true)
       try {
         await askNotificationPermission()
         const result = await swicCall('enablePush')
@@ -204,6 +213,7 @@ export const ModalConfirmConnect = () => {
         console.log('connectApp done', npub, appNpub, appUrl, allowedPerms)
       } catch (e: any) {
         notify(e.toString(), 'error')
+        setIsPending(false)
         return
       }
 
@@ -215,6 +225,7 @@ export const ModalConfirmConnect = () => {
           console.log('error', e)
           notify('App did not reply. Please try to log in now.', 'error')
           navigate(`/key/${npub}`, { replace: true })
+          setIsPending(false)
           return
         }
       }
@@ -228,8 +239,12 @@ export const ModalConfirmConnect = () => {
   }
 
   const disallow = () => {
-    if (pendingReqId) confirmPending(pendingReqId, false, true)
-    else closeModalAfterRequest()
+    if (pendingReqId) {
+      setIsPending(true)
+      confirmPending(pendingReqId, false, true).finally(() => setIsPending(false))
+    } else {
+      closeModalAfterRequest()
+    }
   }
 
   if (isPopup) {
@@ -252,7 +267,7 @@ export const ModalConfirmConnect = () => {
 
   const permsTitle = hasReqPerms ? `Requested ${perms.length} permissions` : 'Basic permissions'
   const permsDescription = hasReqPerms
-    ? formatPermSummary(perms.map(p => p.perm))
+    ? formatPermSummary(perms.map((p) => p.perm))
     : 'The default set of permissions for social media apps'
 
   return (
@@ -307,10 +322,10 @@ export const ModalConfirmConnect = () => {
 
         <Stack direction={'row'} gap={'1rem'}>
           <StyledButton onClick={disallow} varianttype="secondary">
-            Ignore
+            Ignore {isPending && <LoadingSpinner mode="secondary" />}
           </StyledButton>
           <StyledButton fullWidth onClick={allow}>
-            Connect
+            Connect {isPending && <LoadingSpinner />}
           </StyledButton>
         </Stack>
       </Stack>
