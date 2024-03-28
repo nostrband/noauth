@@ -22,7 +22,7 @@ enum ACTION_TYPE {
 
 const ACTION_LABELS = {
   [ACTION_TYPE.ALWAYS]: 'Always',
-  [ACTION_TYPE.ONCE]: 'Just Once',
+  [ACTION_TYPE.ONCE]: 'Once',
 }
 
 export const ModalConfirmEvent: FC = () => {
@@ -182,7 +182,7 @@ export const ModalConfirmEvent: FC = () => {
             {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
           </Box>
           {showDetails && <StyledPre>{details}</StyledPre>}
-          <Box padding={'0 0.5rem'}>
+          <Box padding={'0.5rem 0.5rem 0 0.5rem'}>
             <FormControlLabel
               onChange={handleChangeRememberDecision}
               checked={remember}
