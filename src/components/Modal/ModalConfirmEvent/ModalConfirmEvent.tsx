@@ -7,7 +7,14 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { FC, useEffect, useState } from 'react'
-import { Container, StyledActionName, StyledAvatar, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
+import {
+  Container,
+  StyledActionName,
+  StyledAvatar,
+  StyledButton,
+  StyledHeadingContainer,
+  StyledPre,
+} from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { AppLink } from '@/shared/AppLink/AppLink'

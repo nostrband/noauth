@@ -14,6 +14,7 @@ import { DbApp } from '@/modules/db'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { swicCall } from '@/modules/swic'
+import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 
 export const ModalAppDetails = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -116,15 +117,30 @@ export const ModalAppDetails = () => {
 
   const isFormValid = !isEmptyString(name)
 
+  const { userAgent } = currentApp || {}
+
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
-      <Stack gap={'1rem'} component={'form'} onSubmit={submitHandler}>
-        <Stack alignItems={'center'}>
-          <Typography fontWeight={600} variant="h5">
-            App details
-          </Typography>
-        </Stack>
-
+      <Stack alignItems={'center'}>
+        <Typography fontWeight={600} variant="h5">
+          App details
+        </Typography>
+      </Stack>
+      <Stack gap={'0.75rem'} component={'form'} onSubmit={submitHandler} overflow={'auto'}>
+        <Input
+          label="NPUB"
+          fullWidth
+          defaultValue={appNpub}
+          readOnly
+          endAdornment={<InputCopyButton value={appNpub} />}
+        />
+        <Input
+          label="User-agent"
+          fullWidth
+          defaultValue={userAgent}
+          readOnly
+          endAdornment={<InputCopyButton value={userAgent || ''} />}
+        />
         <Input
           label="Name"
           fullWidth

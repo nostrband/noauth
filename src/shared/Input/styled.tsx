@@ -14,6 +14,7 @@ export const StyledInputContainer = styled((props: BoxProps) => <Box {...props} 
       '&.error': {
         border: '1px solid ' + theme.palette.error.main,
       },
+      gap: '0.5rem',
     },
     '& .input:is(.disabled, &)': {
       WebkitTextFillColor: '#ffffff80',
