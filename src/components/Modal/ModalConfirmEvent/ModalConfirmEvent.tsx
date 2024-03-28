@@ -2,36 +2,27 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, FormControlLabel, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
-import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { FC, useEffect, useMemo, useState } from 'react'
-import {
-  Container,
-  StyledActionName,
-  StyledAvatar,
-  StyledButton,
-  StyledHeadingContainer,
-  StyledPre,
-  StyledToggleButtonsGroup,
-} from './styled'
+import { Container, StyledActionName, StyledAvatar, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { getReqDetails } from '@/utils/helpers/helpers-frontend'
+import { Checkbox } from '@/shared/Checkbox/Checkbox'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
   ONCE = 'ONCE',
-  ALLOW_ALL = 'ALLOW_ALL',
 }
 
 const ACTION_LABELS = {
   [ACTION_TYPE.ALWAYS]: 'Always',
   [ACTION_TYPE.ONCE]: 'Just Once',
-  [ACTION_TYPE.ALLOW_ALL]: 'All Advanced Actions',
 }
 
 export const ModalConfirmEvent: FC = () => {
@@ -48,10 +39,13 @@ export const ModalConfirmEvent: FC = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const pendings = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
-  const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.ALWAYS)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [showJsonParams, setShowJsonParams] = useState(false)
+  const [remember, setRemember] = useState(true)
+
+  const [showDetails, setShowDetails] = useState(false)
   const [details, setDetails] = useState('')
+
+  const [isPending, setIsPending] = useState(false)
 
   const currentAppPendingReqs = useMemo(
     () => pendings.filter((pr) => pr.appNpub === appNpub) || [],
@@ -64,6 +58,8 @@ export const ModalConfirmEvent: FC = () => {
       sp.delete('reqId')
       sp.delete('redirect_uri')
       sp.delete('popup')
+      setRemember(true)
+      setShowDetails(false)
     },
   })
 
@@ -80,7 +76,10 @@ export const ModalConfirmEvent: FC = () => {
 
   useEffect(() => {
     // reset
-    setShowJsonParams(false)
+    setShowDetails(false)
+    setRemember(true)
+    setIsPending(false)
+
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
       // wait for SW to start
@@ -97,10 +96,8 @@ export const ModalConfirmEvent: FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (currentPendingRequest)
-        setDetails(await getReqDetails(currentPendingRequest))
-      else
-        setDetails('')
+      if (currentPendingRequest) setDetails(await getReqDetails(currentPendingRequest))
+      else setDetails('')
     }
     load()
   }, [currentPendingRequest])
@@ -108,26 +105,6 @@ export const ModalConfirmEvent: FC = () => {
   if (isLoaded && isModalOpened && !currentPendingRequest) {
     if (!isPopup) closeModalAfterRequest()
     return null
-  }
-
-  const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
-    if (!value) return undefined
-    return setSelectedActionType(value)
-  }
-
-  async function confirmPending(allow: boolean) {
-    if (!currentPendingRequest) return
-    try {
-      const remember = selectedActionType !== ACTION_TYPE.ONCE
-      const result = await swicCall('confirm', currentPendingRequest.id, allow, remember)
-      console.log('confirmed', { id: currentPendingRequest.id, selectedActionType, allow, result })
-    } catch (e) {
-      console.log(`Error: ${e}`)
-      notify('Error: ' + e, 'error')
-      return
-    }
-    if (!isPopup) closeModalAfterRequest()
-    closePopup()
   }
 
   const closePopup = () => {
@@ -143,6 +120,23 @@ export const ModalConfirmEvent: FC = () => {
     window.location.href = redirectUri
   }
 
+  async function confirmPending(allow: boolean) {
+    if (!currentPendingRequest) return
+    setIsPending(true)
+    try {
+      const result = await swicCall('confirm', currentPendingRequest.id, allow, remember)
+      console.log('confirmed', { id: currentPendingRequest.id, remember, allow, result })
+      setIsPending(false)
+    } catch (e) {
+      console.log(`Error: ${e}`)
+      notify('Error: ' + e, 'error')
+      setIsPending(false)
+      return
+    }
+    if (!isPopup) closeModalAfterRequest()
+    closePopup()
+  }
+
   if (isPopup) {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
@@ -154,7 +148,11 @@ export const ModalConfirmEvent: FC = () => {
 
   const actionName = currentPendingRequest ? getReqActionName(currentPendingRequest) : ''
 
-  const handleToggleShowJsonParams = () => setShowJsonParams((prevState) => !prevState)
+  const handleToggleShowJsonParams = () => setShowDetails((prevState) => !prevState)
+
+  const handleChangeRememberDecision = (e: any, checked: boolean) => setRemember(checked)
+
+  const actionLabel = remember ? ACTION_LABELS.ALWAYS : ACTION_LABELS.ONCE
 
   return (
     <Modal title="Permission request" open={isModalOpened} withCloseButton={false}>
@@ -187,19 +185,25 @@ export const ModalConfirmEvent: FC = () => {
             <StyledActionName>{actionName}</StyledActionName>
             {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
           </Box>
-          {showJsonParams && <StyledPre>{details}</StyledPre>}
+          {showDetails && <StyledPre>{details}</StyledPre>}
+          <Box padding={'0 0.5rem'}>
+            <FormControlLabel
+              onChange={handleChangeRememberDecision}
+              checked={remember}
+              control={<Checkbox />}
+              label="Remember my decision"
+              sx={{ marginLeft: 0 }}
+            />
+          </Box>
         </Stack>
 
-        <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
-          <ActionToggleButton value={ACTION_TYPE.ALWAYS} title="Always" />
-          <ActionToggleButton value={ACTION_TYPE.ONCE} title="Just once" />
-        </StyledToggleButtonsGroup>
-
-        <Stack direction={'row'} gap={'1rem'}>
-          <StyledButton onClick={() => confirmPending(false)} varianttype="secondary">
-            Disallow {ACTION_LABELS[selectedActionType]}
+        <Stack direction={'row'} gap={'1rem'} justifyContent={'flex-end'}>
+          <StyledButton onClick={() => confirmPending(false)} varianttype="secondary" disabled={isPending}>
+            Disallow {actionLabel} {isPending && <LoadingSpinner mode="secondary" />}
           </StyledButton>
-          <StyledButton onClick={() => confirmPending(true)}>Allow {ACTION_LABELS[selectedActionType]}</StyledButton>
+          <StyledButton onClick={() => confirmPending(true)} disabled={isPending}>
+            Allow {actionLabel} {isPending && <LoadingSpinner />}
+          </StyledButton>
         </Stack>
       </Container>
     </Modal>
