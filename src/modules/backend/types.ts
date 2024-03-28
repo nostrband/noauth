@@ -28,3 +28,11 @@ export interface Key {
   watcher: Watcher
 }
 
+export interface CreateConnectParams {
+  name: string
+  password: string
+  appNpub: string
+  perms: string
+  appUrl: string
+}
+

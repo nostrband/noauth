@@ -42,30 +42,21 @@ export const ModalConfirmEvent: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const pendingReqId = searchParams.get('reqId') || ''
-  const appNpub = searchParams.get('appNpub') || ''
   const isPopup = searchParams.get('popup') === 'true'
+  const redirectUri = searchParams.get('redirect_uri') || ''
+  const done = searchParams.get('done') === 'true'
+
   const { npub = '' } = useParams<{ npub: string }>()
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const pendings = useAppSelector((state) => selectPendingsByNpub(state, npub))
+
+  const currentPendingRequest = pendings.find((pr) => pr.id === pendingReqId)
+  const appNpub = currentPendingRequest?.appNpub || ''
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(ACTION_TYPE.ALWAYS)
   const [isLoaded, setIsLoaded] = useState(false)
   const [showJsonParams, setShowJsonParams] = useState(false)
   const [details, setDetails] = useState('')
-
-  const currentAppPendingReqs = useMemo(
-    () => pendings.filter((pr) => pr.appNpub === appNpub) || [],
-    [pendings, appNpub]
-  )
-
-  const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
-    onClose: (sp) => {
-      sp.delete('appNpub')
-      sp.delete('reqId')
-      sp.delete('redirect_uri')
-      sp.delete('popup')
-    },
-  })
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
   const { name, url = '', icon = '' } = triggerApp || {}
@@ -75,8 +66,15 @@ export const ModalConfirmEvent: FC = () => {
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
-  const redirectUri = searchParams.get('redirect_uri') || ''
-  const done = searchParams.get('done') === 'true'
+
+  const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EVENT, {
+    onClose: (sp) => {
+      sp.delete('reqId')
+      sp.delete('redirect_uri')
+      sp.delete('popup')
+      sp.delete('done')
+    },
+  })
 
   useEffect(() => {
     // reset
@@ -85,15 +83,13 @@ export const ModalConfirmEvent: FC = () => {
     if (isPopup && pendingReqId) {
       // wait for SW to start
       swicWaitStarted().then(async () => {
-        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
+        await swicCall('checkPendingRequest', npub, pendingReqId)
         setIsLoaded(true)
       })
     } else {
       setIsLoaded(true)
     }
   }, [isModalOpened, isPopup, pendingReqId, appNpub, npub])
-
-  const currentPendingRequest = currentAppPendingReqs.find((pr) => pr.id === pendingReqId)
 
   useEffect(() => {
     const load = async () => {

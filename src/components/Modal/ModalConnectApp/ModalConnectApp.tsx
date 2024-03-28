@@ -37,11 +37,12 @@ export const ModalConnectApp = () => {
   useEffect(() => {
     const load = async () => {
       if (isModalOpened && isNpubExists && (!token || token.expiry < Date.now())) {
-        const t = await swicCall('getConnectToken', npub) as DbConnectToken
+        const t = (await swicCall('getConnectToken', npub)) as DbConnectToken
         setToken(t)
       }
     }
-    load()
+    if (isModalOpened) load()
+    else setToken(undefined)
   }, [npub, token, isModalOpened, isNpubExists])
 
   if (isModalOpened && !isNpubExists) {
@@ -77,7 +78,9 @@ export const ModalConnectApp = () => {
     <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
       <Stack gap={'1rem'} alignItems={'center'}>
         <Typography variant="body2">Please, copy this string and paste it into the app to log in.</Typography>
-        <Typography variant="body2" color={'red'}>Do not share it publicly!</Typography>
+        <Typography variant="body2" color={'red'}>
+          Do not share it publicly!
+        </Typography>
         <Input
           sx={{
             gap: '0.5rem',
