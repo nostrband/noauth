@@ -94,9 +94,9 @@ export const ModalLogin = () => {
   useEffect(() => {
     if (isModalOpened) {
       const npub = searchParams.get('npub') || ''
-      const appNpub = searchParams.get('appNpub') || ''
       if (isPopup && isModalOpened) {
-        swicCall('fetchPendingRequests', npub, appNpub)
+        // ask backend to pre-fetch pending reqs
+        swicCall('fetchPendingRequests', npub)
 
         fetchNpubNames(npub).then((names) => {
           if (names.length) {

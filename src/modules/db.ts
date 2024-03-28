@@ -41,6 +41,7 @@ export interface DbPending {
   timestamp: number
   method: string
   params: string
+  appUrl?: string
 }
 
 export interface DbHistory {
