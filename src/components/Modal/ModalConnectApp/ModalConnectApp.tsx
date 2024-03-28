@@ -77,7 +77,7 @@ export const ModalConnectApp = () => {
   return (
     <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
       <Stack gap={'1rem'} alignItems={'center'}>
-        <Typography variant="body2">Please, copy this string and paste it into the app to log in.</Typography>
+        <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography>
         <Typography variant="body2" color={'red'}>
           Do not share it publicly!
         </Typography>
