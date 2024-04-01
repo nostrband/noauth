@@ -6,10 +6,10 @@ import { AppInputProps } from './types'
 const renderItem = <T,>(item: T, value: ReactNode) => (item ? value : null)
 
 export const Input = forwardRef<HTMLInputElement, AppInputProps>(
-  ({ helperText, containerProps, helperTextProps, helperTextColor, label, error, ...props }, ref) => {
+  ({ helperText, containerProps, helperTextProps, helperTextColor, label, error, mode = 'default', ...props }, ref) => {
     const theme = useTheme()
     return (
-      <StyledInputContainer {...containerProps}>
+      <StyledInputContainer {...containerProps} mode={mode}>
         {renderItem(
           label,
           <FormLabel className="label" htmlFor={props.id}>

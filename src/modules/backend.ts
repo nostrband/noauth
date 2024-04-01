@@ -30,7 +30,7 @@ import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip4
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
 import { Watcher } from './backend/watcher'
-import { DECISION, IAllowCallbackParams, Key } from './backend/types'
+import { CreateConnectParams, DECISION, IAllowCallbackParams, Key } from './backend/types'
 import { Nip46Backend } from './backend/nip46'
 import { sha256 } from './backend/utils'
 import { Api, KeyStore } from './backend/api'
@@ -633,9 +633,9 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       const params = getReqParams(req)
       if (params && params.length >= 2 && params[1]) {
         const secret = params[1]
-        const token = this.connectTokens.find(t => t.token === secret)
+        const token = this.connectTokens.find((t) => t.token === secret)
         if (!token || token.expiry < Date.now() || token.npub !== req.npub) {
-          console.log("unknown token", secret)
+          console.log('unknown token', secret)
           return DECISION.IGNORE
         }
       }
@@ -815,15 +815,34 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         // confirm
         console.log(Date.now(), decision, npub, method, options, params)
 
+        // consume the token
+        if (method === 'connect') {
+          const token = params && params.length >= 2 ? params[1] : ''
+
+          // consume the token even if app not allowed, reload
+          console.log('consume connect token', token)
+          if (token) {
+            await dbi.removeConnectToken(token)
+            self.connectTokens = await dbi.listConnectTokens()
+          }
+        }
+
+        // decision enum handling for TS checks,
+        // only ALLOW/DISALLOW fall through
         switch (decision) {
           case DECISION.ASK:
             throw new Error('Make a decision!')
           case DECISION.IGNORE:
+            // don't store this any longer!
+            if (manual) await dbi.removePending(id)
             return // noop
           case DECISION.ALLOW:
           case DECISION.DISALLOW:
           // fall through
         }
+
+        // runtime check that stuff
+        if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
 
         const allow = decision === DECISION.ALLOW
 
@@ -832,11 +851,10 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
           // add app on 'allow connect'
           if (method === 'connect' && allow) {
-
             // save connect token that was used
-            const params = getReqParams(req)
             const token = params && params.length >= 2 ? params[1] : ''
 
+            // add app if it's allowed
             await dbi.addApp({
               appNpub: req.appNpub,
               npub: req.npub,
@@ -847,17 +865,11 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
-              token: token || ''
+              token: token || '',
             })
 
             // reload
             self.apps = await dbi.listApps()
-
-            // consume the token, reload
-            if (token) {
-              await dbi.removeConnectToken(token)
-              self.connectTokens = await dbi.listConnectTokens()
-            }
           }
         } else {
           // just send to db w/o waiting for it
@@ -889,13 +901,17 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               timestamp: Date.now(),
             })
           }
-          await this.updateAppPermTimestamp(req.appNpub, req.npub)
 
           // reload
           this.perms = await dbi.listPerms()
 
-          // if remembering - publish
-          this.publishAppPerms({ npub: req.npub, appNpub: req.appNpub })
+          // publish updated apps if app is added
+          if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
+            await this.updateAppPermTimestamp(req.appNpub, req.npub)
+
+            // if remembering - publish
+            this.publishAppPerms({ npub: req.npub, appNpub: req.appNpub })
+          }
         }
 
         // release this promise to send reply
@@ -954,9 +970,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
         // OAuth flow
         const isConnect = method === 'connect'
-        const perms = isConnect && params.length >= 3 ? `&perms=${params[2]}` : ''
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&appNpub=${appNpub}&reqId=${id}&popup=true${perms}`
+        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
@@ -1060,15 +1075,14 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.emit(`start-key-${npub}`)
   }
 
-  private async fetchPendingRequests(npub: string, appNpub: string) {
+  private async fetchPendingRequests(npub: string) {
     const { data: pubkey } = nip19.decode(npub)
-    const { data: appPubkey } = nip19.decode(appNpub)
 
     const events = await this.ndk.fetchEvents(
       {
         kinds: [KIND_RPC],
         '#p': [pubkey as string],
-        authors: [appPubkey as string],
+        since: Math.floor(Date.now() / 1000 - 10),
       },
       undefined,
       NDKRelaySet.fromRelayUrls(NIP46_RELAYS, this.ndk)
@@ -1087,8 +1101,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     })
   }
 
-  private async checkPendingRequest(npub: string, appNpub: string, reqId: string) {
-    console.log('checkPendingRequest', { npub, appNpub, reqId, buffer: this.confirmBuffer })
+  private async checkPendingRequest(npub: string, reqId: string) {
+    console.log('checkPendingRequest', { npub, reqId, buffer: this.confirmBuffer })
     // already there - return immediately
     const req = this.confirmBuffer.find((r) => r.req.id === reqId)
     if (req) return true
@@ -1117,17 +1131,16 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       }
 
       // check relay
-      await this.fetchPendingRequests(npub, appNpub)
+      await this.fetchPendingRequests(npub)
       const reqs = this.pendingNpubEvents.get(npub)
-      console.log('checkPendingRequest', { npub, appNpub, reqId, reqs })
+      console.log('checkPendingRequest', { npub, reqId, reqs })
       if (!reqs || !reqs.length) return notFound()
       this.pendingNpubEvents.delete(npub)
 
       // parse reqs and find by id
-      const { data: appPubkey } = nip19.decode(appNpub)
-      const appUser = new NDKUser({ pubkey: appPubkey as string })
       for (const r of reqs) {
         try {
+          const appUser = new NDKUser({ pubkey: r.pubkey })
           const payload = await key.signer.decrypt(appUser, r.content)
           const data = JSON.parse(payload)
 
@@ -1161,6 +1174,24 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const k = await this.addKey({ name, passphrase })
     this.updateUI()
     return k
+  }
+
+  private async generateKeyConnect(params: CreateConnectParams) {
+    const k = await this.addKey({ name: params.name, passphrase: params.password })
+
+    const { data: pubkey } = nip19.decode(k.npub)
+    const req: DbPending = {
+      id: Math.random().toString(),
+      npub: k.npub,
+      appNpub: params.appNpub,
+      method: 'connect',
+      params: JSON.stringify([pubkey, '', params.perms]),
+      timestamp: Date.now(),
+      appUrl: params.appUrl,
+    }
+    await dbi.addPending(req)
+    this.updateUI()
+    return req
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1321,7 +1352,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   }
 
   private async addPerm(appNpub: string, npub: string, perm: string) {
-
     const p: DbPerm = {
       id: Math.random().toString(36).substring(7),
       npub: npub,
@@ -1419,7 +1449,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       subNpub,
       timestamp: Date.now(),
       expiry: Date.now() + TOKEN_TTL,
-      token: bytesToHex(randomBytes(TOKEN_SIZE))
+      token: bytesToHex(randomBytes(TOKEN_SIZE)),
     }
     await dbi.addConnectToken(t)
     // update
@@ -1435,6 +1465,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       let result = undefined
       if (method === 'generateKey') {
         result = await this.generateKey(args[0], args[1])
+      } else if (method === 'generateKeyConnect') {
+        result = await this.generateKeyConnect(args[0])
       } else if (method === 'redeemToken') {
         result = await this.redeemToken(args[0], args[1])
       } else if (method === 'importKey') {
@@ -1462,9 +1494,9 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       } else if (method === 'enablePush') {
         result = await this.enablePush()
       } else if (method === 'checkPendingRequest') {
-        result = await this.checkPendingRequest(args[0], args[1], args[2])
+        result = await this.checkPendingRequest(args[0], args[1])
       } else if (method === 'fetchPendingRequests') {
-        result = await this.fetchPendingRequests(args[0], args[1])
+        result = await this.fetchPendingRequests(args[0])
       } else if (method === 'exportKey') {
         result = await this.exportKey(args[0])
       } else if (method === 'nip04Decrypt') {

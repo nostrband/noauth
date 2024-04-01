@@ -14,4 +14,9 @@ export const StyledCopyButton = styled((props) => (
 ))(() => ({
   width: 40,
   height: 40,
+  '@media screen and (max-width: 485px)': {
+    width: 24,
+    height: 24,
+    padding: '0.25rem',
+  },
 }))

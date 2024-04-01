@@ -1,19 +1,27 @@
 import { Box, BoxProps, styled } from '@mui/material'
 
-export const StyledInputContainer = styled((props: BoxProps) => <Box {...props} />)(({ theme }) => {
+export const StyledInputContainer = styled((props: BoxProps & { mode: 'default' | 'light' }) => <Box {...props} />)(({
+  theme,
+  mode = 'default',
+}) => {
   const isDark = theme.palette.mode === 'dark'
+  const background = mode === 'light' ? theme.palette.secondary.main : isDark ? '#000000A8' : '#000'
+
   return {
     width: '100%',
     '& > .input_root': {
-      background: isDark ? '#000000A8' : '#000',
-      color: theme.palette.common.white,
+      background: background,
+      color: mode === 'light' ? theme.palette.primary.main : theme.palette.common.white,
       padding: '0.75rem 1rem',
       borderRadius: '1rem',
-      border: '0.3px solid #FFFFFF54',
+      borderWidth: '0.3px',
+      borderStyle: 'solid',
+      borderColor: mode === 'light' ? 'transparent' : '#FFFFFF54',
       fontSize: '0.875rem',
       '&.error': {
         border: '1px solid ' + theme.palette.error.main,
       },
+      gap: '0.5rem',
     },
     '& .input:is(.disabled, &)': {
       WebkitTextFillColor: '#ffffff80',

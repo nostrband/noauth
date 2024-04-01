@@ -366,3 +366,69 @@ export const isValidUserName = (username: string) => {
   } catch {}
   return true
 }
+
+export const generateNip05 = async () => {
+  const nouns = [
+    'lion',
+    'tiger',
+    'bull',
+    'bear',
+    'wolf',
+    'fish',
+    'whale',
+    'cat',
+    'panther',
+    'elephant',
+    'leopard',
+    'jaguar',
+    'deer',
+    'gorilla',
+    'panda',
+    'squirrel',
+    'wombat',
+    'rabbit',
+    'ostrich',
+    'possum',
+    'koala',
+    'crocodile',
+    'badger',
+    'iguana',
+    'falcon',
+    'owl',
+    'puma',
+    'goose',
+    'peacock'
+  ]
+  const adjs = [
+    'strong',
+    'cool',
+    'brave',
+    'smart',
+    'honest',
+    'optimistic',
+    'adventurous',
+    'calm',
+    'charming',
+    'cheerful',
+    'confident',
+    'patient',
+    'reliable',
+    'bright',
+    'creative',
+    'fast',
+    'special',
+    'lovely'
+  ]
+  const MAX_NUMBER = 100
+  const noun = nouns[Math.floor(Math.random() * nouns.length)]
+  const adj = adjs[Math.floor(Math.random() * adjs.length)]
+  for (let i = 0; i < 3; i++) {
+    const id = 1 + Math.floor(Math.random() * MAX_NUMBER - 1)
+    const name = `${adj}-${noun}-${id}`
+    const nip05 = await fetchNip05(`${name}@${DOMAIN}`)
+    if (!nip05) return name
+  }
+
+  const id = Math.floor(Math.random() * 100000)
+  return `${adj}-${noun}-${id}`
+}

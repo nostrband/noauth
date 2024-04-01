@@ -7,6 +7,7 @@ import {
   getAppIconTitle,
   getDomainPort,
   getReferrerAppUrl,
+  getReqParams,
   getShortenNpub,
   packageToPerms,
   permListToPerms,
@@ -14,7 +15,7 @@ import {
 import { Box, Stack, Typography } from '@mui/material'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
-import { selectAppsByNpub, selectKeys, selectPendingsByNpub } from '@/store'
+import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { StyledActionsListContainer, StyledButton, StyledSelectButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useEffect, useState } from 'react'
@@ -27,76 +28,89 @@ import { nip19 } from 'nostr-tools'
 // import { AppLink } from '@/shared/AppLink/AppLink'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 type Perm = DbPerm & { checked: boolean }
 
 export const ModalConfirmConnect = () => {
-  const keys = useAppSelector(selectKeys)
-
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
-  const [searchParams, setSearchParams] = useSearchParams()
-  const paramNpub = searchParams.get('npub') || ''
-  const { npub = paramNpub } = useParams<{ npub: string }>()
-  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
-  const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
-
   const [isLoaded, setIsLoaded] = useState(false)
   const [perms, setPerms] = useState<Perm[]>([])
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  // npub might be passed by the /create page
+  const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
 
-  const appNpub = searchParams.get('appNpub') || ''
+  // pending reqs for this npub
+  const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
+
+  // we need valid reqId
   const pendingReqId = searchParams.get('reqId') || ''
-  const isPopup = searchParams.get('popup') === 'true'
-  const token = searchParams.get('token') || ''
-  const redirectUri = searchParams.get('redirect_uri') || ''
-  const done = searchParams.get('done') === 'true'
-  const permsParam = searchParams.get('perms') || ''
-  const hasReqPerms = !!permsParam
+  const req = pending.find((p) => p.id === pendingReqId)
+  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
+  const triggerApp = apps.find((app) => app.appNpub === req?.appNpub)
 
+  // provided by apps
+  const redirectUri = searchParams.get('redirect_uri') || ''
+
+  // to show 'redirecting back to your app'
+  const done = searchParams.get('done') === 'true'
+
+  // popup mode for auth_url
+  const isPopup = searchParams.get('popup') === 'true'
+
+  // server token for create_account callback
+  const token = searchParams.get('token') || ''
+
+  // perms requested by 'connect'/'create_account'
+  const params = req ? getReqParams(req) : []
+  const permsParam = params?.[2] || ''
+  const hasReqPerms = !!permsParam
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
     hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
   )
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
-  const triggerApp = apps.find((app) => app.appNpub === appNpub)
+  const [isPending, setIsPending] = useState(false)
+
+  const { appNpub = '' } = req || {}
   const { name, url = '', icon = '' } = triggerApp || {}
 
-  const appUrl = url || searchParams.get('appUrl') || getReferrerAppUrl()
+  const appUrl = url || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
 
   useEffect(() => {
-    const list = selectedActionType === ACTION_TYPE.REQUESTED ? permListToPerms(permsParam) : packageToPerms(selectedActionType)
-    const perms = list ? list.map(
-      (p) =>
-        ({
-          id: p,
-          appNpub,
-          npub,
-          checked: true,
-          perm: p,
-          timestamp: Date.now(),
-          value: '1',
-        }) as Perm
-    ) : []
+    const list =
+      selectedActionType === ACTION_TYPE.REQUESTED ? permListToPerms(permsParam) : packageToPerms(selectedActionType)
+    const perms = list
+      ? list.map(
+          (p) =>
+            ({
+              id: p,
+              appNpub,
+              npub,
+              checked: true,
+              perm: p,
+              timestamp: Date.now(),
+              value: '1',
+            }) as Perm
+        )
+      : []
     setPerms(perms)
-  }, [selectedActionType, pendingReqId, permsParam, appNpub, npub])
+  }, [selectedActionType, pendingReqId, permsParam, req, npub, appNpub])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
-      sp.delete('appNpub')
       sp.delete('reqId')
       sp.delete('popup')
-      sp.delete('npub')
-      sp.delete('appUrl')
       sp.delete('token')
       sp.delete('redirect_uri')
-      sp.delete('perms')
       setShowAdvancedOptions(false)
     },
   })
@@ -108,7 +122,7 @@ export const ModalConfirmConnect = () => {
       // wait for SW to start
       swicWaitStarted().then(async () => {
         // block until req is loaded or we're sure it doesn't exist
-        await swicCall('checkPendingRequest', npub, appNpub, pendingReqId)
+        await swicCall('checkPendingRequest', npub, pendingReqId)
         setIsLoaded(true)
       })
     } else {
@@ -121,16 +135,13 @@ export const ModalConfirmConnect = () => {
       if (isModalOpened) {
         // modal closed
         setShowAdvancedOptions(false)
+        setIsPending(false)
       }
     }
   }, [isModalOpened])
+
   if (isLoaded) {
-    const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
-    // NOTE: app doesn't exist yet!
-    // const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
-    const isPendingReqIdExists = pendingReqId.trim().length && pending.some((p) => p.id === pendingReqId)
-    // console.log("pending", {isModalOpened, isPendingReqIdExists, isNpubExists, /*isAppNpubExists,*/ pendingReqId, pending});
-    if (isModalOpened && (!isNpubExists /*|| !isAppNpubExists*/ || (pendingReqId && !isPendingReqIdExists))) {
+    if (isModalOpened && !req) {
       // we are looking at a stale event!
       if (!isPopup) closeModalAfterRequest()
       return null
@@ -154,6 +165,7 @@ export const ModalConfirmConnect = () => {
     if (!isPopup) return
     if (!redirectUri) return window.close()
 
+    setIsPending(false)
     // add done marker first
     searchParams.append('done', 'true')
     setSearchParams(searchParams)
@@ -181,8 +193,10 @@ export const ModalConfirmConnect = () => {
 
     if (pendingReqId) {
       const options = { perms: allowedPerms, appUrl }
-      await confirmPending(pendingReqId, true, true, options)
+      setIsPending(true)
+      await confirmPending(pendingReqId, true, true, options).finally(() => setIsPending(false))
     } else {
+      setIsPending(true)
       try {
         await askNotificationPermission()
         const result = await swicCall('enablePush')
@@ -199,6 +213,7 @@ export const ModalConfirmConnect = () => {
         console.log('connectApp done', npub, appNpub, appUrl, allowedPerms)
       } catch (e: any) {
         notify(e.toString(), 'error')
+        setIsPending(false)
         return
       }
 
@@ -210,6 +225,7 @@ export const ModalConfirmConnect = () => {
           console.log('error', e)
           notify('App did not reply. Please try to log in now.', 'error')
           navigate(`/key/${npub}`, { replace: true })
+          setIsPending(false)
           return
         }
       }
@@ -223,8 +239,12 @@ export const ModalConfirmConnect = () => {
   }
 
   const disallow = () => {
-    if (pendingReqId) confirmPending(pendingReqId, false, true)
-    else closeModalAfterRequest()
+    if (pendingReqId) {
+      setIsPending(true)
+      confirmPending(pendingReqId, false, true).finally(() => setIsPending(false))
+    } else {
+      closeModalAfterRequest()
+    }
   }
 
   if (isPopup) {
@@ -247,7 +267,7 @@ export const ModalConfirmConnect = () => {
 
   const permsTitle = hasReqPerms ? `Requested ${perms.length} permissions` : 'Basic permissions'
   const permsDescription = hasReqPerms
-    ? formatPermSummary(perms.map(p => p.perm))
+    ? formatPermSummary(perms.map((p) => p.perm))
     : 'The default set of permissions for social media apps'
 
   return (
@@ -302,10 +322,10 @@ export const ModalConfirmConnect = () => {
 
         <Stack direction={'row'} gap={'1rem'}>
           <StyledButton onClick={disallow} varianttype="secondary">
-            Ignore
+            Ignore {isPending && <LoadingSpinner mode="secondary" />}
           </StyledButton>
           <StyledButton fullWidth onClick={allow}>
-            Connect
+            Connect {isPending && <LoadingSpinner />}
           </StyledButton>
         </Stack>
       </Stack>
