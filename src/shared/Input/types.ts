@@ -7,4 +7,5 @@ export type AppInputProps = InputBaseProps & {
   containerProps?: BoxProps
   label?: string
   helperTextColor?: string
+  mode?: 'default' | 'light'
 }

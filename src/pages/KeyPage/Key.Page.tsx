@@ -26,7 +26,7 @@ import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPa
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
-  const { keys, apps, pending, perms } = useAppSelector((state) => state.content)
+  const { keys, pending, perms } = useAppSelector((state) => state.content)
   const [searchParams] = useSearchParams()
 
   const [isCheckingSync, setIsChecking] = useState(true)
@@ -47,7 +47,6 @@ const KeyPage = () => {
   }, [key])
   const username = getUsername()
 
-  const filteredApps = apps.filter((a) => a.npub === npub)
   useTriggerConfirmModal(npub, pending, perms)
 
   const isKeyExists = npub.trim().length && key
@@ -108,7 +107,7 @@ const KeyPage = () => {
           </StyledIconButton>
         </Stack>
 
-        <Apps apps={filteredApps} npub={npub} />
+        <Apps />
       </Stack>
 
       <ModalConnectApp />

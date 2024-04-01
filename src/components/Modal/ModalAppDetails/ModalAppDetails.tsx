@@ -3,9 +3,9 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Autocomplete, Stack, Typography } from '@mui/material'
+import { Autocomplete, Stack, Typography, useTheme } from '@mui/material'
 import { StyledInput } from './styled'
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { isEmptyString } from '@/utils/helpers/helpers'
 import { useParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -15,25 +15,54 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { swicCall } from '@/modules/swic'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
+import { useDebounce } from 'use-debounce'
+import { nip19 } from 'nostr-tools'
 
 export const ModalAppDetails = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.APP_DETAILS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.APP_DETAILS)
+  const notify = useEnqueueSnackbar()
+  const theme = useTheme()
 
   const { npub = '', appNpub = '' } = useParams()
   const apps = useAppSelector(selectApps)
+  const currentApp = apps.find((app) => app.appNpub === appNpub && app.npub === npub)
 
-  const notify = useEnqueueSnackbar()
-
+  const [isLoading, setIsLoading] = useState(false)
   const [details, setDetails] = useState({
     url: '',
     name: '',
     icon: '',
+    subNpub: '',
   })
-  const [isLoading, setIsLoading] = useState(false)
+  const [isValidNpub, setIsValidNpub] = useState(false)
 
-  const currentApp = apps.find((app) => app.appNpub === appNpub && app.npub === npub)
+  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+  const { userAgent } = currentApp || {}
+
+  const { icon, name, url, subNpub } = details
+  const subNpubEntered = subNpub.trim().length > 0
+//  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
+  const isFormValid = subNpubEntered ? isValidNpub : true
+
+  const [debouncedSubNpub] = useDebounce(subNpub, 100)
+
+  const validateSubNpub = useCallback(async () => {
+    if (!debouncedSubNpub.trim().length) return
+    try {
+      const { type } = nip19.decode(debouncedSubNpub)
+      if (type === 'npub') setIsValidNpub(true)
+      else setIsValidNpub(false)
+    } catch (error) {
+      setIsValidNpub(false)
+    }
+  }, [debouncedSubNpub])
+
+  useEffect(() => {
+    validateSubNpub()
+  }, [validateSubNpub])
+
   useEffect(() => {
     if (!currentApp) return
 
@@ -41,6 +70,7 @@ export const ModalAppDetails = () => {
       icon: currentApp.icon || '',
       name: currentApp.name || '',
       url: currentApp.url || '',
+      subNpub: currentApp.subNpub || '',
     })
 
     // eslint-disable-next-line
@@ -51,18 +81,15 @@ export const ModalAppDetails = () => {
       if (isModalOpened) {
         // modal closed
         setIsLoading(false)
+        setIsValidNpub(false)
       }
     }
   }, [isModalOpened])
-
-  const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
 
   if (isModalOpened && !isAppNpubExists) {
     handleCloseModal()
     return null
   }
-
-  const { icon, name, url } = details
 
   const handleInputBlur = () => {
     if (isEmptyString(url)) return
@@ -103,6 +130,7 @@ export const ModalAppDetails = () => {
         url,
         name,
         icon,
+        subNpub,
         updateTimestamp: Date.now(),
       }
       await swicCall('updateApp', updatedApp)
@@ -114,10 +142,6 @@ export const ModalAppDetails = () => {
       notify(error?.message || 'Something went wrong!', 'error')
     }
   }
-
-  const isFormValid = !isEmptyString(name)
-
-  const { userAgent } = currentApp || {}
 
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
@@ -141,6 +165,16 @@ export const ModalAppDetails = () => {
           readOnly
           endAdornment={<InputCopyButton value={userAgent || ''} />}
         />
+        <Input
+          label="Shared access with"
+          fullWidth
+          placeholder="npub1..."
+          value={subNpub}
+          onChange={handleInputChange('subNpub')}
+          helperText={!isValidNpub && subNpubEntered && 'Invalid NPUB'}
+          helperTextColor={theme.palette.error.main}
+        />
+
         <Input
           label="Name"
           fullWidth

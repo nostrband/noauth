@@ -23,6 +23,7 @@ export interface DbApp {
   permUpdateTimestamp: number
   userAgent?: string
   token?: string
+  subNpub?: string
 }
 
 export interface DbPerm {
@@ -86,7 +87,7 @@ db.version(12).stores({
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
   requestHistory: 'id',
   syncHistory: 'npub',
-  connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]'
+  connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]',
 })
 
 export const dbi = {
@@ -153,6 +154,7 @@ export const dbi = {
         icon: app.icon,
         url: app.url,
         updateTimestamp: app.updateTimestamp,
+        subNpub: app.subNpub,
       })
     } catch (error) {
       console.log(`db updateApp error: ${error}`)
@@ -189,10 +191,7 @@ export const dbi = {
   },
   getAppLastActiveRecord: async (app: DbApp) => {
     try {
-      const records = await db.history
-        .where({ npub: app.npub, appNpub: app.appNpub })
-        .reverse()
-        .sortBy('timestamp')
+      const records = await db.history.where({ npub: app.npub, appNpub: app.appNpub }).reverse().sortBy('timestamp')
       const lastActive = records.shift()
       return lastActive?.timestamp || 0
     } catch (error) {
@@ -301,7 +300,7 @@ export const dbi = {
   },
   getConnectToken: async (npub: string, subNpub?: string) => {
     try {
-      let req: { npub: string, subNpub?: string } = { npub }
+      let req: { npub: string; subNpub?: string } = { npub }
       if (subNpub) req = { ...req, subNpub }
       const token = await db.connectTokens.get(req)
       if (token && token.expiry > Date.now()) return token

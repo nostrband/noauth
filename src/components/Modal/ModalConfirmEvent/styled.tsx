@@ -16,12 +16,14 @@ export const StyledButton = styled((props: AppButtonProps) => <Button {...props}
   padding: '0.75rem 1rem',
   maxHeight: '41px',
   minWidth: 'fit-content',
+  '@media screen and (max-width: 320px)': {
+    minWidth: 'auto',
+  },
 }))
 
 export const StyledHeadingContainer = styled((props: StackProps) => <Stack {...props} direction={'row'} />)(() => ({
   gap: '1rem',
   alignItems: 'center',
-  marginBottom: '1rem',
 }))
 
 export const StyledAvatar = styled((props: AvatarProps) => <Avatar {...props} variant="square" />)({

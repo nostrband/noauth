@@ -14,16 +14,16 @@ const getVariantApp = (size: AppNostrSize) => {
 
 export const StyledAppIcon = styled(
   forwardRef<HTMLAnchorElement, IBoxStyled>(function BoxDisplayName(props, ref) {
-    const exclude = new Set(['isNotLoaded'])
+    const exclude = new Set(['isNotLoaded', 'isRounded'])
     const omitProps = Object.fromEntries(Object.entries(props).filter((e) => !exclude.has(e[0])))
 
     return <Box ref={ref} {...omitProps} />
   })
-)(({ theme, isNotLoaded, size = APP_NSEC_SIZE.MEDIUM }) => ({
+)(({ theme, isNotLoaded, size = APP_NSEC_SIZE.MEDIUM, isRounded = false }) => ({
   position: 'relative',
-  borderRadius: theme.shape.borderRadius,
   overflow: 'hidden',
   ...getVariantApp(size),
+  borderRadius: isRounded ? '50%' : theme.shape.borderRadius,
   transition: theme.transitions.create(['border-color', 'transition']),
   backgroundColor: isNotLoaded ? color : theme.palette.background.default,
   boxSizing: 'border-box',

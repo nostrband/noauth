@@ -41,13 +41,15 @@ const AppPage = () => {
     return <Navigate to={`/key/${npub}`} />
   }
 
-  const { icon = '', name = '', url = '', userAgent = '' } = currentApp || {}
+  const { icon = '', name = '', url = '', userAgent = '', subNpub } = currentApp || {}
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appDevice = getAppDevice(userAgent)
+
+  const subNpubExists = !!subNpub
 
   const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {
     addSuffix: true,
@@ -95,6 +97,18 @@ const AppPage = () => {
             </Typography>
           </Box>
         </HeadingContainer>
+
+        {subNpubExists && (
+          <Box marginBottom={'1rem'}>
+            <SectionTitle marginBottom={'0.5rem'}>Shared with</SectionTitle>
+            <Stack direction={'row'} gap={'1rem'} alignItems={'center'}>
+              <IconApp picture="" alt={subNpub} size="large" isRounded />
+              <Typography noWrap fontWeight={500}>
+                {getShortenNpub(subNpub)}
+              </Typography>
+            </Stack>
+          </Box>
+        )}
 
         <Box marginBottom={'1rem'}>
           <SectionTitle marginBottom={'0.5rem'}>Disconnect</SectionTitle>
