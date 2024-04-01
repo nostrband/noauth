@@ -35,6 +35,7 @@ export const groupAppsByURL = (apps: IClientApp[] = []): IAppGroup[] => {
       }
       return appGroup
     })
+    .sort((a, b) => b.lastActive - a.lastActive)
     .sort((a, b) => a.name.localeCompare(b.name))
 
   return displayData

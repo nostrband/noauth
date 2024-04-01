@@ -14,6 +14,7 @@ import {
   StyledButton,
   StyledHeadingContainer,
   StyledPre,
+  StyledSubNpubContainer,
 } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
@@ -21,6 +22,8 @@ import { AppLink } from '@/shared/AppLink/AppLink'
 import { getReqDetails } from '@/utils/helpers/helpers-frontend'
 import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
+import { IconApp } from '@/shared/IconApp/IconApp'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -71,7 +74,7 @@ export const ModalConfirmEvent: FC = () => {
   })
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  const { name, url = '', icon = '' } = triggerApp || {}
+  const { name, url = '', icon = '', subNpub = '' } = triggerApp || {}
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
@@ -176,12 +179,22 @@ export const ModalConfirmEvent: FC = () => {
               <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
                 {shortAppNpub}
               </Typography>
-            )}{' '}
+            )}
+
             <Typography variant="body2" color={'GrayText'}>
               App wants to perform this action
             </Typography>
           </Box>
         </StyledHeadingContainer>
+        {subNpub.trim().length > 0 && (
+          <StyledSubNpubContainer>
+            <SectionTitle>Shared access with</SectionTitle>
+            <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
+              <IconApp picture="" alt={subNpub} size="medium" />
+              <Typography>{getShortenNpub(subNpub)}</Typography>
+            </Stack>
+          </StyledSubNpubContainer>
+        )}
 
         <Stack gap={'0.5rem'}>
           <Box padding={'0.5rem'} display={'flex'} alignItems={'center'} gap={'0.5rem'}>
@@ -189,7 +202,7 @@ export const ModalConfirmEvent: FC = () => {
             {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
           </Box>
           {showDetails && <StyledPre>{details}</StyledPre>}
-          <Box padding={'0.5rem 0.5rem 0 0.5rem'}>
+          <Box padding={'0.5rem'}>
             <FormControlLabel
               onChange={handleChangeRememberDecision}
               checked={remember}

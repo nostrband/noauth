@@ -480,7 +480,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     name,
     nsec,
     existingName,
-    passphrase
+    passphrase,
   }: {
     name: string
     nsec?: string
@@ -820,7 +820,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
           const token = params && params.length >= 2 ? params[1] : ''
 
           // consume the token even if app not allowed, reload
-          console.log("consume connect token", token)
+          console.log('consume connect token', token)
           if (token) {
             await dbi.removeConnectToken(token)
             self.connectTokens = await dbi.listConnectTokens()
@@ -842,8 +842,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         }
 
         // runtime check that stuff
-        if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW)
-          throw new Error('Unknown decision')
+        if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
 
         const allow = decision === DECISION.ALLOW
 
@@ -1188,7 +1187,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       method: 'connect',
       params: JSON.stringify([pubkey, '', params.perms]),
       timestamp: Date.now(),
-      appUrl: params.appUrl
+      appUrl: params.appUrl,
     }
     await dbi.addPending(req)
     this.updateUI()
