@@ -9,7 +9,7 @@ import { Button } from '@/shared/Button/Button'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
+import { fetchNip05, generateNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePassword } from '@/hooks/usePassword'
@@ -43,6 +43,7 @@ export const ModalSignUp = () => {
     formState: { errors },
     watch,
     trigger,
+    setValue
   } = useForm<FormInputType>({
     defaultValues: FORM_DEFAULT_VALUES,
     resolver: yupResolver(schema),
@@ -113,6 +114,8 @@ export const ModalSignUp = () => {
   }
 
   useEffect(() => {
+    if (!enteredUsername) generateNip05().then(n => setValue('username', n))
+
     return () => {
       if (isModalOpened) {
         // modal closed
