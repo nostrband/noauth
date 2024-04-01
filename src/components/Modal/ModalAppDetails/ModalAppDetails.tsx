@@ -43,7 +43,8 @@ export const ModalAppDetails = () => {
 
   const { icon, name, url, subNpub } = details
   const subNpubEntered = subNpub.trim().length > 0
-  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
+//  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
+  const isFormValid = subNpubEntered ? isValidNpub : true
 
   const [debouncedSubNpub] = useDebounce(subNpub, 100)
 
