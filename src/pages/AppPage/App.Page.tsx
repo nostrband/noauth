@@ -102,7 +102,7 @@ const AppPage = () => {
           <Box marginBottom={'1rem'}>
             <SectionTitle marginBottom={'0.5rem'}>Shared with</SectionTitle>
             <Stack direction={'row'} gap={'1rem'} alignItems={'center'}>
-              <IconApp picture="" alt={subNpub} size="large" />
+              <IconApp picture="" alt={subNpub} size="large" isRounded />
               <Typography noWrap fontWeight={500}>
                 {getShortenNpub(subNpub)}
               </Typography>

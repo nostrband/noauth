@@ -7,15 +7,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { FC, useEffect, useState } from 'react'
-import {
-  Container,
-  StyledActionName,
-  StyledAvatar,
-  StyledButton,
-  StyledHeadingContainer,
-  StyledPre,
-  StyledSubNpubContainer,
-} from './styled'
+import { Container, StyledActionName, StyledAvatar, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { AppLink } from '@/shared/AppLink/AppLink'
@@ -186,22 +178,26 @@ export const ModalConfirmEvent: FC = () => {
             </Typography>
           </Box>
         </StyledHeadingContainer>
+
         {subNpub.trim().length > 0 && (
-          <StyledSubNpubContainer>
+          <Stack gap={'0.5rem'}>
             <SectionTitle>Shared access with</SectionTitle>
             <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-              <IconApp picture="" alt={subNpub} size="medium" />
+              <IconApp picture="" alt={subNpub} size="medium" isRounded />
               <Typography>{getShortenNpub(subNpub)}</Typography>
             </Stack>
-          </StyledSubNpubContainer>
+          </Stack>
         )}
 
         <Stack gap={'0.5rem'}>
+          <SectionTitle>Permission</SectionTitle>
           <Box padding={'0.5rem'} display={'flex'} alignItems={'center'} gap={'0.5rem'}>
             <StyledActionName>{actionName}</StyledActionName>
             {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
           </Box>
+
           {showDetails && <StyledPre>{details}</StyledPre>}
+
           <Box padding={'0.5rem'}>
             <FormControlLabel
               onChange={handleChangeRememberDecision}

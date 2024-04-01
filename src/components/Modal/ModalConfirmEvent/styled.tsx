@@ -24,7 +24,6 @@ export const StyledButton = styled((props: AppButtonProps) => <Button {...props}
 export const StyledHeadingContainer = styled((props: StackProps) => <Stack {...props} direction={'row'} />)(() => ({
   gap: '1rem',
   alignItems: 'center',
-  marginBottom: '1rem',
 }))
 
 export const StyledAvatar = styled((props: AvatarProps) => <Avatar {...props} variant="square" />)({
@@ -58,12 +57,3 @@ export const StyledActionName = styled((props: TypographyProps) => <Typography {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 }))
-
-export const StyledSubNpubContainer = styled((props: StackProps) => <Stack gap={'0.75rem'} {...props} />)(
-  ({ theme }) => ({
-    padding: '1rem',
-    borderRadius: '1rem',
-    background: theme.palette.background.default,
-    color: theme.palette.text.primary,
-  })
-)

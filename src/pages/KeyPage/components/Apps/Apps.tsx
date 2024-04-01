@@ -66,14 +66,14 @@ export const Apps: FC = () => {
       </Stack>
 
       {subNpubAppsExists && (
-        <Stack marginBottom={'0.5rem'}>
+        <Stack marginBottom={'0.75rem'}>
           <Select input={<Input fullWidth mode="light" />} value={sortAppsBy} onChange={handleChangeSortAppsBy}>
             <MenuItem value={npub}>My connections</MenuItem>
             {subNpubProfiles.map((profile) => {
               return (
                 <MenuItem key={profile.subNpub} value={profile.subNpub}>
                   <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
-                    <IconApp size="extra-small" picture="" alt={profile.subNpub} />
+                    <IconApp size="extra-small" picture="" alt={profile.subNpub} isRounded />
                     {getShortenNpub(profile.subNpub)}
                   </Stack>
                 </MenuItem>

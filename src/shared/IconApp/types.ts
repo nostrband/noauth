@@ -6,6 +6,7 @@ export type IconAppProps = {
   isSmall?: boolean
   onClick?: () => void
   isNotLoaded?: boolean
+  isRounded?: boolean
 }
 
 export type IconAppBase = {
