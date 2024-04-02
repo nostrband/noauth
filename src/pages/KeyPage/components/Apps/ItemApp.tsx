@@ -27,7 +27,7 @@ export const ItemApp: FC<ItemAppProps> = ({
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
-  const appIcon = icon || `https://${appDomain}/favicon.ico`
+  const appIcon = icon
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appDevice = getAppDevice(userAgent)
 
@@ -44,6 +44,7 @@ export const ItemApp: FC<ItemAppProps> = ({
     <StyledItemAppContainer component={Link} to={`/key/${npub}/app/${appNpub}`}>
       {!groupedApp && (
         <IconApp
+          domain={appDomain}
           picture={appIcon}
           alt={appAvatarTitle}
           size={matches ? 'medium' : 'large'}

@@ -18,7 +18,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
-  const appIcon = icon || `https://${appDomain}/favicon.ico`
+  const appIcon = icon
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
 
   const handleExpandClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -46,6 +46,7 @@ export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, si
         <Stack direction={'row'} gap={'0.5rem'}>
           <IconApp
             picture={appIcon}
+            domain={appDomain}
             alt={appAvatarTitle}
             size={matches ? 'medium' : 'large'}
             getAppTitle={() => appAvatarTitle}

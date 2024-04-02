@@ -12,6 +12,7 @@ export type IconAppProps = {
 export type IconAppBase = {
   picture: string
   alt?: string
+  domain?: string
   getAppTitle?: (title: string) => string
 }
 
