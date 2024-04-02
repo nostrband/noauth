@@ -4,8 +4,10 @@ import { MetaEvent, createMetaEvent } from '@/types/meta-event'
 import NDK, { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
 import { nip19 } from 'nostr-tools'
 
+const profileCache = new Map<string, MetaEvent | null>()
+
 export const ndk = new NDK({
-  explicitRelayUrls: ['wss://relay.nostr.band/all', 'wss://relay.nostr.band', 'wss://relay.damus.io', 'wss://nos.lol'],
+  explicitRelayUrls: ['wss://relay.nostr.band/all', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://purplepag.es'],
 })
 
 export function nostrEvent(e: Required<NDKEvent>) {
@@ -65,8 +67,11 @@ export function parseProfileJson(e: NostrEvent): Meta {
   return profile
 }
 
-export async function fetchProfile(npub: string): Promise<MetaEvent | null> {
-  const npubToken = npub.includes('#') ? npub.split('#')[0] : npub
+export async function fetchProfile(npubToken: string): Promise<MetaEvent | null> {
+  const npub = npubToken.includes('#') ? npubToken.split('#')[0] : npubToken
+  const cached = profileCache.get(npub)
+  if (cached !== undefined) return cached
+
   const { type, data: pubkey } = nip19.decode(npubToken)
   if (type !== 'npub') return null
 
@@ -76,8 +81,9 @@ export async function fetchProfile(npub: string): Promise<MetaEvent | null> {
     const augmentedEvent = rawEvent(event as Required<NDKEvent>)
     const m = createMetaEvent(augmentedEvent)
     m.info = parseProfileJson(m)
+    profileCache.set(npub, m)
     return m
   }
 
-  return event
+  return null
 }

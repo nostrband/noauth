@@ -7,7 +7,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { FC, useEffect, useState } from 'react'
-import { Container, StyledActionName, StyledAvatar, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
+import { Container, StyledActionName, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { AppLink } from '@/shared/AppLink/AppLink'
@@ -70,7 +70,7 @@ export const ModalConfirmEvent: FC = () => {
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
-  const appIcon = icon || `https://${appDomain}/favicon.ico`
+  const appIcon = icon
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
 
@@ -162,7 +162,7 @@ export const ModalConfirmEvent: FC = () => {
         )}
 
         <StyledHeadingContainer>
-          <StyledAvatar src={appIcon}>{appAvatarTitle}</StyledAvatar>
+          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
@@ -190,7 +190,7 @@ export const ModalConfirmEvent: FC = () => {
         )}
 
         <Stack gap={'0.5rem'}>
-          <SectionTitle>Permission</SectionTitle>
+          <SectionTitle>ACTION</SectionTitle>
           <Box padding={'0.5rem'} display={'flex'} alignItems={'center'} gap={'0.5rem'}>
             <StyledActionName>{actionName}</StyledActionName>
             {details && <AppLink title="Details" onClick={handleToggleShowJsonParams} />}
