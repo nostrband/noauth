@@ -100,8 +100,8 @@ const CreatePage = () => {
         password,
         appNpub,
         perms,
-        appUrl
-      } 
+        appUrl,
+      }
       const req: any = await swicCall('generateKeyConnect', params)
       console.log('Created', req.npub, 'app', appUrl)
       setCreated(true)
@@ -118,7 +118,8 @@ const CreatePage = () => {
           appNpub,
           // will close after all done
           popup: 'true',
-          redirect_uri
+          redirect_uri,
+          subNpub: req?.subNpub || '',
         },
         replace: true,
       })
@@ -180,7 +181,9 @@ const CreatePage = () => {
                     {errors.rePassword.message}
                   </Typography>
                 )}
-                <GetStartedButton type="submit" disabled={isLoading}>Create account {isLoading && <LoadingSpinner />}</GetStartedButton>
+                <GetStartedButton type="submit" disabled={isLoading}>
+                  Create account {isLoading && <LoadingSpinner />}
+                </GetStartedButton>
               </Stack>
 
               <Typography textAlign={'left'} variant="h5" paddingTop="1em">

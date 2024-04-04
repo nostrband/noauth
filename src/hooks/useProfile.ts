@@ -14,7 +14,7 @@ export const useProfile = (npub: string) => {
   const [profile, setProfile] = useState<MetaEvent | null>(null)
   const currentKey = useAppSelector((state) => selectKeyByNpub(state, npub))
 
-  const userName = currentKey?.name || getProfileUsername(profile)
+  const userName = currentKey?.name || getProfileUsername(profile) || getShortenNpub(npub)
   const userAvatar = profile?.info?.picture || ''
   const avatarTitle = getFirstLetter(userName)
 
@@ -34,7 +34,7 @@ export const useProfile = (npub: string) => {
 
   return {
     profile,
-    userName: userName || getShortenNpub(npub),
+    userName,
     userAvatar,
     avatarTitle,
   }

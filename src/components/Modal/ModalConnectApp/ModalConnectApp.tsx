@@ -11,9 +11,12 @@ import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
-import { Stack, Typography } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { Box, Fade, Stack, Typography, useTheme } from '@mui/material'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { StyledAdvancedButton } from './styled'
+import { useDebounce } from 'use-debounce'
+import { nip19 } from 'nostr-tools'
 
 export const ModalConnectApp = () => {
   const keys = useAppSelector(selectKeys)
@@ -21,8 +24,7 @@ export const ModalConnectApp = () => {
   const timerRef = useRef<NodeJS.Timeout>()
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
-
-  const [token, setToken] = useState<DbConnectToken | undefined>()
+  const theme = useTheme()
 
   const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
@@ -32,23 +34,56 @@ export const ModalConnectApp = () => {
     },
   })
 
+  const [token, setToken] = useState<DbConnectToken | undefined>()
+
+  const [subNpub, setSubNpub] = useState('')
+  const [debouncedSubNpub] = useDebounce(subNpub, 500)
+  const [isSubNpubValid, setIsSubNpubValid] = useState(false)
+  const subNpubEntered = subNpub.trim().length > 0
+
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
 
-  useEffect(() => {
-    const load = async () => {
-      if (isModalOpened && isNpubExists && (!token || token.expiry < Date.now())) {
-        const t = (await swicCall('getConnectToken', npub)) as DbConnectToken
-        setToken(t)
-      }
-    }
-    if (isModalOpened) load()
-    else setToken(undefined)
-  }, [npub, token, isModalOpened, isNpubExists])
-
-  if (isModalOpened && !isNpubExists) {
-    handleCloseModal()
-    return null
+  const loadConnectTokenOnMount = async () => {
+    const validToken = !!token && token.expiry > Date.now()
+    if (validToken) return
+    const t = (await swicCall('getConnectToken', npub)) as DbConnectToken
+    setToken(t)
   }
+
+  const getConnectToken = useCallback(async () => {
+    const isValidSubNpub = isSubNpubValid && debouncedSubNpub !== npub
+    if (!isValidSubNpub) return
+    const t = (await swicCall('getConnectToken', npub, subNpub)) as DbConnectToken
+    setToken(t)
+    // eslint-disable-next-line
+  }, [isSubNpubValid, debouncedSubNpub, npub])
+
+  useEffect(() => {
+    if (isModalOpened && isNpubExists) loadConnectTokenOnMount()
+    // eslint-disable-next-line
+  }, [isModalOpened])
+
+  useEffect(() => {
+    if (isModalOpened && isNpubExists) getConnectToken()
+    // eslint-disable-next-line
+  }, [isModalOpened, getConnectToken])
+
+  const validateSubNpub = useCallback(async () => {
+    if (!debouncedSubNpub.trim().length) return
+    try {
+      const { type } = nip19.decode(debouncedSubNpub)
+      if (type === 'npub') setIsSubNpubValid(true)
+      else setIsSubNpubValid(false)
+    } catch (error) {
+      setIsSubNpubValid(false)
+    }
+  }, [debouncedSubNpub])
+
+  useEffect(() => {
+    validateSubNpub()
+  }, [validateSubNpub])
 
   const bunkerStr = getBunkerLink(npub, token?.token)
 
@@ -74,25 +109,69 @@ export const ModalConnectApp = () => {
     }, 3000)
   }
 
+  const handleToggleShowAdvancedOptions = () => setShowAdvancedOptions((prevShow) => !prevShow)
+
+  const handleSubNpubChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSubNpub(e.target.value)
+  }
+
+  if (isModalOpened && !isNpubExists) {
+    handleCloseModal()
+    return null
+  }
+
   return (
     <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
       <Stack gap={'1rem'} alignItems={'center'}>
-        <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography>
-        <Typography variant="body2" color={'red'}>
-          Do not share it publicly!
-        </Typography>
-        <Input
-          sx={{
-            gap: '0.5rem',
-          }}
-          fullWidth
-          value={token ? bunkerStr : 'Loading...'}
-          endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
-        />
-        <AppLink
-          title="What is this?"
-          onClick={() => handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })}
-        />
+        <StyledAdvancedButton onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+
+        <Fade in={showAdvancedOptions} unmountOnExit={true}>
+          <Box width={'100%'} marginBottom={'0.5rem'}>
+            <Input
+              label="Shared access with"
+              fullWidth
+              placeholder="npub1..."
+              value={subNpub}
+              onChange={handleSubNpubChange}
+              helperText={subNpubEntered && (!isSubNpubValid ? 'Invalid NPUB' : 'Connection string updated!')}
+              helperTextColor={isSubNpubValid ? theme.palette.success.main : theme.palette.error.main}
+            />
+          </Box>
+        </Fade>
+
+        {/* <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography> */}
+
+        <Stack gap={'0.5rem'} alignItems={'center'} width={'100%'}>
+          <Input
+            label="Connection string"
+            sx={{
+              gap: '0.5rem',
+            }}
+            fullWidth
+            value={token ? bunkerStr : 'Loading...'}
+            endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
+          />
+
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            justifyContent={'space-between'}
+            marginBottom={'0.5rem'}
+            padding={'0 1rem'}
+            width={'100%'}
+          >
+            <Typography variant="body2" color={'red'}>
+              Do not share it publicly!
+            </Typography>
+            <AppLink
+              title="What is this?"
+              onClick={() =>
+                handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })
+              }
+            />
+          </Stack>
+        </Stack>
+
         <Button fullWidth onClick={handleShareBunker}>
           Send
         </Button>

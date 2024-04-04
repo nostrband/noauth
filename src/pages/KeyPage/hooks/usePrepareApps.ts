@@ -4,7 +4,7 @@ import { IClientApp } from '@/types/general'
 import { useCallback, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-type SubNpubProfile = {
+export type SubNpubProfile = {
   picture: string
   subNpub: string
 }

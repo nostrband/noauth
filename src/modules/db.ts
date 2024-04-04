@@ -43,6 +43,7 @@ export interface DbPending {
   method: string
   params: string
   appUrl?: string
+  subNpub?: string
 }
 
 export interface DbHistory {

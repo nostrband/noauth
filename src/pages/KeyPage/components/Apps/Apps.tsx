@@ -14,8 +14,8 @@ import { AppGroup } from './AppGroup'
 
 import { Input } from '@/shared/Input/Input'
 import { usePrepareApps } from '../../hooks/usePrepareApps'
-import { getShortenNpub } from '@/utils/helpers/helpers'
-import { IconApp } from '@/shared/IconApp/IconApp'
+import { ItemSubNpubProfile } from './ItemSubNpubProfile'
+import { SubNpubSelectValue } from './SubNpubSelectValue'
 
 export const Apps: FC = () => {
   const { npub = '' } = useParams()
@@ -58,6 +58,11 @@ export const Apps: FC = () => {
     return perms.filter((perm) => perm.appNpub === app.appNpub)
   }
 
+  const renderSelectValue = (value: string) => {
+    if (value === npub) return 'My connections'
+    return <SubNpubSelectValue subNpub={value} />
+  }
+
   return (
     <Box marginBottom={'1rem'} display={'flex'} flexDirection={'column'}>
       <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'} marginBottom={'0.5rem'}>
@@ -67,18 +72,16 @@ export const Apps: FC = () => {
 
       {subNpubAppsExists && (
         <Stack marginBottom={'0.75rem'}>
-          <Select input={<Input fullWidth mode="light" />} value={sortAppsBy} onChange={handleChangeSortAppsBy}>
+          <Select
+            input={<Input fullWidth mode="light" />}
+            value={sortAppsBy}
+            onChange={handleChangeSortAppsBy}
+            renderValue={renderSelectValue}
+          >
             <MenuItem value={npub}>My connections</MenuItem>
-            {subNpubProfiles.map((profile) => {
-              return (
-                <MenuItem key={profile.subNpub} value={profile.subNpub}>
-                  <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
-                    <IconApp size="extra-small" picture="" alt={profile.subNpub} isRounded />
-                    {getShortenNpub(profile.subNpub)}
-                  </Stack>
-                </MenuItem>
-              )
-            })}
+            {subNpubProfiles.map((profile) => (
+              <ItemSubNpubProfile subNpub={profile.subNpub} key={profile.subNpub} value={profile.subNpub} />
+            ))}
           </Select>
         </Stack>
       )}
