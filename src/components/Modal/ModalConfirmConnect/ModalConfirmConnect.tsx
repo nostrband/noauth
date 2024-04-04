@@ -68,8 +68,7 @@ export const ModalConfirmConnect = () => {
   const token = searchParams.get('token') || ''
 
   // to show subNpub profile
-  const subNpub = searchParams.get('subNpub') || ''
-  console.log({ subNpub })
+  const { subNpub = '' } = req || {}
   const { userAvatar, userName } = useProfile(subNpub)
   const subNpubName = userName || getShortenNpub(subNpub)
 
@@ -118,7 +117,6 @@ export const ModalConfirmConnect = () => {
       sp.delete('popup')
       sp.delete('token')
       sp.delete('redirect_uri')
-      sp.delete('subNpub')
       setShowAdvancedOptions(false)
     },
   })
@@ -306,15 +304,19 @@ export const ModalConfirmConnect = () => {
         </Stack>
 
         {subNpub.trim().length > 0 && (
-          <Stack gap={'0.5rem'}>
+          <Stack gap={'0.5rem'} marginBottom={'1rem'}>
             <SectionTitle>Shared access with</SectionTitle>
             <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
               <IconApp picture={userAvatar} alt={subNpubName} size="medium" isRounded />
-              <Typography>{subNpubName}</Typography>
+              <Box overflow={'auto'}>
+                <Typography>{subNpubName}</Typography>
+                <Typography variant='body2' color={'GrayText'}>{getShortenNpub(subNpub)}</Typography>
+              </Box>
             </Stack>
           </Stack>
         )}
 
+        <SectionTitle>Permissions</SectionTitle>
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
           <ActionToggleButton
             selected={true}

@@ -123,23 +123,6 @@ export const ModalConnectApp = () => {
   return (
     <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
       <Stack gap={'1rem'} alignItems={'center'}>
-        <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography>
-        <Typography variant="body2" color={'red'}>
-          Do not share it publicly!
-        </Typography>
-        <Input
-          sx={{
-            gap: '0.5rem',
-          }}
-          fullWidth
-          value={token ? bunkerStr : 'Loading...'}
-          endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
-        />
-        <AppLink
-          title="What is this?"
-          onClick={() => handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })}
-        />
-
         <StyledAdvancedButton onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
 
         <Fade in={showAdvancedOptions} unmountOnExit={true}>
@@ -150,11 +133,44 @@ export const ModalConnectApp = () => {
               placeholder="npub1..."
               value={subNpub}
               onChange={handleSubNpubChange}
-              helperText={!isSubNpubValid && subNpubEntered && 'Invalid NPUB'}
-              helperTextColor={theme.palette.error.main}
+              helperText={subNpubEntered && (!isSubNpubValid ? 'Invalid NPUB' : 'Connection string updated!')}
+              helperTextColor={isSubNpubValid ? theme.palette.success.main : theme.palette.error.main}
             />
           </Box>
         </Fade>
+
+        {/* <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography> */}
+
+        <Stack gap={'0.5rem'} alignItems={'center'} width={'100%'}>
+          <Input
+            label="Connection string"
+            sx={{
+              gap: '0.5rem',
+            }}
+            fullWidth
+            value={token ? bunkerStr : 'Loading...'}
+            endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
+          />
+
+          <Stack
+            direction={'row'}
+            alignItems={'center'}
+            justifyContent={'space-between'}
+            marginBottom={'0.5rem'}
+            padding={'0 1rem'}
+            width={'100%'}
+          >
+            <Typography variant="body2" color={'red'}>
+              Do not share it publicly!
+            </Typography>
+            <AppLink
+              title="What is this?"
+              onClick={() =>
+                handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })
+              }
+            />
+          </Stack>
+        </Stack>
 
         <Button fullWidth onClick={handleShareBunker}>
           Send

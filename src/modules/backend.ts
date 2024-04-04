@@ -25,7 +25,7 @@ import {
   TOKEN_TTL,
   TOKEN_SIZE,
 } from '../utils/consts'
-import { fetchNip05, getReqParams, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
@@ -782,7 +782,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     }
 
     // check token
-    let subNpub = undefined
+    let subNpub: string | undefined = undefined
     if (method === 'connect') {
       if (params && params.length >= 2 && params[1]) {
         const secret = params[1]
@@ -870,6 +870,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
               token: token || '',
+              subNpub
             })
 
             // reload
@@ -975,8 +976,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         // OAuth flow
         const isConnect = method === 'connect'
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const subNpub = isConnect && req.subNpub ? `&subNpub=${req.subNpub}` : ''
-        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true${subNpub}`
+        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
