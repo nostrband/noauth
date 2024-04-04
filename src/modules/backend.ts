@@ -629,18 +629,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private getDecision(backend: NDKNip46Backend, req: DbPending): DECISION {
     if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
-    if (req.method === 'connect') {
-      const params = getReqParams(req)
-      if (params && params.length >= 2 && params[1]) {
-        const secret = params[1]
-        const token = this.connectTokens.find((t) => t.token === secret)
-        if (!token || token.expiry < Date.now() || token.npub !== req.npub) {
-          console.log('unknown token', secret)
-          return DECISION.IGNORE
-        }
-      }
-    }
-
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
 
@@ -793,11 +781,27 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       return [DECISION.IGNORE, undefined]
     }
 
+    // check token
+    let subNpub = undefined
+    if (method === 'connect') {
+      if (params && params.length >= 2 && params[1]) {
+        const secret = params[1]
+        const token = this.connectTokens.find((t) => t.token === secret)
+        if (!token || token.expiry < Date.now() || token.npub !== npub) {
+          console.log('unknown token', secret)
+          return [DECISION.IGNORE, undefined]
+        }
+
+        subNpub = token.subNpub
+      }
+    }
+
     const req: DbPending = {
       id,
       npub,
       appNpub,
       method,
+      subNpub,
       params: JSON.stringify(params),
       timestamp: Date.now(),
     }
