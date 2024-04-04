@@ -975,7 +975,8 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         // OAuth flow
         const isConnect = method === 'connect'
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
+        const subNpub = isConnect && req.subNpub ? `&subNpub=${req.subNpub}` : ''
+        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true${subNpub}`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time

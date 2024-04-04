@@ -12,7 +12,7 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
 import { Box, Fade, Stack, Typography, useTheme } from '@mui/material'
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { StyledAdvancedButton } from './styled'
 import { useDebounce } from 'use-debounce'
@@ -53,16 +53,12 @@ export const ModalConnectApp = () => {
   }
 
   const getConnectToken = useCallback(async () => {
-    const isValidSubNpub = subNpubEntered && isSubNpubValid && debouncedSubNpub !== npub
-
-    if (!isValidSubNpub) {
-      const t = (await swicCall('getConnectToken', npub)) as DbConnectToken
-      return setToken(t)
-    }
-    const t = (await swicCall('getConnectToken', npub, debouncedSubNpub)) as DbConnectToken
-
+    const isValidSubNpub = isSubNpubValid && debouncedSubNpub !== npub
+    if (!isValidSubNpub) return
+    const t = (await swicCall('getConnectToken', npub, subNpub)) as DbConnectToken
     setToken(t)
-  }, [isSubNpubValid, subNpubEntered, npub, debouncedSubNpub])
+    // eslint-disable-next-line
+  }, [isSubNpubValid, debouncedSubNpub, npub])
 
   useEffect(() => {
     if (isModalOpened && isNpubExists) loadConnectTokenOnMount()
@@ -90,7 +86,6 @@ export const ModalConnectApp = () => {
   }, [validateSubNpub])
 
   const bunkerStr = getBunkerLink(npub, token?.token)
-  // console.log({ bunkerStr, token })
 
   const handleShareBunker = async () => {
     const shareData = {

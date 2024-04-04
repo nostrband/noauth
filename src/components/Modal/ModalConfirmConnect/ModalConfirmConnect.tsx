@@ -29,6 +29,7 @@ import { nip19 } from 'nostr-tools'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { useProfile } from '@/hooks/useProfile'
 
 type Perm = DbPerm & { checked: boolean }
 
@@ -65,6 +66,12 @@ export const ModalConfirmConnect = () => {
 
   // server token for create_account callback
   const token = searchParams.get('token') || ''
+
+  // to show subNpub profile
+  const subNpub = searchParams.get('subNpub') || ''
+  console.log({ subNpub })
+  const { userAvatar, userName } = useProfile(subNpub)
+  const subNpubName = userName || getShortenNpub(subNpub)
 
   // perms requested by 'connect'/'create_account'
   const params = req ? getReqParams(req) : []
@@ -111,6 +118,7 @@ export const ModalConfirmConnect = () => {
       sp.delete('popup')
       sp.delete('token')
       sp.delete('redirect_uri')
+      sp.delete('subNpub')
       setShowAdvancedOptions(false)
     },
   })
@@ -296,6 +304,16 @@ export const ModalConfirmConnect = () => {
             </Typography>
           </Box>
         </Stack>
+
+        {subNpub.trim().length > 0 && (
+          <Stack gap={'0.5rem'}>
+            <SectionTitle>Shared access with</SectionTitle>
+            <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
+              <IconApp picture={userAvatar} alt={subNpubName} size="medium" isRounded />
+              <Typography>{subNpubName}</Typography>
+            </Stack>
+          </Stack>
+        )}
 
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
           <ActionToggleButton
