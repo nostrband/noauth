@@ -21,6 +21,7 @@ import { HeadingContainer, AppInfoContainer, AppNameContainer } from './styled'
 import { formatDistanceToNow } from 'date-fns'
 import { ModalAddPermission } from '@/components/Modal/ModalAddPermission/ModalAddPermission'
 import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivities'
+import { useProfile } from '@/hooks/useProfile'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -37,10 +38,6 @@ const AppPage = () => {
 
   const isNpubExists = npub.trim().length && keys.some((key) => key.npub === npub)
 
-  if (!isNpubExists || !currentApp) {
-    return <Navigate to={`/key/${npub}`} />
-  }
-
   const { icon = '', name = '', url = '', userAgent = '', subNpub } = currentApp || {}
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
@@ -48,14 +45,9 @@ const AppPage = () => {
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appDevice = getAppDevice(userAgent)
-
   const subNpubExists = !!subNpub
-
-  const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {
-    addSuffix: true,
-  })
-
-  const connectedOn = `Connected ${connectDate}`
+  const { userAvatar, userName } = useProfile(subNpub || '')
+  const subNpubName = userName || getShortenNpub(subNpub)
 
   const handleDeleteApp = async () => {
     try {
@@ -68,6 +60,15 @@ const AppPage = () => {
   }
 
   const handleShowAppDetailsModal = () => handleOpenModal(MODAL_PARAMS_KEYS.APP_DETAILS)
+
+  if (!isNpubExists || !currentApp) {
+    return <Navigate to={`/key/${npub}`} />
+  }
+
+  const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {
+    addSuffix: true,
+  })
+  const connectedOn = `Connected ${connectDate}`
 
   return (
     <>
@@ -102,9 +103,9 @@ const AppPage = () => {
           <Box marginBottom={'1rem'}>
             <SectionTitle marginBottom={'0.5rem'}>Shared with</SectionTitle>
             <Stack direction={'row'} gap={'1rem'} alignItems={'center'}>
-              <IconApp picture="" alt={subNpub} size="large" isRounded />
+              <IconApp picture={userAvatar} alt={subNpubName} size="large" isRounded />
               <Typography noWrap fontWeight={500}>
-                {getShortenNpub(subNpub)}
+                {subNpubName}
               </Typography>
             </Stack>
           </Box>

@@ -397,7 +397,7 @@ export const generateNip05 = async () => {
     'owl',
     'puma',
     'goose',
-    'peacock'
+    'peacock',
   ]
   const adjs = [
     'strong',
@@ -417,7 +417,7 @@ export const generateNip05 = async () => {
     'creative',
     'fast',
     'special',
-    'lovely'
+    'lovely',
   ]
   const MAX_NUMBER = 100
   const noun = nouns[Math.floor(Math.random() * nouns.length)]

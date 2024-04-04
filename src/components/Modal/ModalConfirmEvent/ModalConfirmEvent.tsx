@@ -16,6 +16,7 @@ import { Checkbox } from '@/shared/Checkbox/Checkbox'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { IconApp } from '@/shared/IconApp/IconApp'
+import { useProfile } from '@/hooks/useProfile'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -73,6 +74,8 @@ export const ModalConfirmEvent: FC = () => {
   const appIcon = icon || `https://${appDomain}/favicon.ico`
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const isAppNameExists = !!name || !!appDomain
+  const { userAvatar, userName } = useProfile(subNpub || '')
+  const subNpubName = userName || getShortenNpub(subNpub)
 
   useEffect(() => {
     // reset
@@ -183,8 +186,8 @@ export const ModalConfirmEvent: FC = () => {
           <Stack gap={'0.5rem'}>
             <SectionTitle>Shared access with</SectionTitle>
             <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-              <IconApp picture="" alt={subNpub} size="medium" isRounded />
-              <Typography>{getShortenNpub(subNpub)}</Typography>
+              <IconApp picture={userAvatar} alt={subNpubName} size="medium" isRounded />
+              <Typography>{subNpubName}</Typography>
             </Stack>
           </Stack>
         )}

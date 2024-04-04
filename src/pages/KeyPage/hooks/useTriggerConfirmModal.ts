@@ -52,10 +52,11 @@ export const useTriggerConfirmModal = (npub: string, pending: DbPending[], perms
       }
 
       shownConnectModals.current[req.id] = true
+      console.log({ req }, 'HISH')
       handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
         search: {
           reqId: req.id,
-          popup: isPopup ? 'true' : ''
+          popup: isPopup ? 'true' : '',
         },
       })
       break
