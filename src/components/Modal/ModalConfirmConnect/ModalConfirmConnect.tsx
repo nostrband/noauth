@@ -140,6 +140,10 @@ export const ModalConfirmConnect = () => {
     }
   }, [isModalOpened])
 
+  useEffect(() => {
+    setSelectedActionType(hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC);
+  }, [isLoaded, hasReqPerms])
+
   if (isLoaded) {
     if (isModalOpened && !req) {
       // we are looking at a stale event!
