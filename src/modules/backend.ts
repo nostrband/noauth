@@ -1319,7 +1319,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const req = this.confirmBuffer.find((r) => r.req.id === id)
     if (!req) {
       console.log('req ', id, 'not found')
-
       await dbi.removePending(id)
       this.updateUI()
       return undefined
@@ -1356,13 +1355,13 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.updateUI()
   }
 
-  private async addPerm(appNpub: string, npub: string, perm: string) {
+  private async addPerm(appNpub: string, npub: string, perm: string, value: string = '') {
     const p: DbPerm = {
       id: Math.random().toString(36).substring(7),
       npub: npub,
       appNpub: appNpub,
       perm,
-      value: '1',
+      value: value || '1',
       timestamp: Date.now(),
     }
 
@@ -1491,7 +1490,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
       } else if (method === 'addPerm') {
-        result = await this.addPerm(args[0], args[1], args[2])
+        result = await this.addPerm(args[0], args[1], args[2], args[3])
       } else if (method === 'editName') {
         result = await this.editName(args[0], args[1])
       } else if (method === 'transferName') {

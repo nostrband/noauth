@@ -8,7 +8,7 @@ import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/Moda
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { useEffect, useState } from 'react'
-import { getReferrerAppUrl, isValidUserName } from '@/utils/helpers/helpers'
+import { askNotificationPermission, getReferrerAppUrl, isValidUserName } from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { useForm } from 'react-hook-form'
@@ -18,6 +18,7 @@ import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/Pass
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { FormInputType, schema } from './const'
 import { CreateConnectParams } from '@/modules/backend/types'
+import { nip19 } from 'nostr-tools'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -94,6 +95,13 @@ const CreatePage = () => {
     try {
       const { password } = values
       setIsLoading(true)
+
+      // first thing on user action is to ask for notifs
+      await askNotificationPermission()
+      const ok = await swicCall('enablePush')
+      if (!ok) throw new Error('Failed to activate the push subscription')
+      console.log('enablePush done')
+
       const appUrl = getReferrerAppUrl()
       const params: CreateConnectParams = {
         name,
@@ -104,25 +112,48 @@ const CreatePage = () => {
       }
       const req: any = await swicCall('generateKeyConnect', params)
       console.log('Created', req.npub, 'app', appUrl)
+
+      await swicCall('confirm', req.id, true, true, {})
+      console.log('confirmed', req.id)
+
       setCreated(true)
-      setIsLoading(false)
       resetPasswordValidation()
       resetForm()
-      handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
-        search: {
-          npub: req.npub,
-          reqId: req.id,
-          token,
-          // needed for this screen itself
-          name,
-          appNpub,
-          // will close after all done
-          popup: 'true',
-          redirect_uri,
-          subNpub: req?.subNpub || '',
-        },
-        replace: true,
-      })
+
+      try {
+        await swicCall('redeemToken', req.npub, token)
+        console.log('redeemToken done')
+
+        // auto-close/redirect only if redeem succeeded
+        if (redirect_uri) {
+          const { data: result } = nip19.decode(req.npub)
+          const url = `${redirect_uri}${redirect_uri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result as string)}`
+          window.location.href = url
+        } else {
+          new Promise(ok => setTimeout(ok, 3000))
+          .then(_ => window.close());
+        }
+      } catch (e) {
+        console.log('error', e)
+        notify('App did not reply. Please try to log in.', 'error')
+      }
+
+      setIsLoading(false)
+      // handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
+      //   search: {
+      //     npub: req.npub,
+      //     reqId: req.id,
+      //     token,
+      //     // needed for this screen itself
+      //     name,
+      //     appNpub,
+      //     // will close after all done
+      //     popup: 'true',
+      //     redirect_uri,
+      //     subNpub: req?.subNpub || '',
+      //   },
+      //   replace: true,
+      // })
     } catch (error: any) {
       notify(error.message || error.toString(), 'error')
       setIsLoading(false)
