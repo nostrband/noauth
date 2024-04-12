@@ -129,7 +129,8 @@ const CreatePage = () => {
           const url = `${redirect_uri}${redirect_uri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result as string)}`
           window.location.href = url
         } else {
-          new Promise((ok) => setTimeout(ok, 3000)).then((_) => window.close())
+          // just show the 'close' button
+          // new Promise((ok) => setTimeout(ok, 3000)).then((_) => window.close())
         }
       } catch (e) {
         console.log('error', e)
