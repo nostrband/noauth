@@ -34,7 +34,7 @@ export const ModalAddPermission: FC = () => {
 
   const [type, setType] = useState('')
   const [param, setParam] = useState<KindOptionType | null>(null)
-  const [allow, setAllow] = useState(false)
+  const [allow, setAllow] = useState(true)
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -163,8 +163,8 @@ export const ModalAddPermission: FC = () => {
         </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center" p={'0.5rem'}>
-          <StyledSwitch onChange={handleAllowChange} value={allow} />
-          <Typography variant="subtitle1">Allow/Disallow</Typography>
+          <StyledSwitch onChange={handleAllowChange} checked={allow} />
+          <Typography variant="subtitle1">{allow ? 'Allow' : 'Disallow'}</Typography>
         </Stack>
 
         <Button type="submit" fullWidth disabled={!isFormValid || isLoading}>
