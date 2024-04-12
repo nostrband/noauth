@@ -13,3 +13,10 @@ export type IKind = {
   kind: number
   name: string
 }
+
+export type SubNpubProfile = {
+  picture: string
+  subNpub: string
+}
+
+export type SubNpubsMap = Record<string, SubNpubProfile>

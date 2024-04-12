@@ -870,7 +870,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
               token: token || '',
-              subNpub
+              subNpub,
             })
 
             // reload
@@ -1356,13 +1356,13 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.updateUI()
   }
 
-  private async addPerm(appNpub: string, npub: string, perm: string) {
+  private async addPerm(appNpub: string, npub: string, perm: string, allow: string) {
     const p: DbPerm = {
       id: Math.random().toString(36).substring(7),
       npub: npub,
       appNpub: appNpub,
       perm,
-      value: '1',
+      value: allow,
       timestamp: Date.now(),
     }
 
@@ -1491,7 +1491,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
       } else if (method === 'addPerm') {
-        result = await this.addPerm(args[0], args[1], args[2])
+        result = await this.addPerm(args[0], args[1], args[2], args[3])
       } else if (method === 'editName') {
         result = await this.editName(args[0], args[1])
       } else if (method === 'transferName') {
