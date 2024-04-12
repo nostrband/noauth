@@ -1,12 +1,10 @@
-import { Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { GetStartedButton, LearnMoreButton } from './styled'
 import { DOMAIN } from '@/utils/consts'
 import { useSearchParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
-import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { useEffect, useState } from 'react'
 import { askNotificationPermission, getReferrerAppUrl, isValidUserName } from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -19,6 +17,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { FormInputType, schema } from './const'
 import { CreateConnectParams } from '@/modules/backend/types'
 import { nip19 } from 'nostr-tools'
+import { Button } from '@/shared/Button/Button'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -27,8 +26,6 @@ const FORM_DEFAULT_VALUES: FormInputType = {
 
 const CreatePage = () => {
   const notify = useEnqueueSnackbar()
-  const { handleOpen } = useModalSearchParams()
-  const [created, setCreated] = useState(false)
 
   const {
     handleSubmit,
@@ -48,10 +45,11 @@ const CreatePage = () => {
   const { hidePassword: hideConfirmPassword, inputProps: confirmPasswordInputProps } = usePassword()
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [isLoading, setIsLoading] = useState(false)
 
+  const created = searchParams.get('created') === 'true'
   const name = searchParams.get('name') || ''
   const token = searchParams.get('token') || ''
   const appNpub = searchParams.get('appNpub') || ''
@@ -110,54 +108,43 @@ const CreatePage = () => {
         perms,
         appUrl,
       }
-      const req: any = await swicCall('generateKeyConnect', params)
-      console.log('Created', req.npub, 'app', appUrl)
+      const npub = (await swicCall('generateKeyConnect', params)) as string
+      console.log('Created', npub, 'app', appUrl)
 
-      await swicCall('confirm', req.id, true, true, {})
-      console.log('confirmed', req.id)
+      // redirect the window to new url and 
+      // make sure back doesn't show the form again
+      searchParams.append('created', 'true')
+      setSearchParams(searchParams, { replace: true })
 
-      setCreated(true)
       resetPasswordValidation()
       resetForm()
 
       try {
-        await swicCall('redeemToken', req.npub, token)
+        await swicCall('redeemToken', npub, token)
         console.log('redeemToken done')
 
         // auto-close/redirect only if redeem succeeded
         if (redirect_uri) {
-          const { data: result } = nip19.decode(req.npub)
+          const { data: result } = nip19.decode(npub)
           const url = `${redirect_uri}${redirect_uri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result as string)}`
           window.location.href = url
         } else {
-          new Promise(ok => setTimeout(ok, 3000))
-          .then(_ => window.close());
+          new Promise((ok) => setTimeout(ok, 3000)).then((_) => window.close())
         }
       } catch (e) {
         console.log('error', e)
-        notify('App did not reply. Please try to log in.', 'error')
+        notify('App connection timeout. Please try to log in.', 'error')
       }
 
       setIsLoading(false)
-      // handleOpen(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
-      //   search: {
-      //     npub: req.npub,
-      //     reqId: req.id,
-      //     token,
-      //     // needed for this screen itself
-      //     name,
-      //     appNpub,
-      //     // will close after all done
-      //     popup: 'true',
-      //     redirect_uri,
-      //     subNpub: req?.subNpub || '',
-      //   },
-      //   replace: true,
-      // })
     } catch (error: any) {
       notify(error.message || error.toString(), 'error')
       setIsLoading(false)
     }
+  }
+
+  const handleClose = () => {
+    window.close()
   }
 
   return (
@@ -166,22 +153,34 @@ const CreatePage = () => {
         {created && (
           <>
             <Typography textAlign={'center'} variant="h4" paddingTop="0.5em">
-              Account created!
+              All set!
+              <br />
+              You can now return to your app
             </Typography>
-            <Typography textAlign={'center'} variant="body1" paddingTop="0.5em">
-              User name: <b>{nip05}</b>
+            <Box marginTop={'1rem'}>
+              <Button fullWidth onClick={handleClose}>Close</Button>
+            </Box>
+
+            <Typography textAlign={'left'} variant="h6" paddingTop={'1.5em'}>
+              Need to update permissions?
+            </Typography>
+            <Typography textAlign={'left'} variant="body2">
+              Come back to Nsec.app any time to manage the access of various apps to your Nostr keys.
             </Typography>
           </>
         )}
         {!created && (
           <>
             <Typography textAlign={'center'} variant="h4" paddingTop="0.5em">
-              Welcome to Nostr!
+              Set a password
+            </Typography>
+            <Typography textAlign={'center'} variant="body1" paddingTop="1em">
+              Your username:
+            </Typography>
+            <Typography textAlign={'center'} variant="h5" paddingTop="0.2em">
+              {nip05}
             </Typography>
             <Stack gap={'0.5rem'} overflow={'auto'}>
-              <Typography textAlign={'left'} variant="h6" paddingTop="0.5em">
-                Chosen name: <b>{nip05}</b>
-              </Typography>
               <Stack gap={'0.5rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
                 <Input
                   label="Password"
@@ -217,7 +216,18 @@ const CreatePage = () => {
                 </GetStartedButton>
               </Stack>
 
-              <Typography textAlign={'left'} variant="h5" paddingTop="1em">
+              <Typography textAlign={'left'} variant="h6" paddingTop={'1.5em'}>
+                What is Nsec.app?
+              </Typography>
+
+              <Typography textAlign={'left'} variant="body1">
+                Nsec.app will store your Nostr keys &mdash; your profile, posts and all other actions are signed by
+                those keys. Come back to this website when you want to connect your keys to some other apps.
+              </Typography>
+
+              {/** FIXME expand from learn-more link to be added above */}
+
+              {/* <Typography textAlign={'left'} variant="h5" paddingTop="1em">
                 What you need to know:
               </Typography>
 
@@ -228,7 +238,7 @@ const CreatePage = () => {
                 <li>When you create an account, a new key will be created.</li>
                 <li>This key can later be used with other Nostr websites.</li>
               </ol>
-              <LearnMoreButton onClick={handleLearnMore}>Learn more</LearnMoreButton>
+              <LearnMoreButton onClick={handleLearnMore}>Learn more</LearnMoreButton> */}
             </Stack>
           </>
         )}
