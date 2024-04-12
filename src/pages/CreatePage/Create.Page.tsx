@@ -180,7 +180,7 @@ const CreatePage = () => {
             <Typography textAlign={'center'} variant="h5" paddingTop="0.2em">
               {nip05}
             </Typography>
-            <Stack gap={'0.5rem'} overflow={'auto'}>
+            <Stack gap={'0.5rem'} marginTop={'0.5em'}>
               <Stack gap={'0.5rem'} component={'form'} onSubmit={handleSubmit(submitHandler)}>
                 <Input
                   label="Password"
