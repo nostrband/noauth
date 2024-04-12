@@ -3,7 +3,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getActionName, getUsablePermList } from '@/utils/helpers/helpers'
-import { FilterOptionsState, MenuItem, SelectChangeEvent, Stack, createFilterOptions } from '@mui/material'
+import { FilterOptionsState, MenuItem, SelectChangeEvent, Stack, Typography, createFilterOptions } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -12,7 +12,7 @@ import { useParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { KINDS } from '@/utils/consts'
-import { StyledAutocomplete, StyledPlaceholder, StyledSelect } from './styled'
+import { StyledAutocomplete, StyledPlaceholder, StyledSelect, StyledSwitch } from './styled'
 import { isNotANumber } from './utils'
 
 export interface KindOptionType {
@@ -34,6 +34,7 @@ export const ModalAddPermission: FC = () => {
 
   const [type, setType] = useState('')
   const [param, setParam] = useState<KindOptionType | null>(null)
+  const [allow, setAllow] = useState(true)
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -58,9 +59,10 @@ export const ModalAddPermission: FC = () => {
     e.preventDefault()
     if (!isFormValid) throw new Error('Please fill out all fields!')
     setIsLoading(true)
+    const allowValue = allow ? '1' : '0'
     try {
       const permission = isSignEvent ? `${type}:${param?.kind}` : type
-      await swicCall('addPerm', appNpub, npub, permission)
+      await swicCall('addPerm', appNpub, npub, permission, allowValue)
       setIsLoading(false)
       notify('Permission successfully added!', 'success')
       resetStates()
@@ -133,6 +135,10 @@ export const ModalAddPermission: FC = () => {
     return `${option.kind} - ${option.name as string}`
   }
 
+  const handleAllowChange = (e: any, checked: boolean) => {
+    setAllow(checked)
+  }
+
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal} title="Add a permission" fixedHeight="50%">
       <Stack minHeight={'40%'} component={'form'} onSubmit={handleSubmit} gap={'1.5rem'}>
@@ -154,6 +160,11 @@ export const ModalAddPermission: FC = () => {
               getOptionLabel={getOptionLabel}
             />
           )}
+        </Stack>
+
+        <Stack direction="row" spacing={2} alignItems="center" p={'0.5rem'}>
+          <StyledSwitch onChange={handleAllowChange} checked={allow} />
+          <Typography variant="subtitle1">{allow ? 'Allow' : 'Disallow'}</Typography>
         </Stack>
 
         <Button type="submit" fullWidth disabled={!isFormValid || isLoading}>

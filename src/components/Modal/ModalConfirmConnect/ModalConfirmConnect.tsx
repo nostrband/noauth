@@ -89,7 +89,7 @@ export const ModalConfirmConnect = () => {
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
-  const appIcon = icon || (appDomain ? `https://${appDomain}/favicon.ico` : '')
+  const appIcon = icon
 
   useEffect(() => {
     const list =
@@ -145,6 +145,10 @@ export const ModalConfirmConnect = () => {
       }
     }
   }, [isModalOpened])
+
+  useEffect(() => {
+    setSelectedActionType(hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC);
+  }, [isLoaded, hasReqPerms])
 
   if (isLoaded) {
     if (isModalOpened && !req) {
@@ -292,7 +296,7 @@ export const ModalConfirmConnect = () => {
         )}
 
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
-          <IconApp picture={appIcon} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
+          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
           <Box overflow={'auto'}>
             <Typography variant="h5" fontWeight={600} noWrap>
               {appName}
