@@ -1,16 +1,18 @@
-import { Input } from '@/shared/Input/Input'
-import { AppInputProps } from '@/shared/Input/types'
+import { AppButtonProps, Button } from '@/shared/Button/Button'
 import { Autocomplete, AutocompleteProps, styled } from '@mui/material'
-import { forwardRef } from 'react'
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest'
+import { SubNpubOptionType } from './ModalConnectApp'
+import { Input } from '@/shared/Input/Input'
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded'
-import { SubNpubOptionType } from './ModalAppDetails'
 
-export const StyledInput = styled(
-  forwardRef<HTMLInputElement, AppInputProps>((props, ref) => <Input {...props} ref={ref} />)
-)(() => ({
-  '& .MuiAutocomplete-endAdornment': {
-    right: '1rem',
+export const StyledAdvancedButton = styled((props: AppButtonProps) => (
+  <Button {...props} startIcon={<SettingsSuggestIcon sx={{ marginTop: '-2px' }} />} />
+))(({ theme }) => ({
+  padding: '0.25rem 1rem',
+  '&.button:is(:hover, :active, &)': {
+    backgroundColor: theme.palette.secondary.main,
   },
+  color: theme.palette.text.primary,
 }))
 
 export const StyledAutocomplete = styled(

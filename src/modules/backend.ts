@@ -24,8 +24,9 @@ import {
   SEED_RELAYS,
   TOKEN_TTL,
   TOKEN_SIZE,
+  ACTION_TYPE,
 } from '../utils/consts'
-import { fetchNip05, getReqParams, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm, packageToPerms } from '@/utils/helpers/helpers'
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
@@ -629,18 +630,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private getDecision(backend: NDKNip46Backend, req: DbPending): DECISION {
     if (!(req.method in backend.handlers)) return DECISION.IGNORE
 
-    if (req.method === 'connect') {
-      const params = getReqParams(req)
-      if (params && params.length >= 2 && params[1]) {
-        const secret = params[1]
-        const token = this.connectTokens.find((t) => t.token === secret)
-        if (!token || token.expiry < Date.now() || token.npub !== req.npub) {
-          console.log('unknown token', secret)
-          return DECISION.IGNORE
-        }
-      }
-    }
-
     const reqPerm = getReqPerm(req)
     const appPerms = this.perms.filter((p) => p.npub === req.npub && p.appNpub === req.appNpub)
 
@@ -793,11 +782,27 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       return [DECISION.IGNORE, undefined]
     }
 
+    // check token
+    let subNpub: string | undefined = undefined
+    if (method === 'connect') {
+      if (params && params.length >= 2 && params[1]) {
+        const secret = params[1]
+        const token = this.connectTokens.find((t) => t.token === secret)
+        if (!token || token.expiry < Date.now() || token.npub !== npub) {
+          console.log('unknown token', secret)
+          return [DECISION.IGNORE, undefined]
+        }
+
+        subNpub = token.subNpub
+      }
+    }
+
     const req: DbPending = {
       id,
       npub,
       appNpub,
       method,
+      subNpub,
       params: JSON.stringify(params),
       timestamp: Date.now(),
     }
@@ -866,6 +871,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
               token: token || '',
+              subNpub,
             })
 
             // reload
@@ -1179,19 +1185,20 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private async generateKeyConnect(params: CreateConnectParams) {
     const k = await this.addKey({ name: params.name, passphrase: params.password })
 
-    const { data: pubkey } = nip19.decode(k.npub)
-    const req: DbPending = {
-      id: Math.random().toString(),
+    const perms = ['connect', 'get_public_key']
+    const allowedPerms = packageToPerms(ACTION_TYPE.BASIC)
+    perms.push(...params.perms.split(',').filter(p => allowedPerms?.includes(p)))
+
+    await this.connectApp({
       npub: k.npub,
       appNpub: params.appNpub,
-      method: 'connect',
-      params: JSON.stringify([pubkey, '', params.perms]),
-      timestamp: Date.now(),
       appUrl: params.appUrl,
-    }
-    await dbi.addPending(req)
+      perms,
+    })
+  
     this.updateUI()
-    return req
+
+    return k.npub
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1314,7 +1321,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const req = this.confirmBuffer.find((r) => r.req.id === id)
     if (!req) {
       console.log('req ', id, 'not found')
-
       await dbi.removePending(id)
       this.updateUI()
       return undefined
@@ -1351,7 +1357,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.updateUI()
   }
 
-  private async addPerm(appNpub: string, npub: string, perm: string) {
+  private async addPerm(appNpub: string, npub: string, perm: string, allow: string) {
     const p: DbPerm = {
       id: Math.random().toString(36).substring(7),
       npub: npub,
@@ -1486,7 +1492,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
       } else if (method === 'addPerm') {
-        result = await this.addPerm(args[0], args[1], args[2])
+        result = await this.addPerm(args[0], args[1], args[2], args[3])
       } else if (method === 'editName') {
         result = await this.editName(args[0], args[1])
       } else if (method === 'transferName') {
