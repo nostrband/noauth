@@ -1,12 +1,17 @@
 import { Box, Stack, Typography } from '@mui/material'
-import { GetStartedButton, LearnMoreButton } from './styled'
+import { GetStartedButton } from './styled'
 import { DOMAIN } from '@/utils/consts'
 import { useSearchParams } from 'react-router-dom'
 import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
 import { useEffect, useState } from 'react'
-import { askNotificationPermission, getReferrerAppUrl, isValidUserName } from '@/utils/helpers/helpers'
+import {
+  askNotificationPermission,
+  getNotificationPermission,
+  getReferrerAppUrl,
+  isValidUserName,
+} from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { useForm } from 'react-hook-form'
@@ -59,10 +64,12 @@ const CreatePage = () => {
 
   const nip05 = `${name}@${DOMAIN}`
 
-  const handleLearnMore = () => {
-    // @ts-ignore
-    window.open(`https://${DOMAIN}`, '_blank').focus()
-  }
+  const isGranted = getNotificationPermission()
+
+  // const handleLearnMore = () => {
+  //   // @ts-ignore
+  //   window.open(`https://${DOMAIN}`, '_blank').focus()
+  // }
 
   useEffect(() => {
     return () => {
@@ -111,7 +118,7 @@ const CreatePage = () => {
       const npub = (await swicCall('generateKeyConnect', params)) as string
       console.log('Created', npub, 'app', appUrl)
 
-      // redirect the window to new url and 
+      // redirect the window to new url and
       // make sure back doesn't show the form again
       searchParams.append('created', 'true')
       setSearchParams(searchParams, { replace: true })
@@ -159,7 +166,9 @@ const CreatePage = () => {
               You can now return to your app
             </Typography>
             <Box marginTop={'1rem'}>
-              <Button fullWidth onClick={handleClose}>Close</Button>
+              <Button fullWidth onClick={handleClose}>
+                Close
+              </Button>
             </Box>
 
             <Typography textAlign={'left'} variant="h6" paddingTop={'1.5em'}>
@@ -212,6 +221,19 @@ const CreatePage = () => {
                     {errors.rePassword.message}
                   </Typography>
                 )}
+
+                {isGranted === undefined && (
+                  <Typography textAlign={'left'} variant="body2" color={'red'} padding={'1em 0.5em 0.5em 0.5em'}>
+                    Your browser does not support notifications! Keep nsec.app tab open
+                    for normal operation. 
+                  </Typography>
+                )}
+                {isGranted === false && (
+                  <Typography textAlign={'left'} variant="body2" padding={'1em 0.5em 0.5em 0.5em'}>
+                    You will be asked to <b>enable notifications</b> to allow nsec.app do it's job in the background.
+                  </Typography>
+                )}
+
                 <GetStartedButton type="submit" disabled={isLoading}>
                   Create account {isLoading && <LoadingSpinner />}
                 </GetStartedButton>

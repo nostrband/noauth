@@ -25,6 +25,14 @@ export const getBunkerLink = (npub: string, token = '') => {
   return `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}${token ? `&secret=${token}` : ''}`
 }
 
+export function getNotificationPermission() {
+  if (!('Notification' in window)) {
+    return undefined
+  } else {
+    return Notification.permission === 'granted'
+  }
+}
+
 export async function askNotificationPermission() {
   return new Promise<void>((ok, rej) => {
     // Let's check if the browser supports notifications
