@@ -80,11 +80,6 @@ export const ModalAppDetails = () => {
     }
   }, [isModalOpened])
 
-  if (isModalOpened && !isAppNpubExists) {
-    handleCloseModal()
-    return null
-  }
-
   const handleInputBlur = () => {
     if (isEmptyString(url)) return
 
@@ -163,6 +158,11 @@ export const ModalAppDetails = () => {
       return false
     }
   }, [])
+
+  if (isModalOpened && !isAppNpubExists) {
+    handleCloseModal()
+    return null
+  }
 
   const handleFilterOptions = (options: SubNpubOptionType[], params: FilterOptionsState<SubNpubOptionType>) => {
     const filtered = filter(options, params)

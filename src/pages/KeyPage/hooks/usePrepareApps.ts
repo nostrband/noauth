@@ -16,7 +16,7 @@ type usePrepareAppsReturnType = {
 export const usePrepareApps = (npub: string): usePrepareAppsReturnType => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   const [searchParams, setSearchParams] = useSearchParams()
-  const { subNpubs } = usePrepareSubNpubList(npub)
+  const subNpubs = usePrepareSubNpubList(npub)
 
   const subNpubParam = searchParams.get('subNpub') || ''
 

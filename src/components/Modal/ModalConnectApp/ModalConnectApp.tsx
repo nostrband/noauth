@@ -46,7 +46,7 @@ export const ModalConnectApp = () => {
   const [subNpubOption, setSubNpubOption] = useState<SubNpubOptionType | null>(null)
   const { subNpub = '' } = subNpubOption || {}
 
-  const { subNpubs } = usePrepareSubNpubList(npub)
+  const subNpubs = usePrepareSubNpubList(npub)
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
