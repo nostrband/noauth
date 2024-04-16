@@ -8,7 +8,6 @@ import {
   TypographyProps,
   styled,
 } from '@mui/material'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import { KindOptionType } from './ModalAddPermission'
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded'
 
@@ -17,13 +16,8 @@ export const StyledPlaceholder = styled((props: TypographyProps) => (
 ))({})
 
 export const StyledSelect = styled(({ label, ...props }: SelectProps & { label: string }) => (
-  <Select
-    {...props}
-    input={<Input fullWidth label={label} />}
-    endAdornment={<ArrowDropDownIcon htmlColor="white" />}
-    displayEmpty
-  />
-))({}) as unknown as typeof Select
+  <Select {...props} input={<Input fullWidth label={label} />} displayEmpty />
+))(({ theme }) => ({})) as unknown as typeof Select
 
 export const StyledAutocomplete = styled(
   (props: Omit<AutocompleteProps<KindOptionType, false, false, true>, 'renderInput'>) => (

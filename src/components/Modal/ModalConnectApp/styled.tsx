@@ -7,7 +7,7 @@ export const StyledAdvancedButton = styled((props: AppButtonProps) => (
 ))(({ theme }) => ({
   padding: '0.25rem 1rem',
   '&.button:is(:hover, :active, &)': {
-    backgroundColor: theme.palette.secondary.main,
+    backgroundColor: theme.palette.backgroundSecondary.default,
   },
   color: theme.palette.text.primary,
 }))

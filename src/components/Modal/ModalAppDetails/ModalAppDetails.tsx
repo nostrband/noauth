@@ -43,7 +43,7 @@ export const ModalAppDetails = () => {
 
   const { icon, name, url, subNpub } = details
   const subNpubEntered = subNpub.trim().length > 0
-//  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
+  //  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
   const isFormValid = subNpubEntered ? isValidNpub : true
 
   const [debouncedSubNpub] = useDebounce(subNpub, 100)
@@ -210,7 +210,7 @@ export const ModalAppDetails = () => {
           value={details.icon}
         />
 
-        <Button varianttype="secondary" type="submit" fullWidth disabled={!isFormValid || isLoading}>
+        <Button type="submit" fullWidth disabled={!isFormValid || isLoading}>
           Save changes {isLoading && <LoadingSpinner mode="secondary" />}
         </Button>
       </Stack>

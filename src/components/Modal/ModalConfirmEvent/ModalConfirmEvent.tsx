@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppDevice, getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
 import { Box, FormControlLabel, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -17,6 +17,7 @@ import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { useProfile } from '@/hooks/useProfile'
+import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -67,7 +68,7 @@ export const ModalConfirmEvent: FC = () => {
   })
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  const { name, url = '', icon = '', subNpub = '' } = triggerApp || {}
+  const { name, url = '', icon = '', subNpub = '', userAgent = '' } = triggerApp || {}
   const appDomain = getDomainPort(url)
   const shortAppNpub = getShortenNpub(appNpub)
   const appName = name || appDomain || shortAppNpub
@@ -76,6 +77,7 @@ export const ModalConfirmEvent: FC = () => {
   const isAppNameExists = !!name || !!appDomain
   const { userAvatar, userName } = useProfile(subNpub || '')
   const subNpubName = userName || getShortenNpub(subNpub)
+  const appDevice = getAppDevice(userAgent)
 
   useEffect(() => {
     // reset
@@ -165,7 +167,13 @@ export const ModalConfirmEvent: FC = () => {
         )}
 
         <StyledHeadingContainer>
-          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
+          <IconApp
+            picture={appIcon}
+            domain={appDomain}
+            alt={appAvatarTitle}
+            getAppTitle={() => appAvatarTitle}
+            size="large"
+          />
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
@@ -176,9 +184,7 @@ export const ModalConfirmEvent: FC = () => {
               </Typography>
             )}
 
-            <Typography variant="body2" color={'GrayText'}>
-              App wants to perform this action
-            </Typography>
+            <DeviceInfo info={appDevice} />
           </Box>
         </StyledHeadingContainer>
 
