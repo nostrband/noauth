@@ -184,7 +184,7 @@ export const ModalConfirmEvent: FC = () => {
               </Typography>
             )}
 
-            <DeviceInfo info={appDevice} />
+            {appDevice && <DeviceInfo info={appDevice} />}
           </Box>
         </StyledHeadingContainer>
 

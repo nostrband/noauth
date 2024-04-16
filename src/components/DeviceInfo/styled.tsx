@@ -1,7 +1,7 @@
 import { Box, Stack, StackProps, styled } from '@mui/material'
 
 export const IconWrapper = styled(Box)({
-  height: '26px',
+  height: '20px',
   '& svg': {
     height: '100%',
     aspectRatio: '1/1',
