@@ -3,8 +3,8 @@ import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Autocomplete, Stack, Typography, useTheme } from '@mui/material'
-import { StyledInput } from './styled'
+import { Autocomplete, FilterOptionsState, MenuItem, Stack, Typography, createFilterOptions } from '@mui/material'
+import { StyledAutocomplete, StyledInput } from './styled'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { isEmptyString } from '@/utils/helpers/helpers'
 import { useParams } from 'react-router-dom'
@@ -15,53 +15,43 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { swicCall } from '@/modules/swic'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
-import { useDebounce } from 'use-debounce'
 import { nip19 } from 'nostr-tools'
+import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
+import { SubNpubMenuItem } from './components/SubNpubMenuItem'
+
+export interface SubNpubOptionType {
+  inputValue?: string
+  subNpub?: string
+}
+
+const filter = createFilterOptions<SubNpubOptionType>()
 
 export const ModalAppDetails = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.APP_DETAILS)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.APP_DETAILS)
   const notify = useEnqueueSnackbar()
-  const theme = useTheme()
 
   const { npub = '', appNpub = '' } = useParams()
   const apps = useAppSelector(selectApps)
   const currentApp = apps.find((app) => app.appNpub === appNpub && app.npub === npub)
+  const subNpubs = usePrepareSubNpubList(npub)
 
-  const [isLoading, setIsLoading] = useState(false)
   const [details, setDetails] = useState({
     url: '',
     name: '',
     icon: '',
-    subNpub: '',
   })
-  const [isValidNpub, setIsValidNpub] = useState(false)
+  const [subNpubOption, setSubNpubOption] = useState<SubNpubOptionType | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+
   const { userAgent } = currentApp || {}
-
-  const { icon, name, url, subNpub } = details
+  const { icon, name, url } = details
+  const { subNpub = '' } = subNpubOption || {}
   const subNpubEntered = subNpub.trim().length > 0
-  //  const isFormValid = subNpubEntered ? !isEmptyString(name) && isValidNpub : !isEmptyString(name)
-  const isFormValid = subNpubEntered ? isValidNpub : true
-
-  const [debouncedSubNpub] = useDebounce(subNpub, 100)
-
-  const validateSubNpub = useCallback(async () => {
-    if (!debouncedSubNpub.trim().length) return
-    try {
-      const { type } = nip19.decode(debouncedSubNpub)
-      if (type === 'npub') setIsValidNpub(true)
-      else setIsValidNpub(false)
-    } catch (error) {
-      setIsValidNpub(false)
-    }
-  }, [debouncedSubNpub])
-
-  useEffect(() => {
-    validateSubNpub()
-  }, [validateSubNpub])
+  const isFormValid = subNpubEntered || true
 
   useEffect(() => {
     if (!currentApp) return
@@ -70,8 +60,13 @@ export const ModalAppDetails = () => {
       icon: currentApp.icon || '',
       name: currentApp.name || '',
       url: currentApp.url || '',
-      subNpub: currentApp.subNpub || '',
     })
+
+    if (currentApp.subNpub) {
+      setSubNpubOption({
+        subNpub: currentApp.subNpub,
+      })
+    }
 
     // eslint-disable-next-line
   }, [appNpub, isModalOpened])
@@ -81,7 +76,6 @@ export const ModalAppDetails = () => {
       if (isModalOpened) {
         // modal closed
         setIsLoading(false)
-        setIsValidNpub(false)
       }
     }
   }, [isModalOpened])
@@ -143,6 +137,60 @@ export const ModalAppDetails = () => {
     }
   }
 
+  const handleSelectKind = (e: any, newValue: string | SubNpubOptionType | null) => {
+    if (typeof newValue === 'string') {
+      return setSubNpubOption({
+        subNpub: newValue,
+        inputValue: newValue,
+      })
+    }
+    if (newValue && newValue.inputValue) {
+      // Create a new value from the user input
+      return setSubNpubOption({
+        subNpub: newValue.inputValue,
+        inputValue: newValue.inputValue,
+      })
+    }
+    setSubNpubOption(newValue)
+  }
+
+  const validateSubNpub = useCallback((npub: string) => {
+    try {
+      if (!npub.startsWith('npub')) return false
+      const { type } = nip19.decode(npub)
+      return type === 'npub'
+    } catch (error) {
+      return false
+    }
+  }, [])
+
+  const handleFilterOptions = (options: SubNpubOptionType[], params: FilterOptionsState<SubNpubOptionType>) => {
+    const filtered = filter(options, params)
+    const { inputValue } = params
+    // Suggest the creation of a new value
+    const isValidNpub = validateSubNpub(inputValue)
+
+    if (!isValidNpub) return filtered
+
+    const isExisting = options.some((option) => inputValue === option.subNpub)
+    if (inputValue !== '' && !isExisting) {
+      filtered.push({
+        inputValue,
+        subNpub: `Enter "${inputValue}"`,
+      })
+    }
+    return filtered
+  }
+
+  const getOptionLabel = (option: string | SubNpubOptionType) => {
+    // Value selected with enter, right from the input
+    if (typeof option === 'string') return option
+    // Add "xxx" option created dynamically
+    if (option.inputValue) return option.subNpub as string
+    // Regular option
+    return option.subNpub as string
+  }
+
   return (
     <Modal open={isModalOpened} onClose={handleCloseModal}>
       <Stack alignItems={'center'}>
@@ -165,14 +213,16 @@ export const ModalAppDetails = () => {
           readOnly
           endAdornment={<InputCopyButton value={userAgent || ''} />}
         />
-        <Input
-          label="Shared access with"
-          fullWidth
-          placeholder="npub1..."
-          value={subNpub}
-          onChange={handleInputChange('subNpub')}
-          helperText={!isValidNpub && subNpubEntered && 'Invalid NPUB'}
-          helperTextColor={theme.palette.error.main}
+        <StyledAutocomplete
+          value={subNpubOption}
+          onChange={handleSelectKind}
+          filterOptions={handleFilterOptions}
+          options={subNpubs as SubNpubOptionType[]}
+          getOptionLabel={getOptionLabel}
+          renderOption={(props, option) => {
+            if (option.inputValue) return <MenuItem {...props}>{option.subNpub}</MenuItem>
+            return <SubNpubMenuItem {...props} option={option} />
+          }}
         />
 
         <Input

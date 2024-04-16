@@ -24,8 +24,9 @@ import {
   SEED_RELAYS,
   TOKEN_TTL,
   TOKEN_SIZE,
+  ACTION_TYPE,
 } from '../utils/consts'
-import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm } from '@/utils/helpers/helpers'
+import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm, packageToPerms } from '@/utils/helpers/helpers'
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
 import { bytesToHex } from '@noble/hashes/utils'
 import { EventEmitter } from 'tseep'
@@ -870,7 +871,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
               permUpdateTimestamp: Date.now(),
               userAgent: navigator?.userAgent || '',
               token: token || '',
-              subNpub
+              subNpub,
             })
 
             // reload
@@ -1184,19 +1185,20 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
   private async generateKeyConnect(params: CreateConnectParams) {
     const k = await this.addKey({ name: params.name, passphrase: params.password })
 
-    const { data: pubkey } = nip19.decode(k.npub)
-    const req: DbPending = {
-      id: Math.random().toString(),
+    const perms = ['connect', 'get_public_key']
+    const allowedPerms = packageToPerms(ACTION_TYPE.BASIC)
+    perms.push(...params.perms.split(',').filter(p => allowedPerms?.includes(p)))
+
+    await this.connectApp({
       npub: k.npub,
       appNpub: params.appNpub,
-      method: 'connect',
-      params: JSON.stringify([pubkey, '', params.perms]),
-      timestamp: Date.now(),
       appUrl: params.appUrl,
-    }
-    await dbi.addPending(req)
+      perms,
+    })
+  
     this.updateUI()
-    return req
+
+    return k.npub
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1319,7 +1321,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const req = this.confirmBuffer.find((r) => r.req.id === id)
     if (!req) {
       console.log('req ', id, 'not found')
-
       await dbi.removePending(id)
       this.updateUI()
       return undefined
@@ -1356,7 +1357,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.updateUI()
   }
 
-  private async addPerm(appNpub: string, npub: string, perm: string) {
+  private async addPerm(appNpub: string, npub: string, perm: string, allow: string) {
     const p: DbPerm = {
       id: Math.random().toString(36).substring(7),
       npub: npub,
@@ -1491,7 +1492,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       } else if (method === 'deletePerm') {
         result = await this.deletePerm(args[0])
       } else if (method === 'addPerm') {
-        result = await this.addPerm(args[0], args[1], args[2])
+        result = await this.addPerm(args[0], args[1], args[2], args[3])
       } else if (method === 'editName') {
         result = await this.editName(args[0], args[1])
       } else if (method === 'transferName') {

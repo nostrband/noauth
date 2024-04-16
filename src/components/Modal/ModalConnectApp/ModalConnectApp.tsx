@@ -11,12 +11,20 @@ import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getBunkerLink } from '@/utils/helpers/helpers'
-import { Box, Fade, Stack, Typography, useTheme } from '@mui/material'
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { Box, Fade, FilterOptionsState, MenuItem, Stack, Typography, createFilterOptions } from '@mui/material'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { StyledAdvancedButton } from './styled'
-import { useDebounce } from 'use-debounce'
+import { StyledAdvancedButton, StyledAutocomplete } from './styled'
 import { nip19 } from 'nostr-tools'
+import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
+import { SubNpubMenuItem } from './components/SubNpubMenuItem'
+
+export interface SubNpubOptionType {
+  inputValue?: string
+  subNpub?: string
+}
+
+const filter = createFilterOptions<SubNpubOptionType>()
 
 export const ModalConnectApp = () => {
   const keys = useAppSelector(selectKeys)
@@ -24,7 +32,6 @@ export const ModalConnectApp = () => {
   const timerRef = useRef<NodeJS.Timeout>()
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
-  const theme = useTheme()
 
   const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONNECT_APP)
@@ -36,10 +43,10 @@ export const ModalConnectApp = () => {
 
   const [token, setToken] = useState<DbConnectToken | undefined>()
 
-  const [subNpub, setSubNpub] = useState('')
-  const [debouncedSubNpub] = useDebounce(subNpub, 500)
-  const [isSubNpubValid, setIsSubNpubValid] = useState(false)
-  const subNpubEntered = subNpub.trim().length > 0
+  const [subNpubOption, setSubNpubOption] = useState<SubNpubOptionType | null>(null)
+  const { subNpub = '' } = subNpubOption || {}
+
+  const { subNpubs } = usePrepareSubNpubList(npub)
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
@@ -53,12 +60,11 @@ export const ModalConnectApp = () => {
   }
 
   const getConnectToken = useCallback(async () => {
-    const isValidSubNpub = isSubNpubValid && debouncedSubNpub !== npub
+    const isValidSubNpub = subNpub !== npub
     if (!isValidSubNpub) return
     const t = (await swicCall('getConnectToken', npub, subNpub)) as DbConnectToken
     setToken(t)
-    // eslint-disable-next-line
-  }, [isSubNpubValid, debouncedSubNpub, npub])
+  }, [npub, subNpub])
 
   useEffect(() => {
     if (isModalOpened && isNpubExists) loadConnectTokenOnMount()
@@ -69,21 +75,6 @@ export const ModalConnectApp = () => {
     if (isModalOpened && isNpubExists) getConnectToken()
     // eslint-disable-next-line
   }, [isModalOpened, getConnectToken])
-
-  const validateSubNpub = useCallback(async () => {
-    if (!debouncedSubNpub.trim().length) return
-    try {
-      const { type } = nip19.decode(debouncedSubNpub)
-      if (type === 'npub') setIsSubNpubValid(true)
-      else setIsSubNpubValid(false)
-    } catch (error) {
-      setIsSubNpubValid(false)
-    }
-  }, [debouncedSubNpub])
-
-  useEffect(() => {
-    validateSubNpub()
-  }, [validateSubNpub])
 
   const bunkerStr = getBunkerLink(npub, token?.token)
 
@@ -111,8 +102,58 @@ export const ModalConnectApp = () => {
 
   const handleToggleShowAdvancedOptions = () => setShowAdvancedOptions((prevShow) => !prevShow)
 
-  const handleSubNpubChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSubNpub(e.target.value)
+  const handleSelectKind = (e: any, newValue: string | SubNpubOptionType | null) => {
+    if (typeof newValue === 'string') {
+      return setSubNpubOption({
+        subNpub: newValue,
+        inputValue: newValue,
+      })
+    }
+    if (newValue && newValue.inputValue) {
+      // Create a new value from the user input
+      return setSubNpubOption({
+        subNpub: newValue.inputValue,
+        inputValue: newValue.inputValue,
+      })
+    }
+    setSubNpubOption(newValue)
+  }
+
+  const validateSubNpub = useCallback((npub: string) => {
+    try {
+      if (!npub.startsWith('npub')) return false
+      const { type } = nip19.decode(npub)
+      return type === 'npub'
+    } catch (error) {
+      return false
+    }
+  }, [])
+
+  const handleFilterOptions = (options: SubNpubOptionType[], params: FilterOptionsState<SubNpubOptionType>) => {
+    const filtered = filter(options, params)
+    const { inputValue } = params
+    // Suggest the creation of a new value
+    const isValidNpub = validateSubNpub(inputValue)
+
+    if (!isValidNpub) return filtered
+
+    const isExisting = options.some((option) => inputValue === option.subNpub)
+    if (inputValue !== '' && !isExisting) {
+      filtered.push({
+        inputValue,
+        subNpub: `Enter "${inputValue}"`,
+      })
+    }
+    return filtered
+  }
+
+  const getOptionLabel = (option: string | SubNpubOptionType) => {
+    // Value selected with enter, right from the input
+    if (typeof option === 'string') return option
+    // Add "xxx" option created dynamically
+    if (option.inputValue) return option.subNpub as string
+    // Regular option
+    return option.subNpub as string
   }
 
   if (isModalOpened && !isNpubExists) {
@@ -127,19 +168,19 @@ export const ModalConnectApp = () => {
 
         <Fade in={showAdvancedOptions} unmountOnExit={true}>
           <Box width={'100%'} marginBottom={'0.5rem'}>
-            <Input
-              label="Shared access with"
-              fullWidth
-              placeholder="npub1..."
-              value={subNpub}
-              onChange={handleSubNpubChange}
-              helperText={subNpubEntered && (!isSubNpubValid ? 'Invalid NPUB' : 'Connection string updated!')}
-              helperTextColor={isSubNpubValid ? theme.palette.success.main : theme.palette.error.main}
+            <StyledAutocomplete
+              value={subNpubOption}
+              onChange={handleSelectKind}
+              filterOptions={handleFilterOptions}
+              options={subNpubs as SubNpubOptionType[]}
+              getOptionLabel={getOptionLabel}
+              renderOption={(props, option) => {
+                if (option.inputValue) return <MenuItem {...props}>{option.subNpub}</MenuItem>
+                return <SubNpubMenuItem {...props} option={option} />
+              }}
             />
           </Box>
         </Fade>
-
-        {/* <Typography variant="body2">Copy this string and paste it into the app to log in.</Typography> */}
 
         <Stack gap={'0.5rem'} alignItems={'center'} width={'100%'}>
           <Input
