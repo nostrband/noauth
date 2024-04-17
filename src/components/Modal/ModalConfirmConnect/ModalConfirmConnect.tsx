@@ -4,6 +4,7 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import {
   askNotificationPermission,
   formatPermSummary,
+  getAppDevice,
   getAppIconTitle,
   getDomainPort,
   getReferrerAppUrl,
@@ -25,11 +26,11 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
-// import { AppLink } from '@/shared/AppLink/AppLink'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useProfile } from '@/hooks/useProfile'
+import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 
 type Perm = DbPerm & { checked: boolean }
 
@@ -43,17 +44,23 @@ export const ModalConfirmConnect = () => {
   const [perms, setPerms] = useState<Perm[]>([])
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
 
+  // apps for this npub
+  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   // pending reqs for this npub
   const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
   // we need valid reqId
   const pendingReqId = searchParams.get('reqId') || ''
   const req = pending.find((p) => p.id === pendingReqId)
-  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
-  const triggerApp = apps.find((app) => app.appNpub === req?.appNpub)
+  const { appNpub: pendingReqAppNpub = '', subNpub = '' } = req || {}
+
+  const triggerApp = apps.find((app) => {
+    return app.appNpub === pendingReqAppNpub
+  })
 
   // provided by apps
   const redirectUri = searchParams.get('redirect_uri') || ''
@@ -68,7 +75,6 @@ export const ModalConfirmConnect = () => {
   const token = searchParams.get('token') || ''
 
   // to show subNpub profile
-  const { subNpub = '' } = req || {}
   const { userAvatar, userName } = useProfile(subNpub)
   const subNpubName = userName || getShortenNpub(subNpub)
 
@@ -83,13 +89,14 @@ export const ModalConfirmConnect = () => {
   const [isPending, setIsPending] = useState(false)
 
   const { appNpub = '' } = req || {}
-  const { name, url = '', icon = '' } = triggerApp || {}
+  const { name, url = '', icon = '', userAgent = '' } = triggerApp || {}
 
   const appUrl = url || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
+  const appDevice = getAppDevice(userAgent)
 
   useEffect(() => {
     const list =
@@ -147,7 +154,7 @@ export const ModalConfirmConnect = () => {
   }, [isModalOpened])
 
   useEffect(() => {
-    setSelectedActionType(hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC);
+    setSelectedActionType(hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC)
   }, [isLoaded, hasReqPerms])
 
   if (isLoaded) {
@@ -296,14 +303,18 @@ export const ModalConfirmConnect = () => {
         )}
 
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
-          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
+          <IconApp
+            picture={appIcon}
+            domain={appDomain}
+            alt={appAvatarTitle}
+            getAppTitle={() => appAvatarTitle}
+            size="large"
+          />
           <Box overflow={'auto'}>
             <Typography variant="h5" fontWeight={600} noWrap>
               {appName}
             </Typography>
-            <Typography variant="body2" color={'GrayText'} noWrap>
-              New app would like to connect
-            </Typography>
+            {appDevice && <DeviceInfo info={appDevice} />}
           </Box>
         </Stack>
 
@@ -314,7 +325,9 @@ export const ModalConfirmConnect = () => {
               <IconApp picture={userAvatar} alt={subNpubName} size="medium" isRounded />
               <Box overflow={'auto'}>
                 <Typography>{subNpubName}</Typography>
-                <Typography variant='body2' color={'GrayText'}>{getShortenNpub(subNpub)}</Typography>
+                <Typography variant="body2" color={'GrayText'}>
+                  {getShortenNpub(subNpub)}
+                </Typography>
               </Box>
             </Stack>
           </Stack>

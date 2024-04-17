@@ -46,7 +46,7 @@ export const ModalConnectApp = () => {
   const [subNpubOption, setSubNpubOption] = useState<SubNpubOptionType | null>(null)
   const { subNpub = '' } = subNpubOption || {}
 
-  const { subNpubs } = usePrepareSubNpubList(npub)
+  const subNpubs = usePrepareSubNpubList(npub)
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
@@ -201,8 +201,8 @@ export const ModalConnectApp = () => {
             padding={'0 1rem'}
             width={'100%'}
           >
-            <Typography variant="body2" color={'red'}>
-              Do not share it publicly!
+            <Typography variant="body2" color={'GrayText'}>
+              Paste it into an app. 
             </Typography>
             <AppLink
               title="What is this?"
