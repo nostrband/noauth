@@ -201,8 +201,8 @@ export const ModalConnectApp = () => {
             padding={'0 1rem'}
             width={'100%'}
           >
-            <Typography variant="body2" color={'red'}>
-              Do not share it publicly!
+            <Typography variant="body2" color={'GrayText'}>
+              Paste it into an app. 
             </Typography>
             <AppLink
               title="What is this?"
