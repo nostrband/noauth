@@ -134,6 +134,8 @@ export function formatPermSummary(perms: string[]) {
 
   const important = []
   if (encrypt && decrypt) important.push('encrypt and decrypt data (DMs)')
+  else if (encrypt) important.push('encrypt data (DMs)')
+  else if (decrypt) important.push('decrypt data (DMs)')
   if (dms) important.push('send direct messages')
   if (profile) important.push('update your profile')
   if (contacts) important.push('update your contacts')

@@ -350,6 +350,13 @@ export const ModalConfirmConnect = () => {
 
         <SectionTitle>Permissions</SectionTitle>
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
+          {appDomainPermsExists && (
+            <ActionToggleButton
+              value={ACTION_TYPE.REUSE}
+              title={'Reuse permissions'}
+              description={reuseActionTypeDescription}
+            />
+          )}
           {!hasReqPerms && (
             <ActionToggleButton
               value={ACTION_TYPE.BASIC}
@@ -360,15 +367,8 @@ export const ModalConfirmConnect = () => {
           {hasReqPerms && (
             <ActionToggleButton
               value={ACTION_TYPE.REQUESTED}
-              title={`Requested ${selectedPerms.length} permissions`}
+              title={`Asking ${selectedPerms.length} permissions`}
               description={requestedActionTypeDescription}
-            />
-          )}
-          {appDomainPermsExists && (
-            <ActionToggleButton
-              value={ACTION_TYPE.REUSE}
-              title={'Reuse app permissions'}
-              description={reuseActionTypeDescription}
             />
           )}
         </StyledToggleButtonsGroup>
