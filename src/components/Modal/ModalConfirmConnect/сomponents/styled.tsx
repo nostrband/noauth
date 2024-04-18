@@ -40,6 +40,7 @@ export const StyledToggleButton = styled((props: ToggleButtonProps) => (
       WebkitBoxOrient: 'vertical',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
+      fontSize: '10px',
     },
   },
 }))
