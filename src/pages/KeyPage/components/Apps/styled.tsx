@@ -34,6 +34,9 @@ export const StyledAccordion = styled((props: AccordionProps) => <Accordion {...
     },
     borderRadius: '12px !important',
     padding: '0.5rem 1rem',
+    '&:before': {
+      height: '0',
+    },
   })
 )
 

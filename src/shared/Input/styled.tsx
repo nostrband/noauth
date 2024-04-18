@@ -1,22 +1,19 @@
 import { Box, BoxProps, styled } from '@mui/material'
 
-export const StyledInputContainer = styled((props: BoxProps & { mode: 'default' | 'light' }) => <Box {...props} />)(({
-  theme,
-  mode = 'default',
-}) => {
+export const StyledInputContainer = styled((props: BoxProps) => <Box {...props} />)(({ theme }) => {
   const isDark = theme.palette.mode === 'dark'
-  const background = mode === 'light' ? theme.palette.secondary.main : isDark ? '#000000A8' : '#000'
+  const background = isDark ? '#000000A8' : theme.palette.secondary.main
 
   return {
     width: '100%',
     '& > .input_root': {
       background: background,
-      color: mode === 'light' ? theme.palette.primary.main : theme.palette.common.white,
+      color: theme.palette.primary.main,
       padding: '0.75rem 1rem',
       borderRadius: '1rem',
       borderWidth: '0.3px',
       borderStyle: 'solid',
-      borderColor: mode === 'light' ? 'transparent' : '#FFFFFF54',
+      borderColor: isDark ? '#FFFFFF54' : '#00000015',
       fontSize: '0.875rem',
       '&.error': {
         border: '1px solid ' + theme.palette.error.main,

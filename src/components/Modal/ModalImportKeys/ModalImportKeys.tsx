@@ -176,7 +176,7 @@ export const ModalImportKeys = () => {
     const isStepValid = await trigger(['username', 'nsec'])
     if (
       !isStepValid ||
-      (nameNpub && !isTakenByNsec) || 
+      (nameNpub && !isTakenByNsec) ||
       isBadNsec ||
       !enteredUsername.trim() ||
       !enteredNsec.trim() ||
@@ -203,7 +203,7 @@ export const ModalImportKeys = () => {
                 label="Choose a username"
                 fullWidth
                 placeholder="Enter a Username"
-                endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
+                endAdornment={<Typography color={theme.palette.textSecondaryDecorate.main}>@{DOMAIN}</Typography>}
                 {...register('username')}
                 error={!!errors.username}
                 helperText={nameHelperText}

@@ -165,7 +165,13 @@ export const ModalConfirmEvent: FC = () => {
         )}
 
         <StyledHeadingContainer>
-          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
+          <IconApp
+            picture={appIcon}
+            domain={appDomain}
+            alt={appAvatarTitle}
+            getAppTitle={() => appAvatarTitle}
+            size="large"
+          />
           <Box>
             <Typography variant="h5" fontWeight={600}>
               {appName}
@@ -175,9 +181,8 @@ export const ModalConfirmEvent: FC = () => {
                 {shortAppNpub}
               </Typography>
             )}
-
-            <Typography variant="body2" color={'GrayText'}>
-              App wants to perform this action
+            <Typography variant="body2" color={'GrayText'} noWrap>
+              New app would like to connect
             </Typography>
           </Box>
         </StyledHeadingContainer>
