@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { Box, Stack, useMediaQuery } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { ItemPermission } from './ItemPermission'
 
 type PermissionsProps = {
@@ -9,17 +9,19 @@ type PermissionsProps = {
 }
 
 export const Permissions: FC<PermissionsProps> = ({ perms }) => {
-  const isMobile = useMediaQuery('(max-width:485px)')
+  const isEmpty = perms.length === 0
 
   return (
     <>
       <SectionTitle marginBottom={'0.5rem'}>Permissions</SectionTitle>
 
-      <Box width={'100%'} marginBottom={'1rem'} flex={1} overflow={isMobile ? 'initial' : 'auto'}>
+      <Box width={'100%'} marginBottom={'1rem'} flex={1}>
         <Stack gap={'0.5rem'}>
-          {perms.map((perm) => {
-            return <ItemPermission key={perm.id} permission={perm} />
-          })}
+          {!isEmpty &&
+            perms.map((perm) => {
+              return <ItemPermission key={perm.id} permission={perm} />
+            })}
+          {isEmpty && <Typography textAlign={'center'}>No permissions</Typography>}
         </Stack>
       </Box>
     </>
