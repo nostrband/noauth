@@ -73,7 +73,7 @@ export const Apps: FC = () => {
       {subNpubAppsExists && (
         <Stack marginBottom={'0.75rem'}>
           <Select
-            input={<Input fullWidth mode="light" />}
+            input={<Input fullWidth />}
             value={sortAppsBy}
             onChange={handleChangeSortAppsBy}
             renderValue={renderSelectValue}

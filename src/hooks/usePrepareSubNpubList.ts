@@ -2,9 +2,7 @@ import { selectAppsByNpub } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { SubNpubProfile, SubNpubsMap } from '@/types/general'
 
-type usePrepareSubNpubListReturnType = {
-  subNpubs: SubNpubProfile[]
-}
+type usePrepareSubNpubListReturnType = SubNpubProfile[]
 
 export const usePrepareSubNpubList = (npub: string): usePrepareSubNpubListReturnType => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
@@ -29,7 +27,5 @@ export const usePrepareSubNpubList = (npub: string): usePrepareSubNpubListReturn
 
   const subNpubProfiles = Object.values(subNpubsMap)
 
-  return {
-    subNpubs: subNpubProfiles,
-  }
+  return subNpubProfiles
 }

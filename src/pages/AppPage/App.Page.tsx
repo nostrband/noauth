@@ -22,6 +22,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { ModalAddPermission } from '@/components/Modal/ModalAddPermission/ModalAddPermission'
 import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivities'
 import { useProfile } from '@/hooks/useProfile'
+import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -93,9 +94,8 @@ const AppPage = () => {
             <Typography variant="body2" noWrap>
               {connectedOn}
             </Typography>
-            <Typography variant="body2" noWrap>
-              {appDevice && `${appDevice}`}
-            </Typography>
+
+            {appDevice && <DeviceInfo info={appDevice} />}
           </Box>
         </HeadingContainer>
 

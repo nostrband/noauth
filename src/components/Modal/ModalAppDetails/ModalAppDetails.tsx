@@ -35,25 +35,22 @@ export const ModalAppDetails = () => {
   const { npub = '', appNpub = '' } = useParams()
   const apps = useAppSelector(selectApps)
   const currentApp = apps.find((app) => app.appNpub === appNpub && app.npub === npub)
-  const { subNpubs } = usePrepareSubNpubList(npub)
+  const subNpubs = usePrepareSubNpubList(npub)
 
-  const [isLoading, setIsLoading] = useState(false)
   const [details, setDetails] = useState({
     url: '',
     name: '',
     icon: '',
-    subNpub: '',
   })
-
   const [subNpubOption, setSubNpubOption] = useState<SubNpubOptionType | null>(null)
-  const { subNpub = '' } = subNpubOption || {}
-  const subNpubEntered = subNpub.trim().length > 0
+  const [isLoading, setIsLoading] = useState(false)
 
   const isAppNpubExists = appNpub.trim().length && apps.some((app) => app.appNpub === appNpub)
+
   const { userAgent } = currentApp || {}
-
   const { icon, name, url } = details
-
+  const { subNpub = '' } = subNpubOption || {}
+  const subNpubEntered = subNpub.trim().length > 0
   const isFormValid = subNpubEntered || true
 
   useEffect(() => {
@@ -63,8 +60,13 @@ export const ModalAppDetails = () => {
       icon: currentApp.icon || '',
       name: currentApp.name || '',
       url: currentApp.url || '',
-      subNpub: currentApp.subNpub || '',
     })
+
+    if (currentApp.subNpub) {
+      setSubNpubOption({
+        subNpub: currentApp.subNpub,
+      })
+    }
 
     // eslint-disable-next-line
   }, [appNpub, isModalOpened])
@@ -157,6 +159,11 @@ export const ModalAppDetails = () => {
     }
   }, [])
 
+  if (isModalOpened && !isAppNpubExists) {
+    handleCloseModal()
+    return null
+  }
+
   const handleFilterOptions = (options: SubNpubOptionType[], params: FilterOptionsState<SubNpubOptionType>) => {
     const filtered = filter(options, params)
     const { inputValue } = params
@@ -182,11 +189,6 @@ export const ModalAppDetails = () => {
     if (option.inputValue) return option.subNpub as string
     // Regular option
     return option.subNpub as string
-  }
-
-  if (isModalOpened && !isAppNpubExists) {
-    handleCloseModal()
-    return null
   }
 
   return (
@@ -258,7 +260,7 @@ export const ModalAppDetails = () => {
           value={details.icon}
         />
 
-        <Button varianttype="secondary" type="submit" fullWidth disabled={!isFormValid || isLoading}>
+        <Button type="submit" fullWidth disabled={!isFormValid || isLoading}>
           Save changes {isLoading && <LoadingSpinner mode="secondary" />}
         </Button>
       </Stack>

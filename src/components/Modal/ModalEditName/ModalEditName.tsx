@@ -142,7 +142,7 @@ export const ModalEditName = () => {
             label="User name"
             fullWidth
             placeholder="Enter a Username"
-            endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
+            endAdornment={<Typography color={palette.textSecondaryDecorate.main}>@{DOMAIN}</Typography>}
             helperText={inputHelperText}
             onChange={handleNameChange}
             value={enteredName}
