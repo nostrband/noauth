@@ -8,7 +8,7 @@ export const StyledToggleButton = styled((props: ToggleButtonProps) => (
   },
   color: theme.palette.text.primary,
   flex: '1 0 6.25rem',
-  height: '100px',
+  minHeight: '100px',
   borderRadius: '1rem',
   border: `2px solid transparent !important`,
   '&.selected': {
@@ -31,7 +31,7 @@ export const StyledToggleButton = styled((props: ToggleButtonProps) => (
   },
   '@media screen and (max-width: 320px)': {
     '& .title': {
-      fontSize: '14px',
+      fontSize: '12px',
     },
     '& .description': {
       margin: '0.25rem 0',
