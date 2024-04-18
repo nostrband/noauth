@@ -18,20 +18,19 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { StyledActionsListContainer, StyledButton, StyledSelectButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { DbPerm } from '@/modules/db'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
-// import { AppLink } from '@/shared/AppLink/AppLink'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { RequestedPermissions } from './сomponents/RequestedPermissions/RequestedPermissions'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useProfile } from '@/hooks/useProfile'
-
-type Perm = DbPerm & { checked: boolean }
+import { usePrepareExistingAppPerms } from './hooks/usePrepareExistingAppPerms'
+import { Perm } from './types'
+import { convertPermListToOptions } from './helpers'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -40,9 +39,12 @@ export const ModalConfirmConnect = () => {
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
 
   const [isLoaded, setIsLoaded] = useState(false)
-  const [perms, setPerms] = useState<Perm[]>([])
+  const [isPending, setIsPending] = useState(false)
+  const [selectedPerms, setSelectedPerms] = useState<Perm[]>([])
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+
   const [searchParams, setSearchParams] = useSearchParams()
+
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
 
@@ -68,48 +70,59 @@ export const ModalConfirmConnect = () => {
   const token = searchParams.get('token') || ''
 
   // to show subNpub profile
-  const { subNpub = '' } = req || {}
+  const { subNpub = '', appNpub = '' } = req || {}
   const { userAvatar, userName } = useProfile(subNpub)
   const subNpubName = userName || getShortenNpub(subNpub)
 
-  // perms requested by 'connect'/'create_account'
-  const params = req ? getReqParams(req) : []
-  const permsParam = params?.[2] || ''
-  const hasReqPerms = !!permsParam
-  const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
-    hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
-  )
-
-  const [isPending, setIsPending] = useState(false)
-
-  const { appNpub = '' } = req || {}
-  const { name, url = '', icon = '' } = triggerApp || {}
-
+  const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
 
+  // existing perms for this appDomain
+  const appDomainPerms = usePrepareExistingAppPerms(npub, appDomain, apps)
+  const appDomainPermsExists = appDomainPerms.length > 0
+
+  // perms requested by 'connect'/'create_account'
+  const params = req ? getReqParams(req) : []
+  const permsParam = params?.[2] || ''
+  const hasReqPerms = !!permsParam
+  const actionTypeDependingOnHasReqPerms = hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
+
+  const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
+    appDomainPermsExists ? ACTION_TYPE.REUSE : actionTypeDependingOnHasReqPerms
+  )
+
+  const getPermOptions = useCallback(
+    (type: ACTION_TYPE) => {
+      if (type === ACTION_TYPE.BASIC) {
+        return convertPermListToOptions(packageToPerms(ACTION_TYPE.BASIC) || [], npub, appNpub)
+      }
+      if (type === ACTION_TYPE.REQUESTED) {
+        return convertPermListToOptions(permListToPerms(permsParam), npub, appNpub)
+      }
+      return []
+    },
+    [appNpub, npub, permsParam]
+  )
+
   useEffect(() => {
-    const list =
-      selectedActionType === ACTION_TYPE.REQUESTED ? permListToPerms(permsParam) : packageToPerms(selectedActionType)
-    const perms = list
-      ? list.map(
-          (p) =>
-            ({
-              id: p,
-              appNpub,
-              npub,
-              checked: true,
-              perm: p,
-              timestamp: Date.now(),
-              value: '1',
-            }) as Perm
-        )
-      : []
-    setPerms(perms)
-  }, [selectedActionType, pendingReqId, permsParam, req, npub, appNpub])
+    setSelectedActionType(appDomainPermsExists ? ACTION_TYPE.REUSE : actionTypeDependingOnHasReqPerms)
+    // eslint-disable-next-line
+  }, [isLoaded])
+
+  useEffect(() => {
+    if (selectedActionType === ACTION_TYPE.REUSE) {
+      return setSelectedPerms(appDomainPerms.map((p) => ({ ...p, checked: true })))
+    }
+    if (selectedActionType === ACTION_TYPE.REQUESTED) {
+      return setSelectedPerms(getPermOptions(ACTION_TYPE.REQUESTED))
+    }
+    return setSelectedPerms(getPermOptions(ACTION_TYPE.BASIC))
+    // eslint-disable-next-line
+  }, [selectedActionType])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
@@ -146,10 +159,6 @@ export const ModalConfirmConnect = () => {
     }
   }, [isModalOpened])
 
-  useEffect(() => {
-    setSelectedActionType(hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC);
-  }, [isLoaded, hasReqPerms])
-
   if (isLoaded) {
     if (isModalOpened && !req) {
       // we are looking at a stale event!
@@ -159,16 +168,20 @@ export const ModalConfirmConnect = () => {
   }
 
   const handleActionTypeChange = (_: any, value: ACTION_TYPE | null) => {
-    if (!value) return undefined
-    return setSelectedActionType(value)
+    if (!value) {
+      setShowAdvancedOptions((prevShow) => !prevShow)
+      return
+    }
+    setShowAdvancedOptions(true)
+    setSelectedActionType(value)
   }
 
   const handleChangeCheckbox = (reqId: string) => {
-    const newRequestedPerms = perms.map((req) => {
+    const newRequestedPerms = selectedPerms.map((req) => {
       if (req.id === reqId) return { ...req, checked: !req.checked }
       return req
     })
-    setPerms(newRequestedPerms)
+    setSelectedPerms(newRequestedPerms)
   }
 
   const closePopup = (result?: string) => {
@@ -199,7 +212,7 @@ export const ModalConfirmConnect = () => {
 
   const allow = async () => {
     let allowedPerms = ['connect', 'get_public_key']
-    allowedPerms.push(...perms.filter((p) => p.checked).map((p) => p.perm))
+    allowedPerms.push(...selectedPerms.filter((p) => p.checked).map((p) => p.perm))
 
     if (pendingReqId) {
       const options = { perms: allowedPerms, appUrl }
@@ -268,17 +281,19 @@ export const ModalConfirmConnect = () => {
   }
 
   const handleUnselectPerms = () => {
-    setPerms((prevPerms) => prevPerms.map((rp) => ({ ...rp, checked: false })))
+    setSelectedPerms((prevPerms) => prevPerms.map((rp) => ({ ...rp, checked: false })))
   }
 
   const handleSelectPerms = () => {
-    setPerms((prevPerms) => prevPerms.map((rp) => ({ ...rp, checked: true })))
+    setSelectedPerms((prevPerms) => prevPerms.map((rp) => ({ ...rp, checked: true })))
   }
 
-  const permsTitle = hasReqPerms ? `Requested ${perms.length} permissions` : 'Basic permissions'
-  const permsDescription = hasReqPerms
-    ? formatPermSummary(perms.map((p) => p.perm))
-    : 'The default set of permissions for social media apps'
+  const reuseActionTypePerms = selectedActionType === ACTION_TYPE.REUSE ? selectedPerms : appDomainPerms
+  const reuseActionTypeDescription = formatPermSummary(reuseActionTypePerms.map((p) => p.perm))
+
+  const requestedActionTypePerms =
+    selectedActionType === ACTION_TYPE.REQUESTED ? selectedPerms : getPermOptions(ACTION_TYPE.REQUESTED)
+  const requestedActionTypeDescription = formatPermSummary(requestedActionTypePerms.map((p) => p.perm))
 
   return (
     <Modal title="Connection request" open={isModalOpened} withCloseButton={false}>
@@ -296,7 +311,13 @@ export const ModalConfirmConnect = () => {
         )}
 
         <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1rem'}>
-          <IconApp picture={appIcon} domain={appDomain} alt={appAvatarTitle} getAppTitle={() => appAvatarTitle} size="large" />
+          <IconApp
+            picture={appIcon}
+            domain={appDomain}
+            alt={appAvatarTitle}
+            getAppTitle={() => appAvatarTitle}
+            size="large"
+          />
           <Box overflow={'auto'}>
             <Typography variant="h5" fontWeight={600} noWrap>
               {appName}
@@ -314,7 +335,9 @@ export const ModalConfirmConnect = () => {
               <IconApp picture={userAvatar} alt={subNpubName} size="medium" isRounded />
               <Box overflow={'auto'}>
                 <Typography>{subNpubName}</Typography>
-                <Typography variant='body2' color={'GrayText'}>{getShortenNpub(subNpub)}</Typography>
+                <Typography variant="body2" color={'GrayText'}>
+                  {getShortenNpub(subNpub)}
+                </Typography>
               </Box>
             </Stack>
           </Stack>
@@ -322,20 +345,34 @@ export const ModalConfirmConnect = () => {
 
         <SectionTitle>Permissions</SectionTitle>
         <StyledToggleButtonsGroup value={selectedActionType} onChange={handleActionTypeChange} exclusive>
-          <ActionToggleButton
-            selected={true}
-            value={hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC}
-            title={permsTitle}
-            description={permsDescription}
-            onClick={() => setShowAdvancedOptions(true)}
-          />
+          {!hasReqPerms && (
+            <ActionToggleButton
+              value={ACTION_TYPE.BASIC}
+              title={'Basic permissions'}
+              description={'The default set of permissions for social media apps'}
+            />
+          )}
+          {hasReqPerms && (
+            <ActionToggleButton
+              value={ACTION_TYPE.REQUESTED}
+              title={`Requested ${selectedPerms.length} permissions`}
+              description={requestedActionTypeDescription}
+            />
+          )}
+          {appDomainPermsExists && (
+            <ActionToggleButton
+              value={ACTION_TYPE.REUSE}
+              title={'Reuse app permissions'}
+              description={reuseActionTypeDescription}
+            />
+          )}
         </StyledToggleButtonsGroup>
 
         <Stack gap={'0.5rem'}>
           {showAdvancedOptions && (
             <StyledActionsListContainer marginBottom={'0.5rem'}>
               <SectionTitle>Permissions</SectionTitle>
-              <RequestedPermissions requestedPerms={perms} onChangeCheckbox={handleChangeCheckbox} />
+              <RequestedPermissions requestedPerms={selectedPerms} onChangeCheckbox={handleChangeCheckbox} />
               <Stack direction={'row'} gap={'1rem'}>
                 <StyledSelectButton onClick={handleSelectPerms}>Select all</StyledSelectButton>
                 <StyledSelectButton onClick={handleUnselectPerms}>Clear all</StyledSelectButton>
