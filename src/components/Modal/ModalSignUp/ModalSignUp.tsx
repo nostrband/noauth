@@ -43,7 +43,7 @@ export const ModalSignUp = () => {
     formState: { errors },
     watch,
     trigger,
-    setValue
+    setValue,
   } = useForm<FormInputType>({
     defaultValues: FORM_DEFAULT_VALUES,
     resolver: yupResolver(schema),
@@ -114,7 +114,7 @@ export const ModalSignUp = () => {
   }
 
   useEffect(() => {
-    if (!enteredUsername) generateNip05().then(n => setValue('username', n))
+    if (!enteredUsername) generateNip05().then((n) => setValue('username', n))
 
     return () => {
       if (isModalOpened) {
@@ -167,7 +167,7 @@ export const ModalSignUp = () => {
                 label="Username"
                 fullWidth
                 placeholder="Enter a Username"
-                endAdornment={<Typography color={'#FFFFFFA8'}>@{DOMAIN}</Typography>}
+                endAdornment={<Typography color={theme.palette.textSecondaryDecorate.main}>@{DOMAIN}</Typography>}
                 {...register('username')}
                 error={!!errors.username}
                 helperText={nameHelperText}

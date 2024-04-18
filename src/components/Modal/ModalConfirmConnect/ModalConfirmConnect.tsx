@@ -4,6 +4,7 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import {
   askNotificationPermission,
   formatPermSummary,
+  getAppDevice,
   getAppIconTitle,
   getDomainPort,
   getReferrerAppUrl,
@@ -31,31 +32,31 @@ import { useProfile } from '@/hooks/useProfile'
 import { usePrepareExistingAppPerms } from './hooks/usePrepareExistingAppPerms'
 import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
+import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_CONNECT)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [isLoaded, setIsLoaded] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [selectedPerms, setSelectedPerms] = useState<Perm[]>([])
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
-  const [searchParams, setSearchParams] = useSearchParams()
-
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
 
+  // apps for this npub
+  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
   // pending reqs for this npub
   const pending = useAppSelector((state) => selectPendingsByNpub(state, npub))
 
   // we need valid reqId
   const pendingReqId = searchParams.get('reqId') || ''
   const req = pending.find((p) => p.id === pendingReqId)
-  const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
-  const triggerApp = apps.find((app) => app.appNpub === req?.appNpub)
 
   // provided by apps
   const redirectUri = searchParams.get('redirect_uri') || ''
@@ -74,12 +75,15 @@ export const ModalConfirmConnect = () => {
   const { userAvatar, userName } = useProfile(subNpub)
   const subNpubName = userName || getShortenNpub(subNpub)
 
-  const { name = '', url = '', icon = '' } = triggerApp || {}
+  const triggerApp = apps.find((app) => app.appNpub === appNpub)
+
+  const { name = '', url = '', icon = '', userAgent = '' } = triggerApp || {}
   const appUrl = url || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
+  const appDevice = getAppDevice(userAgent)
 
   // existing perms for this appDomain
   const appDomainPerms = usePrepareExistingAppPerms(npub, appDomain, apps)
@@ -325,6 +329,7 @@ export const ModalConfirmConnect = () => {
             <Typography variant="body2" color={'GrayText'} noWrap>
               New app would like to connect
             </Typography>
+            {appDevice && <DeviceInfo info={appDevice} />}
           </Box>
         </Stack>
 
