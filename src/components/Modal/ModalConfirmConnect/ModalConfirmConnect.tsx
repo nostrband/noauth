@@ -92,7 +92,8 @@ export const ModalConfirmConnect = () => {
   // perms requested by 'connect'/'create_account'
   const params = req ? getReqParams(req) : []
   const permsParam = params?.[2] || ''
-  const hasReqPerms = !!permsParam
+  const reqPermCount = permsParam ? permListToPerms(permsParam).length : 0
+  const hasReqPerms = !!reqPermCount
   const actionTypeDependingOnHasReqPerms = hasReqPerms ? ACTION_TYPE.REQUESTED : ACTION_TYPE.BASIC
 
   const [selectedActionType, setSelectedActionType] = useState<ACTION_TYPE>(
@@ -367,7 +368,7 @@ export const ModalConfirmConnect = () => {
           {hasReqPerms && (
             <ActionToggleButton
               value={ACTION_TYPE.REQUESTED}
-              title={`Asking ${selectedPerms.length} permissions`}
+              title={`Asking ${reqPermCount} permissions`}
               description={requestedActionTypeDescription}
             />
           )}
