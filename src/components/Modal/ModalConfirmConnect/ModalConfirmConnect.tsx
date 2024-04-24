@@ -4,7 +4,6 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import {
   askNotificationPermission,
   formatPermSummary,
-  getAppDevice,
   getAppIconTitle,
   getDomainPort,
   getReferrerAppUrl,
@@ -32,7 +31,6 @@ import { useProfile } from '@/hooks/useProfile'
 import { usePrepareExistingAppPerms } from './hooks/usePrepareExistingAppPerms'
 import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
-import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -77,13 +75,12 @@ export const ModalConfirmConnect = () => {
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
 
-  const { name = '', url = '', icon = '', userAgent = '' } = triggerApp || {}
+  const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
-  const appDevice = getAppDevice(userAgent)
 
   // existing perms for this appDomain
   const appDomainPerms = usePrepareExistingAppPerms(npub, appDomain, apps)
@@ -329,7 +326,6 @@ export const ModalConfirmConnect = () => {
             <Typography variant="body2" color={'GrayText'} noWrap>
               New app would like to connect
             </Typography>
-            {appDevice && <DeviceInfo info={appDevice} />}
           </Box>
         </Stack>
 
