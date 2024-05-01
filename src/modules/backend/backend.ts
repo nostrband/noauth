@@ -1,5 +1,5 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
-import { dbi } from './db'
+import { dbi } from '../common/db'
 import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '../common/db-types'
 import { Keys } from '../common/keys'
 import NDK, {

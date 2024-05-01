@@ -1,5 +1,5 @@
 import Dexie from 'dexie'
-import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm, DbSyncHistory } from '../common/db-types'
+import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm, DbSyncHistory } from './db-types'
 
 export interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>

@@ -1,4 +1,4 @@
-import { dbi } from './modules/backend/db'
+import { dbi } from './modules/common/db'
 import { useCallback, useEffect, useState } from 'react'
 import { client } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
