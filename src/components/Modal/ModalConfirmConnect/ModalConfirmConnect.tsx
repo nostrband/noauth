@@ -112,8 +112,7 @@ export const ModalConfirmConnect = () => {
 
   useEffect(() => {
     setSelectedActionType(appDomainPermsExists ? ACTION_TYPE.REUSE : actionTypeDependingOnHasReqPerms)
-    // eslint-disable-next-line
-  }, [isLoaded])
+  }, [appDomainPermsExists, actionTypeDependingOnHasReqPerms])
 
   useEffect(() => {
     if (selectedActionType === ACTION_TYPE.REUSE) {
@@ -123,8 +122,7 @@ export const ModalConfirmConnect = () => {
       return setSelectedPerms(getPermOptions(ACTION_TYPE.REQUESTED))
     }
     return setSelectedPerms(getPermOptions(ACTION_TYPE.BASIC))
-    // eslint-disable-next-line
-  }, [selectedActionType])
+  }, [selectedActionType, appDomainPerms, getPermOptions])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {

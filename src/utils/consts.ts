@@ -12,8 +12,8 @@ export const NSEC_APP_NPUB = process.env.REACT_APP_NSEC_APP_NPUB
 
 export const APP_TAG = 'nsec.app/perm'
 
-export const MIN_POW = 14
-export const MAX_POW = 19
+export const MIN_POW = 11
+export const MAX_POW = 17
 
 export const KIND_RPC = 24133
 export const KIND_DATA = 30078
