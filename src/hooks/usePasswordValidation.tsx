@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { isValidPassphase, isWeakPassphase } from '@/modules/keys'
+import { isValidPassphase, isWeakPassphase } from '@/modules/common/keys'
 import { useDebounce } from 'use-debounce'
 
 export type PasswordStrength = 'weak' | 'good'

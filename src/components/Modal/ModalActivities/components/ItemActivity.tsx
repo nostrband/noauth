@@ -1,5 +1,5 @@
 import { FC, useState } from 'react'
-import { DbHistory } from '@/modules/db'
+import { DbHistory } from '@/modules/common/db-types'
 import { Box, Collapse, IconButton, Stack, Typography } from '@mui/material'
 import { StyledActivityItem, StyledDetails } from './styled'
 import { formatTimestampDate } from '@/utils/helpers/date'

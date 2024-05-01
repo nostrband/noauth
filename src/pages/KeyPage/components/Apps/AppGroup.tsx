@@ -3,11 +3,12 @@ import { IconButton, Stack, Typography, useMediaQuery } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from './styled'
 import { IAppGroup } from '@/types/general'
-import { getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
 import { formatDistanceToNow } from 'date-fns'
 import { ItemApp } from './ItemApp'
-import { DbApp, DbPerm } from '@/modules/db'
+import { DbApp, DbPerm } from '@/modules/common/db-types'
 import { IconApp } from '@/shared/IconApp/IconApp'
+import { getShortenNpub } from '@/modules/common/helpers'
 
 type AppGroupProps = IAppGroup & { perms: DbPerm[] }
 

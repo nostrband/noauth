@@ -1,5 +1,5 @@
 import React, { FC } from 'react'
-import { DbPerm } from '@/modules/db'
+import { DbPerm } from '@/modules/common/db-types'
 import { List } from '@mui/material'
 import { ItemRequestedPermission } from './ItemRequestedPermission'
 

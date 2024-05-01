@@ -1,12 +1,13 @@
-import { DbPerm } from '@/modules/db'
+import { DbPerm } from '@/modules/common/db-types'
 import { Stack, Typography, useMediaQuery } from '@mui/material'
 import { FC, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getAppDevice, getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppDevice, getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
 import { StyledItemAppContainer } from './styled'
 import { formatDistanceToNow } from 'date-fns'
 import { IClientApp } from '@/types/general'
 import { IconApp } from '@/shared/IconApp/IconApp'
+import { getShortenNpub } from '@/modules/common/helpers'
 
 type ItemAppProps = IClientApp & { perms: DbPerm[]; groupedApp?: boolean }
 

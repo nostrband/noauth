@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchProfile } from '@/modules/nostr'
-import { MetaEvent } from '@/types/meta-event'
-import { getProfileUsername, getShortenNpub } from '@/utils/helpers/helpers'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeyByNpub } from '@/store'
+import { MetaEvent } from '@/modules/common/meta-event'
+import { getProfileUsername, getShortenNpub } from '@/modules/common/helpers'
+import { fetchProfile } from '@/modules/common/nostr'
 
 const getFirstLetter = (text: string | undefined): string | null => {
   if (!text || text.trim().length === 0) return null

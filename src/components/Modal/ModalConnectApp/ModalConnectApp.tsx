@@ -1,6 +1,6 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { DbConnectToken } from '@/modules/db'
+import { DbConnectToken } from '@/modules/common/db-types'
 import { swicCall } from '@/modules/swic'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { Button } from '@/shared/Button/Button'
@@ -10,7 +10,6 @@ import { Modal } from '@/shared/Modal/Modal'
 import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getBunkerLink } from '@/utils/helpers/helpers'
 import { Box, Fade, FilterOptionsState, MenuItem, Stack, Typography, createFilterOptions } from '@mui/material'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -18,6 +17,7 @@ import { StyledAdvancedButton, StyledAutocomplete } from './styled'
 import { nip19 } from 'nostr-tools'
 import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
 import { SubNpubMenuItem } from './components/SubNpubMenuItem'
+import { NIP46_RELAYS } from '@/utils/consts'
 
 export interface SubNpubOptionType {
   inputValue?: string
@@ -25,6 +25,11 @@ export interface SubNpubOptionType {
 }
 
 const filter = createFilterOptions<SubNpubOptionType>()
+
+const getBunkerLink = (npub: string, token = '') => {
+  const { data: pubkey } = nip19.decode(npub)
+  return `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}${token ? `&secret=${token}` : ''}`
+}
 
 export const ModalConnectApp = () => {
   const keys = useAppSelector(selectKeys)

@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { DbPerm } from '@/modules/db'
+import { DbPerm } from '@/modules/common/db-types'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { Box, Stack, Typography } from '@mui/material'
 import { ItemPermission } from './ItemPermission'

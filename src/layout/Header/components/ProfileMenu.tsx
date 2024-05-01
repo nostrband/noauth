@@ -13,7 +13,7 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 
 import { ListProfiles } from './ListProfiles'
-import { DbKey } from '@/modules/db'
+import { DbKey } from '@/modules/common/db-types'
 
 export const ProfileMenu = () => {
   const { anchorEl, handleOpen: handleOpenMenu, open, handleClose } = useOpenMenu()

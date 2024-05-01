@@ -13,7 +13,7 @@ import { ExpirationPlugin } from 'workbox-expiration'
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { StaleWhileRevalidate } from 'workbox-strategies'
-import { NoauthBackend } from './modules/backend'
+import { ServiceWorkerBackend } from './modules/sw'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -82,7 +82,7 @@ self.addEventListener('message', (event) => {
 
 async function start() {
   console.log('worker starting')
-  const backend = new NoauthBackend(self)
+  const backend = new ServiceWorkerBackend(self)
   await backend.start()
 }
 

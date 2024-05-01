@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { DbPending, DbPerm } from '@/modules/db'
+import { DbPending, DbPerm } from '@/modules/common/db-types'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { ACTION_TYPE, REQ_TTL } from '@/utils/consts'
+import { ACTION_TYPE, REQ_TTL } from '@/modules/common/consts'
 import { useCallback, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 

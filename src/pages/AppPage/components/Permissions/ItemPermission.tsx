@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { Box, IconButton, Typography } from '@mui/material'
-import { DbPerm } from '@/modules/db'
+import { DbPerm } from '@/modules/common/db-types'
 import { formatTimestampDate } from '@/utils/helpers/date'
 import { StyledPermissionItem } from './styled'
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded'

@@ -1,10 +1,10 @@
-import { DbKey, dbi } from './modules/db'
+import { dbi } from './modules/backend/db'
 import { useCallback, useEffect, useState } from 'react'
 import { swicCheckpoint, swicOnReload, swicOnRender } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
-import { fetchProfile, ndk } from './modules/nostr'
+import { fetchProfile, ndk } from './modules/common/nostr'
 import { ModalInitial } from './components/Modal/ModalInitial/ModalInitial'
 import { ModalImportKeys } from './components/Modal/ModalImportKeys/ModalImportKeys'
 import { ModalSignUp } from './components/Modal/ModalSignUp/ModalSignUp'
@@ -12,6 +12,7 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
 import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
+import { DbKey } from './modules/common/db-types'
 
 function App() {
   const [render, setRender] = useState(0)

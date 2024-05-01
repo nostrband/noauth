@@ -1,29 +1,7 @@
 import { nip19 } from 'nostr-tools'
-import { ACTIONS, ACTION_TYPE, DOMAIN, NIP46_RELAYS, NOAUTHD_URL } from '../consts'
-import { DbHistory, DbPending, DbPerm } from '@/modules/db'
-import { MetaEvent } from '@/types/meta-event'
-
-export async function call(cb: () => any) {
-  try {
-    return await cb()
-  } catch (e) {
-    console.log(`Error: ${e}`)
-  }
-}
-
-export const getShortenNpub = (npub = '') => {
-  return npub.substring(0, 10) + '...' + npub.slice(-4)
-}
-
-export const getProfileUsername = (profile: MetaEvent | null) => {
-  if (!profile) return undefined
-  return profile?.info?.name || profile?.info?.display_name
-}
-
-export const getBunkerLink = (npub: string, token = '') => {
-  const { data: pubkey } = nip19.decode(npub)
-  return `bunker://${pubkey}?relay=${NIP46_RELAYS[0]}${token ? `&secret=${token}` : ''}`
-}
+import { ACTIONS, DOMAIN, NOAUTHD_URL } from '../consts'
+import { DbHistory, DbPending, DbPerm } from '@/modules/common/db-types'
+import { fetchNip05, getSignReqKind } from '@/modules/common/helpers'
 
 export function getNotificationPermission() {
   if (!('Notification' in window)) {
@@ -52,29 +30,6 @@ export async function askNotificationPermission() {
   })
 }
 
-export function getReqParams(req: DbPending): any {
-  try {
-    return JSON.parse(req.params)
-  } catch {}
-  return undefined
-}
-
-export function getSignReqKind(req: DbPending): number | undefined {
-  try {
-    const data = JSON.parse(JSON.parse(req.params)[0])
-    return data.kind
-  } catch {}
-  return undefined
-}
-
-export function getReqPerm(req: DbPending): string {
-  if (req.method === 'sign_event') {
-    const kind = getSignReqKind(req)
-    if (kind !== undefined) return `${req.method}:${kind}`
-  }
-  return req.method
-}
-
 export function permListToPerms(perms: string): string[] {
   const r: string[] = []
   for (const p of perms.split(',')) {
@@ -98,30 +53,6 @@ export function permListToPerms(perms: string): string[] {
     }
   }
   return [...new Set(r)]
-}
-
-export function packageToPerms(pack: string) {
-  if (pack === ACTION_TYPE.BASIC) {
-    return [
-      'connect',
-      'get_public_key',
-      'nip04_decrypt',
-      'nip04_encrypt',
-      'nip44_decrypt',
-      'nip44_encrypt',
-      'sign_event:0',
-      'sign_event:1',
-      'sign_event:3',
-      'sign_event:6',
-      'sign_event:7',
-      'sign_event:9734',
-      'sign_event:10002',
-      'sign_event:30023',
-      'sign_event:10000',
-      'sign_event:27235',
-    ]
-  }
-  return undefined
 }
 
 export function formatPermSummary(perms: string[]) {
@@ -167,52 +98,8 @@ export function formatPermSummary(perms: string[]) {
   return t
 }
 
-export function isPackagePerm(perm: string, reqPerm: string) {
-  if (perm === ACTION_TYPE.BASIC) {
-    switch (reqPerm) {
-      case 'connect':
-      case 'get_public_key':
-      case 'nip04_decrypt':
-      case 'nip04_encrypt':
-      case 'nip44_decrypt':
-      case 'nip44_encrypt':
-      case 'sign_event:0':
-      case 'sign_event:1':
-      case 'sign_event:3':
-      case 'sign_event:6':
-      case 'sign_event:7':
-      case 'sign_event:9734':
-      case 'sign_event:10002':
-      case 'sign_event:30023':
-      case 'sign_event:10000':
-      case 'sign_event:27235':
-        return true
-    }
-  }
-  return false
-}
-
 export function getUsablePermList() {
   return ['sign_event', 'nip04_encrypt', 'nip04_decrypt', 'nip44_encrypt', 'nip44_decrypt']
-}
-
-export async function fetchNip05(value: string, origin?: string) {
-  try {
-    const [username, domain] = value.toLocaleLowerCase().split('@')
-    if (!origin) origin = `https://${domain}`
-    const response = await fetch(`${origin}/.well-known/nostr.json?name=${username}`)
-    const getNpub: {
-      names: {
-        [name: string]: string
-      }
-    } = await response.json()
-
-    const pubkey = getNpub.names[username]
-    return nip19.npubEncode(pubkey)
-  } catch (e) {
-    console.log('Failed to fetch nip05', value, 'error: ' + e)
-    return ''
-  }
 }
 
 export async function fetchNpubNames(npub: string) {
@@ -331,36 +218,12 @@ export function getActionName(method: string, kind?: number) {
 export function getReqActionName(req: DbPending | DbHistory) {
   const kind = req.method === 'sign_event' ? getSignReqKind(req) : undefined
   return getActionName(req.method, kind)
-  // const action = ACTIONS[req.method]
-  // if (req.method === 'sign_event') {
-  //   const kind = getSignReqKind(req)
-  //   if (kind !== undefined) {
-  //     switch (kind) {
-  //       case 0: return 'Update your profile'
-  //       case 1: return 'Publish notes'
-  //       case 3: return 'Update your contact list'
-  //       case 4: return 'Send direct messages'
-  //       case 5: return 'Delete event'
-  //       case 6: return 'Publish reposts'
-  //       case 7: return 'Publish reactions'
-  //       case 10002: return 'Update your relay list'
-  //     }
-  //     return `${action} of kind ${kind}`
-  //   }
-  // }
-  // return action
 }
 
 export function getPermActionName(req: DbPerm) {
   const method = req.perm.split(':')[0]
   const kind = method === 'sign_event' ? Number(req.perm.split(':')[1]) : undefined
   return getActionName(method, kind)
-  // const action = ACTIONS[method]
-  // if (method === 'sign_event') {
-  //   const kind = req.perm.split(':')[1]
-  //   if (kind !== undefined) return `${action} of kind ${kind}`
-  // }
-  // return action
 }
 
 export const isEmptyString = (str = '') => {

@@ -4,7 +4,7 @@ import { selectAppByAppNpub, selectKeys, selectPermsByNpubAndAppNpub } from '@/s
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { getAppDevice, getAppIconTitle, getDomainPort, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppDevice, getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
 import { Button } from '@/shared/Button/Button'
 import { Permissions } from './components/Permissions/Permissions'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
@@ -23,6 +23,7 @@ import { ModalAddPermission } from '@/components/Modal/ModalAddPermission/ModalA
 import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivities'
 import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
+import { getShortenNpub } from '@/modules/common/helpers'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)

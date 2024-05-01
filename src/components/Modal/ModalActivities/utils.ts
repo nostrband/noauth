@@ -1,4 +1,5 @@
-import { DbHistory, db } from '@/modules/db'
+import { db } from '@/modules/backend/db'
+import { DbHistory } from '@/modules/common/db-types'
 
 export const getActivityHistoryQuerier = (appNpub: string) => () => {
   if (!appNpub.trim().length) return []

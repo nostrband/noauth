@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getAppDevice, getAppIconTitle, getDomainPort, getReqActionName, getShortenNpub } from '@/utils/helpers/helpers'
+import { getAppDevice, getAppIconTitle, getDomainPort, getReqActionName } from '@/utils/helpers/helpers'
 import { Box, FormControlLabel, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -18,6 +18,7 @@ import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
+import { getShortenNpub } from '@/modules/common/helpers'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',

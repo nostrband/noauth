@@ -5,33 +5,9 @@ export const WEB_PUSH_PUBKEY = process.env.REACT_APP_WEB_PUSH_PUBKEY
 export const DOMAIN = process.env.REACT_APP_DOMAIN
 export const RELAY = process.env.REACT_APP_RELAY || 'wss://relay.nsec.app'
 export const NIP46_RELAYS = [RELAY]
-export const OUTBOX_RELAYS = ['wss://relay.nostr.band', 'wss://nos.lol', 'wss://purplepag.es']
-export const SEED_RELAYS = ['wss://relay.damus.io', 'wss://nostr.mom', 'wss://relay.primal.net']
-export const BROADCAST_RELAY = 'wss://nostr.mutinywallet.com'
 export const NSEC_APP_NPUB = process.env.REACT_APP_NSEC_APP_NPUB
 
-export const APP_TAG = 'nsec.app/perm'
-
-export const MIN_POW = 11
-export const MAX_POW = 17
-
-export const KIND_RPC = 24133
-export const KIND_DATA = 30078
-
 export const RELOAD_STORAGE_KEY = 'reload'
-
-export const REQ_TTL = 60000 // 1 min
-
-export const TOKEN_SIZE = 16
-export const TOKEN_TTL = 600000 // 10 minutes
-
-export enum ACTION_TYPE {
-  BASIC = 'basic',
-  ADVANCED = 'advanced',
-  CUSTOM = 'custom',
-  REQUESTED = 'requested',
-  REUSE = 'reuse',
-}
 
 export const ACTIONS: { [type: string]: string } = {
   basic: 'Basic permissions',

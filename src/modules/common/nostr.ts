@@ -1,8 +1,8 @@
-import { AugmentedEvent } from '@/types/augmented-event'
-import { Meta, createMeta } from '@/types/meta'
-import { MetaEvent, createMetaEvent } from '@/types/meta-event'
 import NDK, { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
 import { nip19 } from 'nostr-tools'
+import { MetaEvent, createMetaEvent } from './meta-event'
+import { AugmentedEvent } from './augmented-event'
+import { Meta, createMeta } from './meta'
 
 const profileCache = new Map<string, MetaEvent | null>()
 

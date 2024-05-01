@@ -1,3 +1,3 @@
-import { DbPerm } from '@/modules/db'
+import { DbPerm } from '@/modules/common/db-types'
 
 export type Perm = DbPerm & { checked: boolean }

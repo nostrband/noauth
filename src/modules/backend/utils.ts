@@ -1,11 +1,10 @@
-import { NDKEvent } from "@nostr-dev-kit/ndk"
-import { nip19 } from "nostr-tools"
-import { Key } from "./types"
-import { NostrPowEvent, minePow } from "./pow"
-
-export async function sha256(swg: ServiceWorkerGlobalScope, s: string) {
-  return Buffer.from(await swg.crypto.subtle.digest('SHA-256', Buffer.from(s))).toString('hex')
-}
+import { NDKEvent } from '@nostr-dev-kit/ndk'
+import { nip19 } from 'nostr-tools'
+import { Key } from './types'
+import { NostrPowEvent, minePow } from './pow'
+import { GlobalContext } from './global'
+import { sha256 } from '@noble/hashes/sha256'
+import { bytesToHex } from '@noble/hashes/utils'
 
 export async function sendPost({
   url,
@@ -36,14 +35,14 @@ export async function sendPost({
 }
 
 export async function sendPostAuthd({
-  swg,
+  global,
   key,
   url,
   method = 'GET',
   body = '',
   pow = 0,
 }: {
-  swg: ServiceWorkerGlobalScope
+  global: GlobalContext
   key: Key
   url: string
   method: string
@@ -62,7 +61,7 @@ export async function sendPostAuthd({
       ['method', method],
     ],
   })
-  if (body) authEvent.tags.push(['payload', await sha256(swg, body)])
+  if (body) authEvent.tags.push(['payload', bytesToHex(sha256(body))])
 
   // generate pow on auth evevnt
   if (pow) {
@@ -75,7 +74,7 @@ export async function sendPostAuthd({
 
   authEvent.sig = await authEvent.sign(key.signer)
 
-  const auth = swg.btoa(JSON.stringify(authEvent.rawEvent()))
+  const auth = await global.btoa(JSON.stringify(authEvent.rawEvent()))
 
   return await sendPost({
     url,

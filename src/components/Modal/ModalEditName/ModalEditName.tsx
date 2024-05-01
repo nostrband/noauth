@@ -10,13 +10,14 @@ import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
+import { isValidUserName } from '@/utils/helpers/helpers'
 import { Stack, Typography, useTheme } from '@mui/material'
 import { ChangeEvent, Fragment, useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useDebounce } from 'use-debounce'
 import { StyledSettingContainer } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
+import { fetchNip05 } from '@/modules/common/helpers'
 
 export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)

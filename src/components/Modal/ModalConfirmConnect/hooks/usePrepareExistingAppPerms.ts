@@ -1,4 +1,4 @@
-import { DbApp, DbPerm } from '@/modules/db'
+import { DbApp, DbPerm } from '@/modules/common/db-types'
 import { selectPermsByNpub } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { getDomainPort } from '@/utils/helpers/helpers'

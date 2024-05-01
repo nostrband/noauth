@@ -13,7 +13,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { usePassword } from '@/hooks/usePassword'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDebounce } from 'use-debounce'
-import { fetchNip05, isValidUserName } from '@/utils/helpers/helpers'
+import { isValidUserName } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -22,6 +22,7 @@ import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/Pass
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
+import { fetchNip05 } from '@/modules/common/helpers'
 
 const FORM_DEFAULT_VALUES = {
   username: '',

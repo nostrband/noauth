@@ -1,4 +1,4 @@
-import { DbKey } from '@/modules/db'
+import { DbKey } from '@/modules/common/db-types'
 import { Stack } from '@mui/material'
 import { FC } from 'react'
 import { ListItemProfile } from './ListItemProfile'

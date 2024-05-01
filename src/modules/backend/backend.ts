@@ -1,6 +1,7 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
-import { DbApp, DbConnectToken, dbi, DbKey, DbPending, DbPerm } from './db'
-import { Keys } from './keys'
+import { dbi } from './db'
+import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '../common/db-types'
+import { Keys } from '../common/keys'
 import NDK, {
   NDKEvent,
   NDKNip46Backend,
@@ -9,34 +10,20 @@ import NDK, {
   NDKSubscriptionCacheUsage,
   NDKUser,
 } from '@nostr-dev-kit/ndk'
-import {
-  NOAUTHD_URL,
-  WEB_PUSH_PUBKEY,
-  NIP46_RELAYS,
-  KIND_RPC,
-  DOMAIN,
-  REQ_TTL,
-  KIND_DATA,
-  OUTBOX_RELAYS,
-  BROADCAST_RELAY,
-  APP_TAG,
-  NSEC_APP_NPUB,
-  SEED_RELAYS,
-  TOKEN_TTL,
-  TOKEN_SIZE,
-  ACTION_TYPE,
-} from '../utils/consts'
-import { fetchNip05, getReqPerm, getShortenNpub, isPackagePerm, packageToPerms } from '@/utils/helpers/helpers'
-import { encrypt as encryptNip49, decrypt as decryptNip49 } from './backend/nip49'
-import { bytesToHex } from '@noble/hashes/utils'
+import { fetchNip05, getReqPerm, isPackagePerm, packageToPerms } from '../common/helpers'
+import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
+import { sha256 } from '@noble/hashes/sha256'
 import { EventEmitter } from 'tseep'
-import { Watcher } from './backend/watcher'
-import { CreateConnectParams, DECISION, IAllowCallbackParams, Key } from './backend/types'
-import { Nip46Backend } from './backend/nip46'
-import { sha256 } from './backend/utils'
-import { Api, KeyStore } from './backend/api'
-import { PrivateKeySigner } from './backend/signer'
+import { Watcher } from './watcher'
+import { CreateConnectParams, DECISION, IAllowCallbackParams, Key } from './types'
+import { Nip46Backend } from './nip46'
+import { Api } from './api'
+import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
+import { GlobalContext } from './global'
+import { ACTION_TYPE, BROADCAST_RELAY, KIND_DATA, KIND_RPC, OUTBOX_RELAYS, REQ_TTL, SEED_RELAYS } from '../common/consts'
+import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
 
 //const PERF_TEST = false
 
@@ -53,92 +40,38 @@ interface Pending {
   notified?: boolean
 }
 
-export class NoauthBackend extends EventEmitter implements KeyStore {
-  readonly swg: ServiceWorkerGlobalScope
+export class NoauthBackend extends EventEmitter {
+  readonly global: GlobalContext
   private keysModule: Keys
+  private ndk: NDK
+  private api: Api
+
   private enckeys: DbKey[] = []
   private keys: Key[] = []
   private perms: DbPerm[] = []
   private apps: DbApp[] = []
   private connectTokens: DbConnectToken[] = []
   private doneReqIds: string[] = []
-  private confirmBuffer: Pending[] = []
+  protected confirmBuffer: Pending[] = []
   private accessBuffer: DbPending[] = []
-  private notifCallback: (() => void) | null = null
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
   private permSub?: NDKSubscription
-  private ndk = new NDK({
-    explicitRelayUrls: [...NIP46_RELAYS, ...OUTBOX_RELAYS, BROADCAST_RELAY],
-    enableOutboxModel: false,
-  })
   private pushNpubs: string[] = []
-  private api: Api
 
-  public constructor(swg: ServiceWorkerGlobalScope) {
+  public constructor(global: GlobalContext, api: Api) {
     super()
-    this.swg = swg
+    this.global = global
+    this.api = api
+    this.keysModule = new Keys(global.getCryptoSubtle())
 
-    this.api = new Api(this.swg, this)
+    // global ndk is needed to pre-fetch pending requests while we haven't
+    // yet unlocked a key and created a separate ndk for it
+    this.ndk = new NDK({
+      explicitRelayUrls: [...global.getNip46Relays(), ...OUTBOX_RELAYS, BROADCAST_RELAY],
+      enableOutboxModel: false,
+    })
 
-    this.keysModule = new Keys(swg.crypto.subtle)
     this.ndk.connect()
-
-    const self = this
-    swg.addEventListener('activate', (event) => {
-      console.log('activate new sw worker')
-      this.reloadUI()
-    })
-
-    swg.addEventListener('push', (event) => {
-      console.log('got push', event)
-      self.onPush(event)
-      event.waitUntil(
-        new Promise((ok: any) => {
-          self.setNotifCallback(ok)
-        })
-      )
-    })
-
-    swg.addEventListener('message', (event) => {
-      self.onMessage(event)
-    })
-
-    swg.addEventListener(
-      'notificationclick',
-      (event) => {
-        event.notification.close()
-        if (event.action.startsWith('allow:')) {
-          self.confirm(event.action.split(':')[1], true, false)
-        } else if (event.action.startsWith('allow-remember:')) {
-          self.confirm(event.action.split(':')[1], true, true)
-        } else if (event.action.startsWith('disallow:')) {
-          self.confirm(event.action.split(':')[1], false, false)
-        } else {
-          event.waitUntil(
-            self.swg.clients.matchAll({ type: 'window' }).then((clientList) => {
-              console.log('clients', clientList.length)
-              // FIXME find a client that has our
-              // key page
-              for (const client of clientList) {
-                console.log('client', client.url)
-                if (new URL(client.url).pathname === '/' && 'focus' in client) {
-                  client.focus()
-                  return
-                }
-              }
-
-              // confirm screen url
-              const req = event.notification.data.req
-              console.log('req', req)
-              // const url = `${self.swg.location.origin}/key/${req.npub}?confirm-connect=true&appNpub=${req.appNpub}&reqId=${req.id}`
-              const url = `${self.swg.location.origin}/key/${req.npub}`
-              self.swg.clients.openWindow(url)
-            })
-          )
-        }
-      },
-      false // ???
-    )
   }
 
   public async start() {
@@ -181,17 +114,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
       // ensure we're subscribed on the server, re-create the
       // subscription endpoint if we have permissions granted
-      let sub = await this.swg.registration.pushManager?.getSubscription()
-      if (!sub && Notification && Notification.permission === 'granted') {
-        const enabled = await this.enablePush()
-        if (enabled) sub = await this.swg.registration.pushManager.getSubscription()
-      }
-
-      if (sub) {
-        // subscribe in the background to avoid blocking
-        // the request processing
-        for (const k of this.enckeys) this.api.sendSubscriptionToServer(k.npub, sub)
-      }
+      await this.subscribeAllKeys()
 
       // sync app perms
       this.subscribeToAppPerms()
@@ -359,13 +282,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     console.log('updated apps', this.apps)
   }
 
-  public setNotifCallback(cb: () => void) {
-    if (this.notifCallback) {
-      // this.notify()
-    }
-    this.notifCallback = cb
-  }
-
   public listKeys(): KeyInfo[] {
     return this.enckeys.map<KeyInfo>((k) => this.keyInfo(k))
   }
@@ -378,90 +294,10 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     return !!this.enckeys.find((k) => k.npub === npub)
   }
 
-  private async fetchNpubName(npub: string) {
-    const url = `${NOAUTHD_URL}/name?npub=${npub}`
-    const r = await fetch(url)
-    const d = await r.json()
-    return d?.names?.length ? (d.names[0] as string) : ''
-  }
-
   public getKey(npub: string) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
     return key
-  }
-
-  private notify() {
-    // FIXME collect info from accessBuffer and confirmBuffer
-    // and update the notifications
-
-    for (const r of this.confirmBuffer) {
-      if (r.notified) continue
-
-      const key = this.keys.find((k) => k.npub === r.req.npub)
-      if (!key) continue
-
-      const app = this.apps.find((a) => a.appNpub === r.req.appNpub)
-      if (r.req.method !== 'connect' && !app) continue
-
-      // FIXME check
-      const icon = 'assets/icons/logo.svg'
-
-      const appName = app?.name || getShortenNpub(r.req.appNpub)
-      // FIXME load profile?
-      const keyName = getShortenNpub(r.req.npub)
-
-      const tag = 'confirm-' + r.req.appNpub
-      const allowAction = 'allow:' + r.req.id
-      const disallowAction = 'disallow:' + r.req.id
-      const data = { req: r.req }
-
-      if (r.req.method === 'connect') {
-        const title = `Connect with new app`
-        const body = `Allow app "${appName}" to connect to key "${keyName}"`
-        this.swg.registration.showNotification(title, {
-          body,
-          tag,
-          icon,
-          data,
-          actions: [
-            {
-              action: allowAction,
-              title: 'Connect',
-            },
-            {
-              action: disallowAction,
-              title: 'Ignore',
-            },
-          ],
-        })
-      } else {
-        const title = `Permission request`
-        const body = `Allow "${r.req.method}" by "${appName}" to "${keyName}"`
-        this.swg.registration.showNotification(title, {
-          body,
-          tag,
-          icon,
-          data,
-          actions: [
-            {
-              action: allowAction,
-              title: 'Yes',
-            },
-            {
-              action: disallowAction,
-              title: 'No',
-            },
-          ],
-        })
-      }
-
-      // mark
-      r.notified = true
-    }
-
-    if (this.notifCallback) this.notifCallback()
-    this.notifCallback = null
   }
 
   private keyInfo(k: DbKey): KeyInfo {
@@ -509,7 +345,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const dbKey: DbKey = { npub, name, enckey, localKey }
 
     // nip49
-    if (passphrase) dbKey.ncryptsec = encryptNip49(Buffer.from(sk, 'hex'), passphrase, 16, nsec ? 0x01 : 0x00)
+    if (passphrase) dbKey.ncryptsec = encryptNip49(hexToBytes(sk), passphrase, 16, nsec ? 0x01 : 0x00)
 
     // FIXME this is all one big complex TX and if something fails
     // we have to gracefully proceed somehow
@@ -534,9 +370,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       }
     }
 
-    const sub = await this.swg.registration.pushManager?.getSubscription()
-    if (sub) await this.api.sendSubscriptionToServer(npub, sub)
-    console.log('subscribed', npub)
+    await this.subscribeNpub(npub)
 
     // async fetching of perms from relays
     this.subscribeToAppPerms()
@@ -559,7 +393,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const key = this.enckeys.find((k) => k.npub === npub)
     if (!key || !signer) throw new Error('Key not found')
     const name = key.name?.split('@')[0]
-    const nip05 = name?.includes('@') ? name : `${name}@${DOMAIN}`
+    const nip05 = name?.includes('@') ? name : `${name}@${this.global.getDomain()}`
 
     // profile
     const profile = new NDKEvent(this.ndk, {
@@ -582,9 +416,9 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       tags: [],
       created_at: Math.floor(Date.now() / 1000),
     })
-    if (NSEC_APP_NPUB) {
+    if (this.global.getNsecAppNpub()) {
       try {
-        const { type, data: nsecAppNpub } = nip19.decode(NSEC_APP_NPUB)
+        const { type, data: nsecAppNpub } = nip19.decode(this.global.getNsecAppNpub())
         if (type === 'npub') contacts.tags.push(['p', nsecAppNpub])
       } catch {}
     }
@@ -662,7 +496,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     const app = this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
     if (!app && !deleted) throw new Error('App not found')
 
-    const id = await sha256(this.swg, `nsec.app_${npub}_${appNpub}`)
+    const id = bytesToHex(sha256(`nsec.app_${npub}_${appNpub}`))
     let data
     if (app) {
       const perms = this.perms.filter((p) => p.appNpub === appNpub && p.npub === npub)
@@ -977,7 +811,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         // OAuth flow
         const isConnect = method === 'connect'
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.swg.location.origin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
+        const authUrl = `${self.global.getOrigin()}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
@@ -994,10 +828,10 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
           } else {
             console.log('skip sending auth_url')
           }
-        }, 500)
+        }, 300)
 
         // show notifs
-        // this.notify()
+        this.notifyConfirm()
 
         // notify main thread to ask for user concent
         this.updateUI()
@@ -1007,7 +841,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
   private async startKey({ npub, sk, backoff = 1000 }: { npub: string; sk: string; backoff?: number }) {
     const ndk = new NDK({
-      explicitRelayUrls: NIP46_RELAYS,
+      explicitRelayUrls: this.global.getNip46Relays(),
     })
 
     // init relay objects but dont wait until we connect
@@ -1091,7 +925,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         since: Math.floor(Date.now() / 1000 - 10),
       },
       undefined,
-      NDKRelaySet.fromRelayUrls(NIP46_RELAYS, this.ndk)
+      NDKRelaySet.fromRelayUrls(this.global.getNip46Relays(), this.ndk)
     )
     console.log('fetched pending for', npub, events.size)
     this.pendingNpubEvents.set(npub, [...events.values()])
@@ -1187,7 +1021,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
 
     const perms = ['connect', 'get_public_key']
     const allowedPerms = packageToPerms(ACTION_TYPE.BASIC)
-    perms.push(...params.perms.split(',').filter(p => allowedPerms?.includes(p)))
+    perms.push(...params.perms.split(',').filter((p) => allowedPerms?.includes(p)))
 
     await this.connectApp({
       npub: k.npub,
@@ -1195,7 +1029,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
       appUrl: params.appUrl,
       perms,
     })
-  
+
     this.updateUI()
 
     return k.npub
@@ -1252,7 +1086,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     })
 
     // encrypt with new password
-    info.ncryptsec = encryptNip49(Buffer.from(sk, 'hex'), passphrase, 16, 0x01)
+    info.ncryptsec = encryptNip49(hexToBytes(sk), passphrase, 16, 0x01)
     await dbi.editNcryptsec(npub, info.ncryptsec)
 
     // upload key to server using new password
@@ -1274,7 +1108,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     // check name - user might have provided external nip05,
     // or just his npub - we must fetch their name from our
     // server, and if not exists - try to assign one
-    const npubName = await this.fetchNpubName(npub)
+    const npubName = await this.api.fetchNpubName(npub)
     if (npubName) {
       // already have name for this npub
       console.log('existing npub name', npub, npubName)
@@ -1282,7 +1116,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     } else if (nip05.includes('@')) {
       // no name for them?
       const [nip05name, domain] = nip05.split('@')
-      if (domain === DOMAIN) {
+      if (domain === this.global.getDomain()) {
         // wtf? how did we learn their npub if
         // it's the name on our server but we can't fetch it?
         console.log('existing name', nip05name)
@@ -1291,11 +1125,11 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
         // try to take same name on our domain
         existingName = false
         name = nip05name
-        let takenName = await fetchNip05(`${name}@${DOMAIN}`)
+        let takenName = await fetchNip05(`${name}@${this.global.getDomain()}`)
         if (takenName) {
           // already taken? try name_domain as name
           name = `${nip05name}_${domain}`
-          takenName = await fetchNip05(`${name}@${DOMAIN}`)
+          takenName = await fetchNip05(`${name}@${this.global.getDomain()}`)
         }
         if (takenName) {
           console.log('All names taken, leave without a name?')
@@ -1317,7 +1151,7 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     return k
   }
 
-  private async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
+  protected async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
     const req = this.confirmBuffer.find((r) => r.req.id === id)
     if (!req) {
       console.log('req ', id, 'not found')
@@ -1406,29 +1240,6 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     this.updateUI()
   }
 
-  private async enablePush(): Promise<boolean> {
-    const options = {
-      userVisibleOnly: true,
-      applicationServerKey: WEB_PUSH_PUBKEY,
-    }
-
-    const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
-    console.log('push endpoint', JSON.stringify(pushSubscription))
-
-    if (!pushSubscription) {
-      console.log('failed to enable push subscription')
-      return false
-    }
-
-    // subscribe to all pubkeys
-    for (const k of this.keys) {
-      await this.api.sendSubscriptionToServer(k.npub, pushSubscription)
-    }
-    console.log('push enabled')
-
-    return true
-  }
-
   private async exportKey(npub: string): Promise<string> {
     const dbKey = await dbi.getKey(npub)
     if (!dbKey) throw new Error('Key not found')
@@ -1463,93 +1274,59 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     return t
   }
 
-  public async onMessage(event: any) {
-    const { id, method, args } = event.data
-    try {
-      const start = Date.now()
-      //console.log("UI message", id, method, args)
-      let result = undefined
-      if (method === 'generateKey') {
-        result = await this.generateKey(args[0], args[1])
-      } else if (method === 'generateKeyConnect') {
-        result = await this.generateKeyConnect(args[0])
-      } else if (method === 'redeemToken') {
-        result = await this.redeemToken(args[0], args[1])
-      } else if (method === 'importKey') {
-        result = await this.importKey(args[0], args[1], args[2])
-      } else if (method === 'setPassword') {
-        result = await this.setPassword(args[0], args[1], args[2])
-      } else if (method === 'fetchKey') {
-        result = await this.fetchKey(args[0], args[1], args[2])
-      } else if (method === 'confirm') {
-        result = await this.confirm(args[0], args[1], args[2], args[3])
-      } else if (method === 'connectApp') {
-        result = await this.connectApp(args[0])
-      } else if (method === 'updateApp') {
-        result = await this.updateApp(args[0])
-      } else if (method === 'deleteApp') {
-        result = await this.deleteApp(args[0], args[1])
-      } else if (method === 'deletePerm') {
-        result = await this.deletePerm(args[0])
-      } else if (method === 'addPerm') {
-        result = await this.addPerm(args[0], args[1], args[2], args[3])
-      } else if (method === 'editName') {
-        result = await this.editName(args[0], args[1])
-      } else if (method === 'transferName') {
-        result = await this.transferName(args[0], args[1], args[2])
-      } else if (method === 'enablePush') {
-        result = await this.enablePush()
-      } else if (method === 'checkPendingRequest') {
-        result = await this.checkPendingRequest(args[0], args[1])
-      } else if (method === 'fetchPendingRequests') {
-        result = await this.fetchPendingRequests(args[0])
-      } else if (method === 'exportKey') {
-        result = await this.exportKey(args[0])
-      } else if (method === 'nip04Decrypt') {
-        result = await this.nip04Decrypt(args[0], args[1], args[2])
-      } else if (method === 'nip44Decrypt') {
-        result = await this.nip44Decrypt(args[0], args[1], args[2])
-      } else if (method === 'getConnectToken') {
-        result = await this.getConnectToken(args[0], args[1])
-      } else {
-        console.log('unknown method from UI ', method)
-      }
-      console.log('done method', method, 'in', Date.now() - start)
-      event.source.postMessage({
-        id,
-        result,
-      })
-      // ensure it's sent to make checkpoint work
-      this.updateUI()
-    } catch (e: any) {
-      console.log('backend error', e)
-      event.source.postMessage({
-        id,
-        error: e.toString(),
-      })
-      // checkpoint
-      this.updateUI()
-    }
-  }
+  public async onMessage(data: any) {
+    const { method, args } = data
 
-  private async updateUI() {
-    const clients = await this.swg.clients.matchAll({
-      includeUncontrolled: true,
-    })
-    console.log('updateUI clients', clients.length)
-    for (const client of clients) {
-      client.postMessage({})
+    const start = Date.now()
+    //console.log("UI message", id, method, args)
+    let result = undefined
+    if (method === 'generateKey') {
+      result = await this.generateKey(args[0], args[1])
+    } else if (method === 'generateKeyConnect') {
+      result = await this.generateKeyConnect(args[0])
+    } else if (method === 'redeemToken') {
+      result = await this.redeemToken(args[0], args[1])
+    } else if (method === 'importKey') {
+      result = await this.importKey(args[0], args[1], args[2])
+    } else if (method === 'setPassword') {
+      result = await this.setPassword(args[0], args[1], args[2])
+    } else if (method === 'fetchKey') {
+      result = await this.fetchKey(args[0], args[1], args[2])
+    } else if (method === 'confirm') {
+      result = await this.confirm(args[0], args[1], args[2], args[3])
+    } else if (method === 'connectApp') {
+      result = await this.connectApp(args[0])
+    } else if (method === 'updateApp') {
+      result = await this.updateApp(args[0])
+    } else if (method === 'deleteApp') {
+      result = await this.deleteApp(args[0], args[1])
+    } else if (method === 'deletePerm') {
+      result = await this.deletePerm(args[0])
+    } else if (method === 'addPerm') {
+      result = await this.addPerm(args[0], args[1], args[2], args[3])
+    } else if (method === 'editName') {
+      result = await this.editName(args[0], args[1])
+    } else if (method === 'transferName') {
+      result = await this.transferName(args[0], args[1], args[2])
+    } else if (method === 'enablePush') {
+      result = await this.enablePush()
+    } else if (method === 'checkPendingRequest') {
+      result = await this.checkPendingRequest(args[0], args[1])
+    } else if (method === 'fetchPendingRequests') {
+      result = await this.fetchPendingRequests(args[0])
+    } else if (method === 'exportKey') {
+      result = await this.exportKey(args[0])
+    } else if (method === 'nip04Decrypt') {
+      result = await this.nip04Decrypt(args[0], args[1], args[2])
+    } else if (method === 'nip44Decrypt') {
+      result = await this.nip44Decrypt(args[0], args[1], args[2])
+    } else if (method === 'getConnectToken') {
+      result = await this.getConnectToken(args[0], args[1])
+    } else {
+      console.log('unknown method from UI ', method)
     }
-  }
-
-  private async reloadUI() {
-    const clients = await this.swg.clients.matchAll({
-      includeUncontrolled: true,
-    })
-    console.log('reloadUI clients', clients.length)
-    for (const client of clients) {
-      client.postMessage({ result: 'reload' })
-    }
+    console.log('done method', method, 'in', Date.now() - start)
+    return result
   }
 
   public async onPush(event: any) {
@@ -1560,7 +1337,34 @@ export class NoauthBackend extends EventEmitter implements KeyStore {
     } catch (e) {
       console.log('Failed to process push event', e)
     }
-    // FIXME use event.waitUntil and and unblock after we
-    // show a notification to avoid annoying the browser
+  }
+
+  protected getApp(npub: string, appNpub: string) {
+    return this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
+  }
+
+  protected getUnlockedNpubs(): string[] {
+    return this.keys.map((k) => k.npub)
+  }
+
+  protected async enablePush(): Promise<boolean> {
+    // noop stub
+    return false
+  }
+
+  protected async updateUI() {
+    // noop stub
+  }
+
+  protected async subscribeAllKeys() {
+    // noop stub
+  }
+
+  protected notifyConfirm() {
+    // noop
+  }
+
+  protected async subscribeNpub(npub: string) {
+    // noop
   }
 }

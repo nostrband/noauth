@@ -1,4 +1,4 @@
-import { DbApp } from '@/modules/db'
+import { DbApp } from '@/modules/common/db-types'
 
 export type IClientApp = DbApp & {
   lastActive: number

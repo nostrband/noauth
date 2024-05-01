@@ -1,5 +1,5 @@
-import { KIND_RPC } from "@/utils/consts"
 import NDK, { NDKEvent, NDKSigner, NDKSubscription, NDKSubscriptionCacheUsage, NDKUser } from "@nostr-dev-kit/ndk"
+import { KIND_RPC } from "../common/consts"
 
 export class Watcher {
   private ndk: NDK

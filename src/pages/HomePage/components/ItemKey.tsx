@@ -1,8 +1,8 @@
 import { FC } from 'react'
-import { DbKey } from '../../../modules/db'
 import { Avatar, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '@/hooks/useProfile'
+import { DbKey } from '@/modules/common/db-types'
 
 type ItemKeyProps = DbKey
 

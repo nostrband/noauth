@@ -1,4 +1,4 @@
-import { DbHistory, DbPending } from '@/modules/db'
+import { DbHistory, DbPending } from '@/modules/common/db-types'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { nip19 } from 'nostr-tools'
 

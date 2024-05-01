@@ -1,4 +1,4 @@
-import { DbApp } from '@/modules/db'
+import { DbApp } from '@/modules/common/db-types'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { Box, MenuItem, Select, SelectChangeEvent, Stack, Typography } from '@mui/material'

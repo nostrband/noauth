@@ -1,9 +1,9 @@
 import { FC } from 'react'
 import { MenuItem, Typography } from '@mui/material'
 import { useProfile } from '@/hooks/useProfile'
-import { getShortenNpub } from '@/utils/helpers/helpers'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { SubNpubOptionType } from '../ModalAppDetails'
+import { getShortenNpub } from '@/modules/common/helpers'
 
 type SubNpubMenuItemProps = {
   option: SubNpubOptionType

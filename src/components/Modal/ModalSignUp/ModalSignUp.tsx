@@ -9,7 +9,7 @@ import { Button } from '@/shared/Button/Button'
 import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 import { DOMAIN } from '@/utils/consts'
-import { fetchNip05, generateNip05, isValidUserName } from '@/utils/helpers/helpers'
+import { generateNip05, isValidUserName } from '@/utils/helpers/helpers'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/PasswordValidationStatus'
 import { usePassword } from '@/hooks/usePassword'
@@ -21,6 +21,7 @@ import { useDebounce } from 'use-debounce'
 import useStepper from '@/hooks/useStepper'
 import { InputsContainer } from './styled'
 import { getNameHelperTextProps } from './utils'
+import { fetchNip05 } from '@/modules/common/helpers'
 
 const steps = ['Username field', 'Password fields']
 

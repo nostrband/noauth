@@ -1,38 +1,12 @@
-import { MAX_POW, MIN_POW, NIP46_RELAYS, NOAUTHD_URL } from "@/utils/consts"
-import { Key } from "./types"
-import { sendPost, sendPostAuthd } from "./utils"
-
-export interface KeyStore {
-  getKey(npub: string): Key
-}
+import { sendPost, sendPostAuthd } from './utils'
+import { GlobalContext } from './global'
+import { MAX_POW, MIN_POW } from '../common/consts'
 
 export class Api {
+  readonly global: GlobalContext
 
-  readonly swg: ServiceWorkerGlobalScope
-  readonly ks: KeyStore
-
-  constructor(swg: ServiceWorkerGlobalScope, ks: KeyStore) {
-    this.swg = swg
-    this.ks = ks
-  }
-
-  public async sendSubscriptionToServer(npub: string, pushSubscription: PushSubscription) {
-    const body = JSON.stringify({
-      npub,
-      relays: NIP46_RELAYS,
-      pushSubscription,
-    })
-
-    const method = 'POST'
-    const url = `${NOAUTHD_URL}/subscribe`
-
-    return sendPostAuthd({
-      swg: this.swg,
-      key: this.ks.getKey(npub),
-      url,
-      method,
-      body,
-    })
+  constructor(global: GlobalContext) {
+    this.global = global
   }
 
   public async sendKeyToServer(npub: string, enckey: string, pwh: string) {
@@ -43,11 +17,11 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${NOAUTHD_URL}/put`
+    const url = `${this.global.getNoauthdUrl()}/put`
 
     return sendPostAuthd({
-      swg: this.swg,
-      key: this.ks.getKey(npub),
+      global: this.global,
+      key: this.global.getKey(npub),
       url,
       method,
       body,
@@ -61,7 +35,7 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${NOAUTHD_URL}/get`
+    const url = `${this.global.getNoauthdUrl()}/get`
 
     return await sendPost({
       url,
@@ -78,9 +52,9 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${NOAUTHD_URL}/name`
+    const url = `${this.global.getNoauthdUrl()}/name`
 
-    const key = this.ks.getKey(npub)
+    const key = this.global.getKey(npub)
 
     // mas pow should be 21 or something like that
     let pow = MIN_POW
@@ -88,7 +62,7 @@ export class Api {
       console.log('Try name', name, 'pow', pow)
       try {
         return await sendPostAuthd({
-          swg: this.swg,
+          global: this.global,
           key,
           url,
           method,
@@ -111,11 +85,11 @@ export class Api {
     })
 
     const method = 'DELETE'
-    const url = `${NOAUTHD_URL}/name`
+    const url = `${this.global.getNoauthdUrl()}/name`
 
     return sendPostAuthd({
-      swg: this.swg,
-      key: this.ks.getKey(npub),
+      global: this.global,
+      key: this.global.getKey(npub),
       url,
       method,
       body,
@@ -130,11 +104,11 @@ export class Api {
     })
 
     const method = 'PUT'
-    const url = `${NOAUTHD_URL}/name`
+    const url = `${this.global.getNoauthdUrl()}/name`
 
     return sendPostAuthd({
-      swg: this.swg,
-      key: this.ks.getKey(npub),
+      global: this.global,
+      key: this.global.getKey(npub),
       url,
       method,
       body,
@@ -148,14 +122,22 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${NOAUTHD_URL}/created`
+    const url = `${this.global.getNoauthdUrl()}/created`
 
     return sendPostAuthd({
-      swg: this.swg,
-      key: this.ks.getKey(npub),
+      global: this.global,
+      key: this.global.getKey(npub),
       url,
       method,
       body,
     })
   }
+
+  public async fetchNpubName(npub: string) {
+    const url = `${this.global.getNoauthdUrl()}/name?npub=${npub}`
+    const r = await fetch(url)
+    const d = await r.json()
+    return d?.names?.length ? (d.names[0] as string) : ''
+  }
+
 }

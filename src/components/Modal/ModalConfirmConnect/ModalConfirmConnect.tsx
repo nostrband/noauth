@@ -7,9 +7,6 @@ import {
   getAppIconTitle,
   getDomainPort,
   getReferrerAppUrl,
-  getReqParams,
-  getShortenNpub,
-  packageToPerms,
   permListToPerms,
 } from '@/utils/helpers/helpers'
 import { Box, Stack, Typography } from '@mui/material'
@@ -20,7 +17,6 @@ import { StyledActionsListContainer, StyledButton, StyledSelectButton, StyledTog
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useCallback, useEffect, useState } from 'react'
 import { swicCall, swicWaitStarted } from '@/modules/swic'
-import { ACTION_TYPE } from '@/utils/consts'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
@@ -31,6 +27,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { usePrepareExistingAppPerms } from './hooks/usePrepareExistingAppPerms'
 import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
+import { getReqParams, getShortenNpub, packageToPerms } from '@/modules/common/helpers'
+import { ACTION_TYPE } from '@/modules/common/consts'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()

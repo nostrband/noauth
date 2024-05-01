@@ -1,5 +1,5 @@
 import { useProfile } from '@/hooks/useProfile'
-import { DbKey } from '@/modules/db'
+import { DbKey } from '@/modules/common/db-types'
 import { Avatar, ListItemIcon, MenuItem, Typography } from '@mui/material'
 import React, { FC } from 'react'
 
