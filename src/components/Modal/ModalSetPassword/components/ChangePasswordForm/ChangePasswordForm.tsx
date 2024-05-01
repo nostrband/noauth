@@ -8,10 +8,10 @@ import { PasswordValidationStatus } from '@/shared/PasswordValidationStatus/Pass
 import { Button } from '@/shared/Button/Button'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useParams } from 'react-router-dom'
-import { swicCall } from '@/modules/swic'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { usePassword } from '@/hooks/usePassword'
+import { client } from '@/modules/swic'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   existingPassword: '',
@@ -61,7 +61,7 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onClose }) => 
       const { password, existingPassword } = values
       if (!existingPassword.trim() || !password.trim()) throw new Error('Please fill out all fields!')
 
-      await swicCall('setPassword', npub, password, existingPassword)
+      await client.call('setPassword', npub, password, existingPassword)
       setIsLoading(false)
       notify('Password has been successfully updated', 'success')
       onClose()

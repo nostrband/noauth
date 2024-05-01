@@ -1274,7 +1274,7 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
-  public async onMessage(data: any) {
+  public async onMessage(data: BackendRequest) {
     const { method, args } = data
 
     const start = Date.now()

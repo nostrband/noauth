@@ -1,5 +1,5 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { swicCall, swr } from '@/modules/swic'
+import { client, swr } from '@/modules/swic'
 import { askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
 
@@ -20,7 +20,7 @@ export const useBackgroundSigning = () => {
       console.log("asking...");
       await askNotificationPermission()
       console.log("asked");
-      const result = await swicCall('enablePush')
+      const result = await client.call('enablePush')
       if (!result) throw new Error('Failed to activate the push subscription')
       notify('Background service enabled!', 'success')
       setShowWarning(false)

@@ -6,7 +6,6 @@ import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, Slide, Stack, Typography, useTheme } from '@mui/material'
 import { Input } from '@/shared/Input/Input'
 import { Button } from '@/shared/Button/Button'
-import { swicCall } from '@/modules/swic'
 import { useNavigate } from 'react-router-dom'
 import { DOMAIN } from '@/utils/consts'
 import { generateNip05, isValidUserName } from '@/utils/helpers/helpers'
@@ -22,6 +21,7 @@ import useStepper from '@/hooks/useStepper'
 import { InputsContainer } from './styled'
 import { getNameHelperTextProps } from './utils'
 import { fetchNip05 } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 const steps = ['Username field', 'Password fields']
 
@@ -95,7 +95,7 @@ export const ModalSignUp = () => {
     if (!username.trim() || !password.trim()) throw new Error('Fill out all fields!')
     try {
       setIsLoading(true)
-      const k: any = await swicCall('generateKey', username.trim(), password.trim())
+      const k: any = await client.call('generateKey', username.trim(), password.trim())
       if (k.name) {
         notify(`Account created for "${k.name}"`, 'success')
         reset()

@@ -2,10 +2,10 @@ import React from 'react'
 import { StyledButton, StyledSettingContainer } from '../styled'
 import { Stack, Typography } from '@mui/material'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
-import { swicCall } from '@/modules/swic'
 import { useCopyToClipboard } from 'usehooks-ts'
 import { useParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { client } from '@/modules/swic'
 
 export const ExportKeySetting = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -14,7 +14,7 @@ export const ExportKeySetting = () => {
 
   const exportKey = async () => {
     try {
-      const key = (await swicCall('exportKey', npub)) as string
+      const key = (await client.call('exportKey', npub)) as string
       if (!key) notify('Specify Cloud Sync password first!', 'error')
       else if (await copyToClipboard(key)) notify('Key copied to clipboard!')
       else notify('Failed to copy to clipboard', 'error')

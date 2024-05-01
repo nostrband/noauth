@@ -1,6 +1,5 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { swicCall } from '@/modules/swic'
 import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
@@ -23,6 +22,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 import { fetchNip05 } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -138,7 +138,7 @@ export const ModalImportKeys = () => {
       if (!nsec.trim() || !username.trim() || !password.trim()) throw new Error('Fill out all fields!')
       if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
-      const k: any = await swicCall('importKey', username.trim(), nsec.trim(), password.trim())
+      const k: any = await client.call('importKey', username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
       navigate(`/key/${k.npub}`)
       cleanUpStates()

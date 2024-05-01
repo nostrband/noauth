@@ -1,6 +1,6 @@
 import { dbi } from './modules/backend/db'
 import { useCallback, useEffect, useState } from 'react'
-import { swicCheckpoint, swicOnReload, swicOnRender } from './modules/swic'
+import { client } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
@@ -69,7 +69,7 @@ function App() {
 
     // all updates from backend reloaded,
     // backend replies can be delivered now
-    await swicCheckpoint()
+    await client.checkpoint()
 
     // eslint-disable-next-line
   }, [dispatch])
@@ -87,13 +87,13 @@ function App() {
   }, [])
 
   // subscribe to updates from the service worker
-  swicOnRender(() => {
+  client.setOnRender(() => {
     console.log('render')
     setRender((r) => r + 1)
   })
 
   // subscribe to service worker updates
-  swicOnReload(() => {
+  client.setOnReload(() => {
     console.log('reload')
     setNeedReload(true)
   })

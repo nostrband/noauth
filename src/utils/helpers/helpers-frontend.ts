@@ -1,5 +1,5 @@
 import { DbHistory, DbPending } from '@/modules/common/db-types'
-import { swicCall, swicWaitStarted } from '@/modules/swic'
+import { client } from '@/modules/swic'
 import { nip19 } from 'nostr-tools'
 
 function printPrettyJson(json: string) {
@@ -26,12 +26,10 @@ export async function getReqDetails(req: DbPending | DbHistory) {
     if (req.method === 'sign_event') {
       return printPrettyParams(paramsArray)
     } else if (req.method === 'nip04_decrypt') {
-      await swicWaitStarted()
-      const text = await swicCall('nip04Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
+      const text = await client.call('nip04Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
       return `Message with ${nip19.npubEncode(paramsArray[0])}: ${printPrettyJson(text)}`
     } else if (req.method === 'nip44_decrypt') {
-      await swicWaitStarted()
-      const text = await swicCall('nip44Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
+      const text = await client.call('nip44Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
       return `Message (NIP-44) with ${nip19.npubEncode(paramsArray[0])}: ${printPrettyJson(text)}`
     } else if (req.method === 'nip04_encrypt' || req.method === 'nip44_encrypt') {
       return `Message${req.method === 'nip44_encrypt' ? ' (NIP-44) ' : ' '}with ${nip19.npubEncode(paramsArray[0])}: ${paramsArray[1]}`

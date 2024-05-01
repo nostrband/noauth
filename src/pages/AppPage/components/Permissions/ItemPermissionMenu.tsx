@@ -1,8 +1,8 @@
 import { FC, useState } from 'react'
 import { Menu, MenuItem, MenuProps } from '@mui/material'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
-import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
+import { client } from '@/modules/swic'
 
 type ItemPermissionMenuProps = {
   permId: string
@@ -21,7 +21,7 @@ export const ItemPermissionMenu: FC<ItemPermissionMenuProps> = ({ open, anchorEl
 
   const handleDeletePerm = async () => {
     try {
-      await swicCall('deletePerm', permId)
+      await client.call('deletePerm', permId)
       notify('Permission successfully deleted!', 'success')
       handleCloseConfirm()
     } catch (error: any) {

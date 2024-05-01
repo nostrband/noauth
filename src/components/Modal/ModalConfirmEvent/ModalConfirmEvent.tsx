@@ -8,7 +8,6 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { FC, useEffect, useState } from 'react'
 import { Container, StyledActionName, StyledButton, StyledHeadingContainer, StyledPre } from './styled'
-import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { getReqDetails } from '@/utils/helpers/helpers-frontend'
@@ -19,6 +18,7 @@ import { IconApp } from '@/shared/IconApp/IconApp'
 import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 import { getShortenNpub } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 enum ACTION_TYPE {
   ALWAYS = 'ALWAYS',
@@ -88,11 +88,8 @@ export const ModalConfirmEvent: FC = () => {
 
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
-      // wait for SW to start
-      swicWaitStarted().then(async () => {
-        await swicCall('checkPendingRequest', npub, pendingReqId)
-        setIsLoaded(true)
-      })
+      // wait for pending request to load
+      client.call('checkPendingRequest', npub, pendingReqId).then(() => setIsLoaded(true))
     } else {
       setIsLoaded(true)
     }
@@ -128,7 +125,7 @@ export const ModalConfirmEvent: FC = () => {
     if (!currentPendingRequest) return
     setIsPending(true)
     try {
-      const result = await swicCall('confirm', currentPendingRequest.id, allow, remember)
+      const result = await client.call('confirm', currentPendingRequest.id, allow, remember)
       console.log('confirmed', { id: currentPendingRequest.id, remember, allow, result })
       setIsPending(false)
     } catch (e) {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { swicCall } from '@/modules/swic'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Stack, Typography } from '@mui/material'
@@ -16,6 +15,7 @@ import { fetchNpubNames } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { fetchNip05 } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -78,7 +78,7 @@ export const ModalLogin = () => {
       const passphrase = values.password
 
       console.log('fetch', npub, name)
-      const k: any = await swicCall('fetchKey', npub, passphrase, name)
+      const k: any = await client.call('fetchKey', npub, passphrase, name)
       notify(`Fetched ${k.npub}`, 'success')
       cleanUpStates()
       setTimeout(() => {
@@ -97,7 +97,7 @@ export const ModalLogin = () => {
       const npub = searchParams.get('npub') || ''
       if (isPopup && isModalOpened) {
         // ask backend to pre-fetch pending reqs
-        swicCall('fetchPendingRequests', npub)
+        client.call('fetchPendingRequests', npub)
 
         fetchNpubNames(npub).then((names) => {
           if (names.length) {

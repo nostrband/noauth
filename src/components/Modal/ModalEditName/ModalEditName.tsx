@@ -1,7 +1,6 @@
 import { CheckmarkIcon } from '@/assets'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { swicCall } from '@/modules/swic'
 import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -18,6 +17,7 @@ import { useDebounce } from 'use-debounce'
 import { StyledSettingContainer } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { fetchNip05 } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)
@@ -111,7 +111,7 @@ export const ModalEditName = () => {
     if (isEditButtonDisabled) return
     try {
       setIsLoading(true)
-      await swicCall('editName', npub, enteredName)
+      await client.call('editName', npub, enteredName)
       notify('Username updated!', 'success')
       setIsLoading(false)
     } catch (error: any) {
@@ -124,7 +124,7 @@ export const ModalEditName = () => {
     if (isTransferButtonDisabled) return
     try {
       setIsTransferLoading(true)
-      await swicCall('transferName', npub, enteredName, receiverNpub)
+      await client.call('transferName', npub, enteredName, receiverNpub)
       notify('Username transferred!', 'success')
       setIsTransferLoading(false)
       setEnteredName('')

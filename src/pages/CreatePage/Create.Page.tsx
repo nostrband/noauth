@@ -2,7 +2,6 @@ import { Box, Stack, Typography } from '@mui/material'
 import { GetStartedButton } from './styled'
 import { DOMAIN } from '@/utils/consts'
 import { useSearchParams } from 'react-router-dom'
-import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { ModalConfirmConnect } from '@/components/Modal/ModalConfirmConnect/ModalConfirmConnect'
 import { useEffect, useState } from 'react'
@@ -23,6 +22,7 @@ import { FormInputType, schema } from './const'
 import { CreateConnectParams } from '@/modules/backend/types'
 import { nip19 } from 'nostr-tools'
 import { Button } from '@/shared/Button/Button'
+import { client } from '@/modules/swic'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -103,7 +103,7 @@ const CreatePage = () => {
 
       // first thing on user action is to ask for notifs
       await askNotificationPermission()
-      const ok = await swicCall('enablePush')
+      const ok = await client.call('enablePush')
       if (!ok) throw new Error('Failed to activate the push subscription')
       console.log('enablePush done')
 
@@ -115,7 +115,7 @@ const CreatePage = () => {
         perms,
         appUrl,
       }
-      const npub = (await swicCall('generateKeyConnect', params)) as string
+      const npub = (await client.call('generateKeyConnect', params)) as string
       console.log('Created', npub, 'app', appUrl)
 
       // redirect the window to new url and
@@ -127,7 +127,7 @@ const CreatePage = () => {
       resetForm()
 
       try {
-        await swicCall('redeemToken', npub, token)
+        await client.call('redeemToken', npub, token)
         console.log('redeemToken done')
 
         // auto-close/redirect only if redeem succeeded

@@ -8,10 +8,10 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useParams } from 'react-router-dom'
-import { swicCall } from '@/modules/swic'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { usePassword } from '@/hooks/usePassword'
+import { client } from '@/modules/swic'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -56,7 +56,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
     resetPasswordInputs()
     try {
       const { password } = values
-      await swicCall('setPassword', npub, password)
+      await client.call('setPassword', npub, password)
       setIsLoading(false)
       notify('Password has been successfully set', 'success')
       onClose()

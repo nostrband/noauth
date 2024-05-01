@@ -9,7 +9,6 @@ import { Button } from '@/shared/Button/Button'
 import { Permissions } from './components/Permissions/Permissions'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
-import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { IOSBackButton } from '@/shared/IOSBackButton/IOSBackButton'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
@@ -24,6 +23,7 @@ import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivit
 import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 import { getShortenNpub } from '@/modules/common/helpers'
+import { client } from '@/modules/swic'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -53,7 +53,7 @@ const AppPage = () => {
 
   const handleDeleteApp = async () => {
     try {
-      await swicCall('deleteApp', appNpub, npub)
+      await client.call('deleteApp', appNpub, npub)
       notify(`App: «${appName}» successfully deleted!`, 'success')
       navigate(`/key/${npub}`)
     } catch (error: any) {

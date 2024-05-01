@@ -9,11 +9,11 @@ import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectApps } from '@/store'
 import { useParams } from 'react-router-dom'
-import { swicCall } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { KINDS } from '@/utils/consts'
 import { StyledAutocomplete, StyledPlaceholder, StyledSelect, StyledSwitch } from './styled'
 import { isNotANumber } from './utils'
+import { client } from '@/modules/swic'
 
 export interface KindOptionType {
   inputValue?: string
@@ -62,7 +62,7 @@ export const ModalAddPermission: FC = () => {
     const allowValue = allow ? '1' : '0'
     try {
       const permission = isSignEvent ? `${type}:${param?.kind}` : type
-      await swicCall('addPerm', appNpub, npub, permission, allowValue)
+      await client.call('addPerm', appNpub, npub, permission, allowValue)
       setIsLoading(false)
       notify('Permission successfully added!', 'success')
       resetStates()

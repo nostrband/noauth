@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { useAppSelector } from '../store/hooks/redux'
 import { Navigate } from 'react-router-dom'
-import { swicCall } from '../modules/swic'
 import { Box, Button, Stack, TextField } from '@mui/material'
 import { useEnqueueSnackbar } from '../hooks/useEnqueueSnackbar'
+import { client } from '@/modules/swic'
 
 const WelcomePage = () => {
   const keys = useAppSelector((state) => state.content.keys)
@@ -19,7 +19,7 @@ const WelcomePage = () => {
 
   async function generateKey() {
     try {
-      const k: any = await swicCall('generateKey')
+      const k: any = await client.call('generateKey')
       notify(`New key ${k.npub}`, 'success')
     } catch (error: any) {
       notify(error.message, 'error')
@@ -30,7 +30,7 @@ const WelcomePage = () => {
     try {
       const nsec = nsecInputRef.current?.value
       if (!nsec) return
-      await swicCall('importKey', nsec)
+      await client.call('importKey', nsec)
     } catch (error: any) {
       notify(error.message, 'error')
     }
@@ -40,7 +40,7 @@ const WelcomePage = () => {
     try {
       const npub = npubInputRef.current?.value
       const passphrase = passwordInputRef.current?.value
-      const k: any = await swicCall('fetchKey', npub, passphrase)
+      const k: any = await client.call('fetchKey', npub, passphrase)
       notify(`Fetched ${k.npub}`, 'success')
     } catch (error: any) {
       notify(error.message, 'error')

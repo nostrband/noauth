@@ -13,11 +13,11 @@ import { selectApps } from '@/store'
 import { DbApp } from '@/modules/common/db-types'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { swicCall } from '@/modules/swic'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import { nip19 } from 'nostr-tools'
 import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
 import { SubNpubMenuItem } from './components/SubNpubMenuItem'
+import { client } from '@/modules/swic'
 
 export interface SubNpubOptionType {
   inputValue?: string
@@ -122,7 +122,7 @@ export const ModalAppDetails = () => {
         subNpub,
         updateTimestamp: Date.now(),
       }
-      await swicCall('updateApp', updatedApp)
+      await client.call('updateApp', updatedApp)
       notify(`App successfully updated!`, 'success')
       setIsLoading(false)
       handleCloseModal()

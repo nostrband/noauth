@@ -16,7 +16,6 @@ import { selectAppsByNpub, selectPendingsByNpub } from '@/store'
 import { StyledActionsListContainer, StyledButton, StyledSelectButton, StyledToggleButtonsGroup } from './styled'
 import { ActionToggleButton } from './сomponents/ActionToggleButton'
 import { useCallback, useEffect, useState } from 'react'
-import { swicCall, swicWaitStarted } from '@/modules/swic'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { nip19 } from 'nostr-tools'
@@ -29,6 +28,7 @@ import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
 import { getReqParams, getShortenNpub, packageToPerms } from '@/modules/common/helpers'
 import { ACTION_TYPE } from '@/modules/common/consts'
+import { client } from '@/modules/swic'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -136,12 +136,8 @@ export const ModalConfirmConnect = () => {
   useEffect(() => {
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
-      // wait for SW to start
-      swicWaitStarted().then(async () => {
-        // block until req is loaded or we're sure it doesn't exist
-        await swicCall('checkPendingRequest', npub, pendingReqId)
-        setIsLoaded(true)
-      })
+      // block until req is loaded or we're sure it doesn't exist
+      client.call('checkPendingRequest', npub, pendingReqId).then(() => setIsLoaded(true))
     } else {
       setIsLoaded(true)
     }
@@ -198,7 +194,7 @@ export const ModalConfirmConnect = () => {
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     try {
-      const result = await swicCall('confirm', id, allow, remember, options)
+      const result = await client.call('confirm', id, allow, remember, options)
       console.log('confirmed', { id, allow, remember, options, result })
       if (!isPopup) closeModalAfterRequest()
       closePopup(result as string)
@@ -220,7 +216,7 @@ export const ModalConfirmConnect = () => {
       setIsPending(true)
       try {
         await askNotificationPermission()
-        const result = await swicCall('enablePush')
+        const result = await client.call('enablePush')
         if (!result) throw new Error('Failed to activate the push subscription')
         console.log('enablePush done')
       } catch (e: any) {
@@ -230,7 +226,7 @@ export const ModalConfirmConnect = () => {
       }
 
       try {
-        await swicCall('connectApp', { npub, appNpub, appUrl, perms: allowedPerms })
+        await client.call('connectApp', { npub, appNpub, appUrl, perms: allowedPerms })
         console.log('connectApp done', npub, appNpub, appUrl, allowedPerms)
       } catch (e: any) {
         notify(e.toString(), 'error')
@@ -240,7 +236,7 @@ export const ModalConfirmConnect = () => {
 
       if (token) {
         try {
-          await swicCall('redeemToken', npub, token)
+          await client.call('redeemToken', npub, token)
           console.log('redeemToken done')
         } catch (e) {
           console.log('error', e)

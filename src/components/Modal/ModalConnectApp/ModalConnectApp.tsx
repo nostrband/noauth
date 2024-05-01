@@ -1,7 +1,6 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { DbConnectToken } from '@/modules/common/db-types'
-import { swicCall } from '@/modules/swic'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { Button } from '@/shared/Button/Button'
 import { Input } from '@/shared/Input/Input'
@@ -18,6 +17,7 @@ import { nip19 } from 'nostr-tools'
 import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
 import { SubNpubMenuItem } from './components/SubNpubMenuItem'
 import { NIP46_RELAYS } from '@/utils/consts'
+import { client } from '@/modules/swic'
 
 export interface SubNpubOptionType {
   inputValue?: string
@@ -60,14 +60,14 @@ export const ModalConnectApp = () => {
   const loadConnectTokenOnMount = async () => {
     const validToken = !!token && token.expiry > Date.now()
     if (validToken) return
-    const t = (await swicCall('getConnectToken', npub)) as DbConnectToken
+    const t = (await client.call('getConnectToken', npub)) as DbConnectToken
     setToken(t)
   }
 
   const getConnectToken = useCallback(async () => {
     const isValidSubNpub = subNpub !== npub
     if (!isValidSubNpub) return
-    const t = (await swicCall('getConnectToken', npub, subNpub)) as DbConnectToken
+    const t = (await client.call('getConnectToken', npub, subNpub)) as DbConnectToken
     setToken(t)
   }, [npub, subNpub])
 
