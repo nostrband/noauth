@@ -137,7 +137,7 @@ export const ModalConfirmConnect = () => {
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
       // block until req is loaded or we're sure it doesn't exist
-      client.call('checkPendingRequest', npub, pendingReqId).then(() => setIsLoaded(true))
+      client.checkPendingRequest(npub, pendingReqId).then(() => setIsLoaded(true))
     } else {
       setIsLoaded(true)
     }
@@ -194,7 +194,7 @@ export const ModalConfirmConnect = () => {
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     try {
-      const result = await client.call('confirm', id, allow, remember, options)
+      const result = await client.confirmPendingRequest(id, allow, remember, options)
       console.log('confirmed', { id, allow, remember, options, result })
       if (!isPopup) closeModalAfterRequest()
       closePopup(result as string)
@@ -216,7 +216,7 @@ export const ModalConfirmConnect = () => {
       setIsPending(true)
       try {
         await askNotificationPermission()
-        const result = await client.call('enablePush')
+        const result = await client.enablePush()
         if (!result) throw new Error('Failed to activate the push subscription')
         console.log('enablePush done')
       } catch (e: any) {
@@ -226,7 +226,7 @@ export const ModalConfirmConnect = () => {
       }
 
       try {
-        await client.call('connectApp', { npub, appNpub, appUrl, perms: allowedPerms })
+        await client.connectApp(appNpub, npub, appUrl, allowedPerms)
         console.log('connectApp done', npub, appNpub, appUrl, allowedPerms)
       } catch (e: any) {
         notify(e.toString(), 'error')
@@ -236,7 +236,7 @@ export const ModalConfirmConnect = () => {
 
       if (token) {
         try {
-          await client.call('redeemToken', npub, token)
+          await client.redeemToken(npub, token)
           console.log('redeemToken done')
         } catch (e) {
           console.log('error', e)

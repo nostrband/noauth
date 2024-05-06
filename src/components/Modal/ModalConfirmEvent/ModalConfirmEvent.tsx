@@ -89,7 +89,7 @@ export const ModalConfirmEvent: FC = () => {
     if (!isModalOpened) return
     if (isPopup && pendingReqId) {
       // wait for pending request to load
-      client.call('checkPendingRequest', npub, pendingReqId).then(() => setIsLoaded(true))
+      client.checkPendingRequest(npub, pendingReqId).then(() => setIsLoaded(true))
     } else {
       setIsLoaded(true)
     }
@@ -125,7 +125,7 @@ export const ModalConfirmEvent: FC = () => {
     if (!currentPendingRequest) return
     setIsPending(true)
     try {
-      const result = await client.call('confirm', currentPendingRequest.id, allow, remember)
+      const result = await client.confirmPendingRequest(currentPendingRequest.id, allow, remember)
       console.log('confirmed', { id: currentPendingRequest.id, remember, allow, result })
       setIsPending(false)
     } catch (e) {

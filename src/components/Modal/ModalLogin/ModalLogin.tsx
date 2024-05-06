@@ -78,7 +78,7 @@ export const ModalLogin = () => {
       const passphrase = values.password
 
       console.log('fetch', npub, name)
-      const k: any = await client.call('fetchKey', npub, passphrase, name)
+      const k = await client.fetchKey(npub, passphrase, name)
       notify(`Fetched ${k.npub}`, 'success')
       cleanUpStates()
       setTimeout(() => {
@@ -97,8 +97,7 @@ export const ModalLogin = () => {
       const npub = searchParams.get('npub') || ''
       if (isPopup && isModalOpened) {
         // ask backend to pre-fetch pending reqs
-        client.call('fetchPendingRequests', npub)
-
+        client.fetchPendingRequests(npub)
         fetchNpubNames(npub).then((names) => {
           if (names.length) {
             setValue('username', `${names[0]}@${DOMAIN}`)

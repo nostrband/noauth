@@ -21,7 +21,7 @@ export const ItemPermissionMenu: FC<ItemPermissionMenuProps> = ({ open, anchorEl
 
   const handleDeletePerm = async () => {
     try {
-      await client.call('deletePerm', permId)
+      await client.deletePerm(permId)
       notify('Permission successfully deleted!', 'success')
       handleCloseConfirm()
     } catch (error: any) {

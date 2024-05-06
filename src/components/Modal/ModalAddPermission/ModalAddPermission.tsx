@@ -62,7 +62,7 @@ export const ModalAddPermission: FC = () => {
     const allowValue = allow ? '1' : '0'
     try {
       const permission = isSignEvent ? `${type}:${param?.kind}` : type
-      await client.call('addPerm', appNpub, npub, permission, allowValue)
+      await client.addPerm(appNpub, npub, permission, allowValue)
       setIsLoading(false)
       notify('Permission successfully added!', 'success')
       resetStates()

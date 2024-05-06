@@ -22,8 +22,17 @@ import { Api } from './api'
 import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
-import { ACTION_TYPE, BROADCAST_RELAY, KIND_DATA, KIND_RPC, OUTBOX_RELAYS, REQ_TTL, SEED_RELAYS } from '../common/consts'
+import {
+  ACTION_TYPE,
+  BROADCAST_RELAY,
+  KIND_DATA,
+  KIND_RPC,
+  OUTBOX_RELAYS,
+  REQ_TTL,
+  SEED_RELAYS,
+} from '../common/consts'
 import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { BackendRequest } from '../client'
 
 //const PERF_TEST = false
 

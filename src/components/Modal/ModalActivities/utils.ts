@@ -1,4 +1,4 @@
-import { db } from '@/modules/backend/db'
+import { db } from '@/modules/common/db'
 import { DbHistory } from '@/modules/common/db-types'
 
 export const getActivityHistoryQuerier = (appNpub: string) => () => {

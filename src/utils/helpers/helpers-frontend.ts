@@ -26,10 +26,10 @@ export async function getReqDetails(req: DbPending | DbHistory) {
     if (req.method === 'sign_event') {
       return printPrettyParams(paramsArray)
     } else if (req.method === 'nip04_decrypt') {
-      const text = await client.call('nip04Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
+      const text = await client.nip04Decrypt(req.npub, paramsArray[0], paramsArray[1])
       return `Message with ${nip19.npubEncode(paramsArray[0])}: ${printPrettyJson(text)}`
     } else if (req.method === 'nip44_decrypt') {
-      const text = await client.call('nip44Decrypt', req.npub, paramsArray[0], paramsArray[1]) as string
+      const text = await client.nip44Decrypt(req.npub, paramsArray[0], paramsArray[1])
       return `Message (NIP-44) with ${nip19.npubEncode(paramsArray[0])}: ${printPrettyJson(text)}`
     } else if (req.method === 'nip04_encrypt' || req.method === 'nip44_encrypt') {
       return `Message${req.method === 'nip44_encrypt' ? ' (NIP-44) ' : ' '}with ${nip19.npubEncode(paramsArray[0])}: ${paramsArray[1]}`

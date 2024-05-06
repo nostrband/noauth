@@ -138,7 +138,7 @@ export const ModalImportKeys = () => {
       if (!nsec.trim() || !username.trim() || !password.trim()) throw new Error('Fill out all fields!')
       if (nameNpub && !isTakenByNsec) throw new Error('Name taken')
       setIsLoading(true)
-      const k: any = await client.call('importKey', username.trim(), nsec.trim(), password.trim())
+      const k = await client.importKey(username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
       navigate(`/key/${k.npub}`)
       cleanUpStates()

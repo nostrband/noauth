@@ -6,9 +6,8 @@ import { CircularProgress, Stack } from '@mui/material'
 // Pages
 import CreatePage from '@/pages/CreatePage/Create.Page'
 import HomePage from '../pages/HomePage/Home.Page'
-import KeyPage from '../pages/KeyPage/Key.Page'
 
-const ConfirmPage = lazy(() => import('@/pages/Confirm.Page'))
+const KeyPage = lazy(() => import('@/pages/KeyPage/Key.Page'))
 const AppPage = lazy(() => import('@/pages/AppPage/App.Page'))
 
 const LoadingSpinner = () => (
@@ -26,7 +25,6 @@ const AppRoutes = () => {
           <Route path="/home" element={<HomePage />} />
           <Route path="/key/:npub" element={<KeyPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
-          <Route path="/key/:npub/:req_id" element={<ConfirmPage />} />
           <Route path="/create" element={<CreatePage />} />
         </Route>
         <Route path="*" element={<Navigate to={'/home'} />} />

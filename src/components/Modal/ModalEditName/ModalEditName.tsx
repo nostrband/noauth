@@ -111,7 +111,7 @@ export const ModalEditName = () => {
     if (isEditButtonDisabled) return
     try {
       setIsLoading(true)
-      await client.call('editName', npub, enteredName)
+      await client.editName(npub, enteredName)
       notify('Username updated!', 'success')
       setIsLoading(false)
     } catch (error: any) {
@@ -124,7 +124,7 @@ export const ModalEditName = () => {
     if (isTransferButtonDisabled) return
     try {
       setIsTransferLoading(true)
-      await client.call('transferName', npub, enteredName, receiverNpub)
+      await client.transferName(npub, enteredName, receiverNpub)
       notify('Username transferred!', 'success')
       setIsTransferLoading(false)
       setEnteredName('')

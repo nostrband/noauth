@@ -60,14 +60,14 @@ export const ModalConnectApp = () => {
   const loadConnectTokenOnMount = async () => {
     const validToken = !!token && token.expiry > Date.now()
     if (validToken) return
-    const t = (await client.call('getConnectToken', npub)) as DbConnectToken
+    const t = await client.getConnectToken(npub)
     setToken(t)
   }
 
   const getConnectToken = useCallback(async () => {
     const isValidSubNpub = subNpub !== npub
     if (!isValidSubNpub) return
-    const t = (await client.call('getConnectToken', npub, subNpub)) as DbConnectToken
+    const t = await client.getConnectToken(npub, subNpub)
     setToken(t)
   }, [npub, subNpub])
 
@@ -207,7 +207,7 @@ export const ModalConnectApp = () => {
             width={'100%'}
           >
             <Typography variant="body2" color={'GrayText'}>
-              Paste it into an app. 
+              Paste it into an app.
             </Typography>
             <AppLink
               title="What is this?"

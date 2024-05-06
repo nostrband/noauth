@@ -17,10 +17,10 @@ export const useBackgroundSigning = () => {
   const handleEnableBackground = useCallback(async () => {
     setIsLoading(true)
     try {
-      console.log("asking...");
+      console.log('asking...')
       await askNotificationPermission()
-      console.log("asked");
-      const result = await client.call('enablePush')
+      console.log('asked')
+      const result = await client.enablePush()
       if (!result) throw new Error('Failed to activate the push subscription')
       notify('Background service enabled!', 'success')
       setShowWarning(false)

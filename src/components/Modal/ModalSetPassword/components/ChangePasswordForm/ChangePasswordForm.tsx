@@ -61,7 +61,7 @@ export const ChangePasswordForm: FC<ChangePasswordFormProps> = ({ onClose }) => 
       const { password, existingPassword } = values
       if (!existingPassword.trim() || !password.trim()) throw new Error('Please fill out all fields!')
 
-      await client.call('setPassword', npub, password, existingPassword)
+      await client.setPassword(npub, password, existingPassword)
       setIsLoading(false)
       notify('Password has been successfully updated', 'success')
       onClose()

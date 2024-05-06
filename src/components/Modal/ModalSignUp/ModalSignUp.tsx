@@ -95,7 +95,7 @@ export const ModalSignUp = () => {
     if (!username.trim() || !password.trim()) throw new Error('Fill out all fields!')
     try {
       setIsLoading(true)
-      const k: any = await client.call('generateKey', username.trim(), password.trim())
+      const k = await client.generateKey(username.trim(), password.trim())
       if (k.name) {
         notify(`Account created for "${k.name}"`, 'success')
         reset()

@@ -1,6 +1,10 @@
 // service-worker client interface,
 // works on the frontend, not sw
 import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
+import { KeyInfo } from './backend/backend'
+import { CreateConnectParams } from './backend/types'
+import { AllowType, BackendClient, BackendReply } from './client'
+import { DbApp, DbConnectToken } from './common/db-types'
 
 export let swr: ServiceWorkerRegistration | null = null
 
@@ -70,7 +74,8 @@ class Client implements BackendClient {
     })
   }
 
-  public async call(method: string, ...args: any[]) {
+  // send an RPC to the backend
+  private async call<T = void>(method: string, ...args: any[]): Promise<T> {
     await this.waitStarted()
 
     const id = this.nextReqId
@@ -95,6 +100,90 @@ class Client implements BackendClient {
 
       this.callWhenStarted(call)
     })
+  }
+
+  public async addPerm(appNpub: string, npub: string, permission: string, allow: AllowType) {
+    return this.call('addPerm', appNpub, npub, permission, allow)
+  }
+
+  public async deletePerm(permId: string) {
+    return this.call('deletePerm', permId)
+  }
+
+  public async updateApp(app: DbApp) {
+    return this.call('updateApp', app)
+  }
+
+  public async connectApp(appNpub: string, npub: string, appUrl: string, perms: string[]) {
+    return this.call('connectApp', { npub, appNpub, appUrl, perms })
+  }
+
+  public async deleteApp(appNpub: string, npub: string) {
+    return this.call('deleteApp', appNpub, npub)
+  }
+
+  public async checkPendingRequest(npub: string, pendingReqId: string) {
+    return this.call('checkPendingRequest', npub, pendingReqId)
+  }
+
+  public async confirmPendingRequest(id: string, allow: boolean, remember: boolean, options?: any) {
+    return this.call<string | undefined>('confirm', id, allow, remember, options)
+  }
+
+  public async fetchPendingRequests(npub: string) {
+    return this.call('fetchPendingRequests', npub)
+  }
+
+  public async enablePush() {
+    return this.call<boolean>('enablePush')
+  }
+
+  public async redeemToken(npub: string, token: string) {
+    return this.call('redeemToken', npub, token)
+  }
+
+  public async getConnectToken(npub: string, subNpub?: string) {
+    return this.call<DbConnectToken>('getConnectToken', npub, subNpub)
+  }
+
+  public async editName(npub: string, newName: string) {
+    return this.call('editName', npub, newName)
+  }
+
+  public async transferName(npub: string, name: string, receiverNpub: string) {
+    return this.call('transferName', npub, name, receiverNpub)
+  }
+
+  public async setPassword(npub: string, passphrase: string, existingPassphrase?: string) {
+    return this.call('setPassword', npub, passphrase, existingPassphrase)
+  }
+
+  public async importKey(name: string, nsec: string, passphrase: string) {
+    return this.call<KeyInfo>('importKey', name, nsec, passphrase)
+  }
+
+  public async fetchKey(npub: string, passphrase: string, name: string) {
+    return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
+  }
+
+  public async exportKey(npub: string) {
+    return this.call<string>('exportKey', npub)
+  }
+
+  public async generateKey(name: string, passphrase: string) {
+    return this.call<KeyInfo>('generateKey', name, passphrase)
+  }
+
+  public async generateKeyConnect(params: CreateConnectParams) {
+    return this.call<string>('generateKeyConnect', params)
+  }
+
+  public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
+    return this.call<string>('nip04Decrypt', npub, peerPubkey, ciphertext)
+  }
+
+  public async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
+    return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
   }
 }
 
@@ -130,6 +219,5 @@ export async function swicRegister() {
     swClient.onMessage((event as MessageEvent).data)
   })
 }
-
 
 export const client: BackendClient = swClient

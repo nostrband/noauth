@@ -122,7 +122,7 @@ export const ModalAppDetails = () => {
         subNpub,
         updateTimestamp: Date.now(),
       }
-      await client.call('updateApp', updatedApp)
+      await client.updateApp(updatedApp)
       notify(`App successfully updated!`, 'success')
       setIsLoading(false)
       handleCloseModal()

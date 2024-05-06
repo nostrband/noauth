@@ -53,7 +53,7 @@ const AppPage = () => {
 
   const handleDeleteApp = async () => {
     try {
-      await client.call('deleteApp', appNpub, npub)
+      await client.deleteApp(appNpub, npub)
       notify(`App: «${appName}» successfully deleted!`, 'success')
       navigate(`/key/${npub}`)
     } catch (error: any) {

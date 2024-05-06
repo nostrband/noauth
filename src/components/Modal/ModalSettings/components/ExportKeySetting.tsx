@@ -14,7 +14,7 @@ export const ExportKeySetting = () => {
 
   const exportKey = async () => {
     try {
-      const key = (await client.call('exportKey', npub)) as string
+      const key = await client.exportKey(npub)
       if (!key) notify('Specify Cloud Sync password first!', 'error')
       else if (await copyToClipboard(key)) notify('Key copied to clipboard!')
       else notify('Failed to copy to clipboard', 'error')

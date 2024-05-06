@@ -56,7 +56,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
     resetPasswordInputs()
     try {
       const { password } = values
-      await client.call('setPassword', npub, password)
+      await client.setPassword(npub, password)
       setIsLoading(false)
       notify('Password has been successfully set', 'success')
       onClose()

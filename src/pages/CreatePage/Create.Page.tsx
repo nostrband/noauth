@@ -103,7 +103,7 @@ const CreatePage = () => {
 
       // first thing on user action is to ask for notifs
       await askNotificationPermission()
-      const ok = await client.call('enablePush')
+      const ok = await client.enablePush()
       if (!ok) throw new Error('Failed to activate the push subscription')
       console.log('enablePush done')
 
@@ -115,7 +115,7 @@ const CreatePage = () => {
         perms,
         appUrl,
       }
-      const npub = (await client.call('generateKeyConnect', params)) as string
+      const npub = await client.generateKeyConnect(params)
       console.log('Created', npub, 'app', appUrl)
 
       // redirect the window to new url and
@@ -127,7 +127,7 @@ const CreatePage = () => {
       resetForm()
 
       try {
-        await client.call('redeemToken', npub, token)
+        await client.redeemToken(npub, token)
         console.log('redeemToken done')
 
         // auto-close/redirect only if redeem succeeded
@@ -224,8 +224,7 @@ const CreatePage = () => {
 
                 {isGranted === undefined && (
                   <Typography textAlign={'left'} variant="body2" color={'red'} padding={'1em 0.5em 0.5em 0.5em'}>
-                    Your browser does not support notifications! Keep nsec.app tab open
-                    for normal operation. 
+                    Your browser does not support notifications! Keep nsec.app tab open for normal operation.
                   </Typography>
                 )}
                 {isGranted === false && (
