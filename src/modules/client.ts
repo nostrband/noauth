@@ -1,6 +1,6 @@
 import { KeyInfo } from './backend/backend'
 import { CreateConnectParams } from './backend/types'
-import { DbApp, DbConnectToken } from './common/db-types'
+import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from './common/db-types'
 
 export interface BackendRequest {
   id: number
@@ -74,4 +74,14 @@ export interface BackendClient {
   nip04Decrypt: (npub: string, peerPubkey: string, ciphertext: string) => Promise<string>
 
   nip44Decrypt: (npub: string, peerPubkey: string, ciphertext: string) => Promise<string>
+
+  getListKeys: () => Promise<DbKey[]>
+
+  getListApps: () => Promise<DbApp[]>
+
+  getListPerms: () => Promise<DbPerm[]>
+
+  getListPendingRequests: () => Promise<DbPending[]>
+
+  getAppLastActiveRecord: (app: DbApp) => Promise<number>
 }

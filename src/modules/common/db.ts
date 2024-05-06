@@ -130,6 +130,7 @@ export const dbi = {
       return lastActive?.timestamp || 0
     } catch (error) {
       console.log(`db getAppLastActiveRecord error: ${error}`)
+      return 0
     }
   },
   addPerm: async (perm: DbPerm) => {

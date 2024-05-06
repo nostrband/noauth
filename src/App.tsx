@@ -1,4 +1,3 @@
-import { dbi } from './modules/common/db'
 import { useCallback, useEffect, useState } from 'react'
 import { client } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
@@ -12,7 +11,6 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
 import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
-import { DbKey } from './modules/common/db-types'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -24,8 +22,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false)
 
   const load = useCallback(async () => {
-    const keys: DbKey[] = await dbi.listKeys()
-
+    const keys = await client.getListKeys()
     dispatch(setKeys({ keys }))
 
     const loadProfiles = async () => {
@@ -46,11 +43,11 @@ function App() {
     // async load to avoid blocking main code below
     loadProfiles()
 
-    const apps = await dbi.listApps()
+    const apps = await client.getListApps()
     const loadApps = async () => {
       const updatedApps = []
       for (const app of apps) {
-        const lastActive = await dbi.getAppLastActiveRecord(app)
+        const lastActive = await client.getAppLastActiveRecord(app)
         updatedApps.push({ ...app, lastActive })
       }
       dispatch(
@@ -61,10 +58,10 @@ function App() {
     }
     loadApps()
 
-    const perms = await dbi.listPerms()
+    const perms = await client.getListPerms()
     dispatch(setPerms({ perms }))
 
-    const pending = await dbi.listPending()
+    const pending = await client.getListPendingRequests()
     dispatch(setPending({ pending }))
 
     // all updates from backend reloaded,

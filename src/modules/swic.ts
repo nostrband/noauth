@@ -4,6 +4,7 @@ import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
 import { KeyInfo } from './backend/backend'
 import { CreateConnectParams } from './backend/types'
 import { AllowType, BackendClient, BackendReply } from './client'
+import { dbi } from './common/db'
 import { DbApp, DbConnectToken } from './common/db-types'
 
 export let swr: ServiceWorkerRegistration | null = null
@@ -28,6 +29,34 @@ class Client implements BackendClient {
 
   private async waitStarted() {
     return new Promise<void>((ok) => this.callWhenStarted(ok))
+  }
+
+  // send an RPC to the backend
+  private async call<T = void>(method: string, ...args: any[]): Promise<T> {
+    await this.waitStarted()
+
+    const id = this.nextReqId
+    this.nextReqId++
+
+    return new Promise((ok, rej) => {
+      const call = async () => {
+        if (!swr || !swr.active) {
+          rej(new Error('No active service worker'))
+          return
+        }
+
+        this.reqs.set(id, { ok, rej })
+        const msg = {
+          id,
+          method,
+          args: [...args],
+        }
+        console.log('sending to SW', msg)
+        swr.active.postMessage(msg)
+      }
+
+      this.callWhenStarted(call)
+    })
   }
 
   public async checkpoint() {
@@ -71,34 +100,6 @@ class Client implements BackendClient {
       // reply
       if (error) r.rej(error)
       else r.ok(result)
-    })
-  }
-
-  // send an RPC to the backend
-  private async call<T = void>(method: string, ...args: any[]): Promise<T> {
-    await this.waitStarted()
-
-    const id = this.nextReqId
-    this.nextReqId++
-
-    return new Promise((ok, rej) => {
-      const call = async () => {
-        if (!swr || !swr.active) {
-          rej(new Error('No active service worker'))
-          return
-        }
-
-        this.reqs.set(id, { ok, rej })
-        const msg = {
-          id,
-          method,
-          args: [...args],
-        }
-        console.log('sending to SW', msg)
-        swr.active.postMessage(msg)
-      }
-
-      this.callWhenStarted(call)
     })
   }
 
@@ -184,6 +185,26 @@ class Client implements BackendClient {
 
   public async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
     return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
+  }
+
+  public getListKeys() {
+    return dbi.listKeys()
+  }
+
+  public getListApps() {
+    return dbi.listApps()
+  }
+
+  public getListPerms() {
+    return dbi.listPerms()
+  }
+
+  public getListPendingRequests() {
+    return dbi.listPending()
+  }
+
+  public getAppLastActiveRecord(app: DbApp) {
+    return dbi.getAppLastActiveRecord(app)
   }
 }
 
