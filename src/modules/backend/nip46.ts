@@ -1,22 +1,44 @@
-import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend } from "@nostr-dev-kit/ndk"
-import { Event, nip19, verifySignature } from "nostr-tools"
-import { DECISION, IAllowCallbackParams } from "./types"
-import { Signer } from "./signer"
-import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from "./nip44"
+import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend } from '@nostr-dev-kit/ndk'
+import { Event, getEventHash, nip19, verifySignature } from 'nostr-tools'
+import { DECISION, IAllowCallbackParams } from './types'
+import { Signer } from './signer'
+import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
 
 class ConnectEventHandlingStrategy implements IEventHandlingStrategy {
   async handle(
-      backend: NDKNip46Backend,
-      id: string,
-      remotePubkey: string,
-      params: string[]
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[]
   ): Promise<string | undefined> {
-    return 'ack';
+    return 'ack'
+  }
+}
+
+class SignEventHandlingStrategy implements IEventHandlingStrategy {
+  async handle(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[]
+  ): Promise<string | undefined> {
+    // NDK messes with created_at for replaceable
+    // events, and it's hard to fix it from the outside,
+    // so we're reimplementing it here properly.
+
+    const [eventString] = params
+
+    const event = JSON.parse(eventString) as Event
+
+    event.pubkey = (await backend.signer.user()).pubkey
+    event.id = getEventHash(event)
+    event.sig = await backend.signer.sign(event)
+
+    return JSON.stringify(event)
   }
 }
 
 export class Nip46Backend extends NDKNip46Backend {
-
   readonly signer: Signer
   private allowCb: (
     params: IAllowCallbackParams
@@ -37,6 +59,7 @@ export class Nip46Backend extends NDKNip46Backend {
     this.handlers['connect'] = new ConnectEventHandlingStrategy()
     this.handlers['nip44_encrypt'] = new Nip44EncryptHandlingStrategy()
     this.handlers['nip44_decrypt'] = new Nip44DecryptHandlingStrategy()
+    this.handlers['sign_event'] = new SignEventHandlingStrategy()
   }
 
   // override ndk's implementation to add 'since' tag
@@ -122,4 +145,3 @@ export class Nip46Backend extends NDKNip46Backend {
     }
   }
 }
-
