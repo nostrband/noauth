@@ -1,4 +1,4 @@
-import { DbApp } from "@noauth/common"
+import { DbApp } from '@noauth/common'
 import { AppLink } from '@/shared/AppLink/AppLink'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { Box, MenuItem, Select, SelectChangeEvent, Stack, Typography } from '@mui/material'

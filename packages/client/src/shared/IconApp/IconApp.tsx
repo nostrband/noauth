@@ -82,7 +82,7 @@ export const IconApp: FC<IIconApp> = ({
         } catch {}
       }
 
-      throw new Error("No icon in manifest")
+      throw new Error('No icon in manifest')
     }
     load()
       .then((url) => {

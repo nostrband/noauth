@@ -17,8 +17,7 @@ export const ItemActivity: FC<ItemActivityProps> = (req) => {
   const [details, setDetails] = useState('')
 
   const handleToggleShowDetails = () => {
-    if (!showMoreDetails && !details)
-      getReqDetails(req).then(setDetails)
+    if (!showMoreDetails && !details) getReqDetails(req).then(setDetails)
     setShowMoreDetails((prevShow) => !prevShow)
   }
 

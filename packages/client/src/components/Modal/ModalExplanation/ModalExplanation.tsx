@@ -72,12 +72,11 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
           request.
           <br />
           <br />
-          Do not share your bunker URL strings publicly! Only copy and paste them to the app you're connecting with. 
+          Do not share your bunker URL strings publicly! Only copy and paste them to the app you're connecting with.
           <br />
           <br />
-          Don't worry, bunker URL strings expire
-          after several minutes or if already used to connect with some app, so even if shared publicly, they will 
-          probably be useless. If unsure, just find a connection with this bunker URL
+          Don't worry, bunker URL strings expire after several minutes or if already used to connect with some app, so
+          even if shared publicly, they will probably be useless. If unsure, just find a connection with this bunker URL
           and delete it.
         </>
       )
@@ -90,19 +89,16 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
           Nsec.app stores your nsec keys and gives permissioned access to apps.
           <br />
           <br />
-          Your username (name@nsec.app) is a NIP-05 name assigned to your public key,
-          it can be used to login to Nostr apps. You don't really need a username 
-          on Nostr, it's just there for convenience.
+          Your username (name@nsec.app) is a NIP-05 name assigned to your public key, it can be used to login to Nostr
+          apps. You don't really need a username on Nostr, it's just there for convenience.
           <br />
           <br />
-          Your password is used to encrypt your keys and sync them across devices. 
-          This way you can manage connected apps on any device. You can also export your 
-          nsec encrypted with your password (NIP-49).
+          Your password is used to encrypt your keys and sync them across devices. This way you can manage connected
+          apps on any device. You can also export your nsec encrypted with your password (NIP-49).
           <br />
           <br />
-          Since your keys are located in your device, nsec.app website needs permission to
-          send you push notifications - our server sends a push message to wake up 
-          your keys when apps make their requests.
+          Since your keys are located in your device, nsec.app website needs permission to send you push notifications -
+          our server sends a push message to wake up your keys when apps make their requests.
           <br />
         </>
       )

@@ -119,7 +119,8 @@ export const ModalConfirmConnect = () => {
       return setSelectedPerms(getPermOptions(ACTION_TYPE.REQUESTED))
     }
     return setSelectedPerms(getPermOptions(ACTION_TYPE.BASIC))
-  }, [selectedActionType, appDomainPerms, getPermOptions])
+    // eslint-disable-next-line
+  }, [selectedActionType, getPermOptions])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {

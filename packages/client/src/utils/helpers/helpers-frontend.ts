@@ -1,4 +1,4 @@
-import { DbHistory, DbPending } from "@noauth/common"
+import { DbHistory, DbPending } from '@noauth/common'
 import { client } from '@/modules/swic'
 import { nip19 } from 'nostr-tools'
 

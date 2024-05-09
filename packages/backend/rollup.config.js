@@ -1,10 +1,12 @@
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
-import alias from '@rollup/plugin-alias'
+// import alias from '@rollup/plugin-alias'
 import typescript from '@rollup/plugin-typescript'
 import terser from '@rollup/plugin-terser'
 import nodePolyfills from 'rollup-plugin-node-polyfills'
 import json from '@rollup/plugin-json'
+import inject from '@rollup/plugin-inject'
+import alias from '@rollup/plugin-alias'
 
 export default {
   input: 'index.ts',
@@ -19,26 +21,31 @@ export default {
     },
   ],
   plugins: [
+    commonjs(),
     json(),
+    // nodePolyfills(),
     alias({
       entries: [
-        { find: 'crypto', replacement: 'crypto-browserify' },
-        { find: 'stream', replacement: 'stream-browserify' },
         { find: 'assert', replacement: 'assert' },
-        { find: 'http', replacement: 'stream-http' },
+        { find: 'crypto', replacement: 'crypto-browserify' },
         { find: 'https', replacement: 'https-browserify' },
         { find: 'os', replacement: 'os-browserify' },
+        { find: 'stream', replacement: 'stream-browserify' },
+        { find: 'http', replacement: 'stream-http' },
         { find: 'url', replacement: 'url' },
       ],
     }),
-    nodePolyfills(),
     resolve({
       browser: true,
       preferBuiltins: false,
     }),
-    commonjs(),
     typescript({
       tsconfig: 'tsconfig.json',
+    }),
+    inject({
+      process: 'process/browser',
+      Buffer: ['buffer', 'Buffer'],
+      // global: ['globalthis', 'window'],
     }),
     terser({
       compress: {

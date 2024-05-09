@@ -2,7 +2,7 @@ import { FC } from 'react'
 import { Avatar, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '@/hooks/useProfile'
-import { DbKey } from "@noauth/common"
+import { DbKey } from '@noauth/common'
 
 type ItemKeyProps = DbKey
 

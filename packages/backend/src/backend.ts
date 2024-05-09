@@ -1,11 +1,24 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
-import { dbi,DbApp, DbConnectToken, DbKey, DbPending, DbPerm, Keys, fetchNip05, getReqPerm, isPackagePerm, packageToPerms, ACTION_TYPE,
+import {
+  dbi,
+  DbApp,
+  DbConnectToken,
+  DbKey,
+  DbPending,
+  DbPerm,
+  Keys,
+  fetchNip05,
+  getReqPerm,
+  isPackagePerm,
+  packageToPerms,
+  ACTION_TYPE,
   BROADCAST_RELAY,
   KIND_DATA,
   KIND_RPC,
   OUTBOX_RELAYS,
   REQ_TTL,
-  SEED_RELAYS, } from '@noauth/common'
+  SEED_RELAYS,
+} from '@noauth/common'
 import NDK, {
   NDKEvent,
   NDKNip46Backend,
@@ -28,7 +41,6 @@ import { GlobalContext } from './global'
 import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
 
 //const PERF_TEST = false
-
 
 export interface BackendRequest {
   id: number

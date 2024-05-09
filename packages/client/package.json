@@ -9,7 +9,6 @@
     "@mui/material": "^5.14.20",
     "@noauth/backend": "^1.0.0",
     "@noauth/common": "^1.0.0",
-    "@nostr-dev-kit/ndk": "^2.4.0",
     "@reduxjs/toolkit": "^2.0.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -19,9 +18,7 @@
     "@types/react": "^18.2.38",
     "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/react-dom": "^18.2.17",
-    "crypto": "^1.0.1",
     "date-fns": "^3.3.1",
-    "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.7",
     "lodash.isequal": "^4.5.0",
     "memoize-one": "^6.0.0",
@@ -34,7 +31,6 @@
     "react-router-dom": "^6.20.1",
     "react-scripts": "5.0.1",
     "redux-persist": "^6.0.0",
-    "tseep": "^1.2.1",
     "typescript": "^5.3.2",
     "use-debounce": "^10.0.0",
     "usehooks-ts": "^2.14.0",
@@ -86,17 +82,8 @@
   },
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.8",
-    "assert": "^2.1.0",
-    "buffer": "^6.0.3",
-    "crypto-browserify": "^3.12.0",
     "customize-cra": "^1.0.0",
-    "https-browserify": "^1.0.0",
-    "os-browserify": "^0.3.0",
-    "process": "^0.11.10",
     "react-app-rewired": "^2.2.1",
-    "serve": "^14.2.1",
-    "stream-browserify": "^3.0.0",
-    "stream-http": "^3.2.0",
-    "url": "^0.11.3"
+    "serve": "^14.2.1"
   }
 }

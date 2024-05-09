@@ -1,4 +1,4 @@
-import { DbApp } from "@noauth/common"
+import { DbApp } from '@noauth/common'
 
 export type IClientApp = DbApp & {
   lastActive: number

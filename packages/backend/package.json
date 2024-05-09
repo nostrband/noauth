@@ -5,10 +5,12 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "dependencies": {
-    "@noauth/common": "1.0.0"
+    "@noauth/common": "1.0.0",
+    "tseep": "^1.2.1"
   },
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "format": "npx prettier --write src"
   },
   "keywords": [],
   "author": "bekbolsun22",
@@ -19,14 +21,17 @@
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.0",
     "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "assert": "^2.1.0",
+    "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
     "https-browserify": "^1.0.0",
     "os-browserify": "^0.3.0",
+    "process": "^0.11.10",
     "rollup": "^4.17.2",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "stream-browserify": "^3.0.0",

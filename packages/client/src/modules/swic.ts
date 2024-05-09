@@ -1,10 +1,9 @@
 // service-worker client interface,
 // works on the frontend, not sw
 import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
-import { KeyInfo } from '../../../backend/src/backend'
-import { CreateConnectParams } from '../../../backend/src/types'
+import { KeyInfo, CreateConnectParams } from '@noauth/backend'
+import { dbi, DbApp, DbConnectToken } from '@noauth/common'
 import { AllowType, BackendClient, BackendReply } from './client'
-import { dbi, DbApp, DbConnectToken} from '@noauth/common'
 
 export let swr: ServiceWorkerRegistration | null = null
 

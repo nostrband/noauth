@@ -6,13 +6,23 @@ import { IAppGroup } from '@/types/general'
 import { getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
 import { formatDistanceToNow } from 'date-fns'
 import { ItemApp } from './ItemApp'
-import { DbApp, DbPerm } from "@noauth/common"
+import { DbApp, DbPerm } from '@noauth/common'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { getShortenNpub } from '@noauth/common'
 
 type AppGroupProps = IAppGroup & { perms: DbPerm[] }
 
-export const AppGroup: FC<AppGroupProps> = ({ apps, icon, url, name, appNpub, size, timestamp, perms = [], lastActive }) => {
+export const AppGroup: FC<AppGroupProps> = ({
+  apps,
+  icon,
+  url,
+  name,
+  appNpub,
+  size,
+  timestamp,
+  perms = [],
+  lastActive,
+}) => {
   const matches = useMediaQuery('(max-width:320px)')
 
   const [expanded, setExpanded] = useState(false)

@@ -1,5 +1,5 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { DbPending, DbPerm } from "@noauth/common"
+import { DbPending, DbPerm } from '@noauth/common'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { ACTION_TYPE, REQ_TTL } from '@noauth/common'
 import { useCallback, useEffect, useRef } from 'react'

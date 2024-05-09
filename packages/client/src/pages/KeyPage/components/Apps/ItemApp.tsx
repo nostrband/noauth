@@ -1,4 +1,4 @@
-import { DbPerm } from "@noauth/common"
+import { DbPerm } from '@noauth/common'
 import { Stack, Typography, useMediaQuery } from '@mui/material'
 import { FC, useCallback } from 'react'
 import { Link } from 'react-router-dom'
@@ -54,7 +54,7 @@ export const ItemApp: FC<ItemAppProps> = ({
       )}
       <Stack>
         <Typography noWrap display={'block'} variant="body1">
-          {groupedApp ? (appDevice || appName) : (appName)}
+          {groupedApp ? appDevice || appName : appName}
         </Typography>
         <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
           {getPermsType()}
