@@ -55,10 +55,10 @@
     }
   },
   "scripts": {
-    "start": "react-app-rewired start",
-    "build": "react-app-rewired build",
-    "test": "react-app-rewired test",
-    "eject": "react-app-rewired eject",
+    "start": "npx react-app-rewired start",
+    "build": "npx react-app-rewired build",
+    "test": "npx react-app-rewired test",
+    "eject": "npx react-app-rewired eject",
     "serve": "npm run build && serve -s build",
     "format": "npx prettier --write src"
   },
