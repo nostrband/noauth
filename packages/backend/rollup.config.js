@@ -1,9 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
-// import alias from '@rollup/plugin-alias'
 import typescript from '@rollup/plugin-typescript'
 import terser from '@rollup/plugin-terser'
-import nodePolyfills from 'rollup-plugin-node-polyfills'
 import json from '@rollup/plugin-json'
 import inject from '@rollup/plugin-inject'
 import alias from '@rollup/plugin-alias'
@@ -23,7 +21,6 @@ export default {
   plugins: [
     commonjs(),
     json(),
-    // nodePolyfills(),
     alias({
       entries: [
         { find: 'assert', replacement: 'assert' },
@@ -45,7 +42,6 @@ export default {
     inject({
       process: 'process/browser',
       Buffer: ['buffer', 'Buffer'],
-      // global: ['globalthis', 'window'],
     }),
     terser({
       compress: {

@@ -3,7 +3,6 @@ import commonjs from '@rollup/plugin-commonjs'
 import alias from '@rollup/plugin-alias'
 import typescript from '@rollup/plugin-typescript'
 import terser from '@rollup/plugin-terser'
-// import nodePolyfills from 'rollup-plugin-node-polyfills'
 import json from '@rollup/plugin-json'
 import inject from '@rollup/plugin-inject'
 
@@ -43,7 +42,6 @@ export default {
     inject({
       process: 'process/browser',
       Buffer: ['buffer', 'Buffer'],
-      // global: ['globalthis', 'window'],
     }),
     terser({
       compress: {
