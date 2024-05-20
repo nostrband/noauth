@@ -1,7 +1,7 @@
 {
   "name": "@noauth/common",
   "version": "1.0.0",
-  "main": "dist/index.esm.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
@@ -29,8 +29,12 @@
     "os-browserify": "^0.3.0",
     "process": "^0.11.10",
     "rollup": "^4.17.2",
+    "rollup-plugin-node-globals": "^1.4.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.3"
+  },
+  "dependencies": {
+    "fake-indexeddb": "^5.0.2"
   }
 }

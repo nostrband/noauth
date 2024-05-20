@@ -22,7 +22,7 @@ import { FormInputType, schema } from './const'
 import { CreateConnectParams } from '@noauth/backend/src/types'
 import { nip19 } from 'nostr-tools'
 import { Button } from '@/shared/Button/Button'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',

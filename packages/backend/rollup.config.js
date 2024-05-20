@@ -10,12 +10,9 @@ export default {
   input: 'index.ts',
   output: [
     {
-      file: 'dist/index.cjs.js',
-      format: 'cjs',
-    },
-    {
-      file: 'dist/index.esm.js',
+      file: 'dist/index.js',
       format: 'esm',
+      sourcemap: true,
     },
   ],
   plugins: [
@@ -24,11 +21,11 @@ export default {
     alias({
       entries: [
         { find: 'assert', replacement: 'assert' },
-        { find: 'crypto', replacement: 'crypto-browserify' },
+        // { find: 'crypto', replacement: 'crypto-browserify' },
         { find: 'https', replacement: 'https-browserify' },
         { find: 'os', replacement: 'os-browserify' },
         { find: 'stream', replacement: 'stream-browserify' },
-        { find: 'http', replacement: 'stream-http' },
+        // { find: 'http', replacement: 'stream-http' },
         { find: 'url', replacement: 'url' },
       ],
     }),
@@ -49,4 +46,5 @@ export default {
       },
     }),
   ],
+  external: ['ws', 'http'],
 }

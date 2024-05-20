@@ -23,7 +23,7 @@ import { ModalActivities } from '@/components/Modal/ModalActivities/ModalActivit
 import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 import { getShortenNpub } from '@noauth/common'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)

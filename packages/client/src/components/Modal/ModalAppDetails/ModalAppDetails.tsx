@@ -17,7 +17,7 @@ import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import { nip19 } from 'nostr-tools'
 import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
 import { SubNpubMenuItem } from './components/SubNpubMenuItem'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 export interface SubNpubOptionType {
   inputValue?: string

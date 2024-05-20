@@ -2,7 +2,7 @@ import { FC, useState } from 'react'
 import { Menu, MenuItem, MenuProps } from '@mui/material'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 type ItemPermissionMenuProps = {
   permId: string

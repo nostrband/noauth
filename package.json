@@ -22,6 +22,6 @@
     "format": "lerna run format",
     "build": "lerna run build",
     "clean": "rm -rf node_modules && lerna clean",
-    "start": "lerna run start --scope=@noauth/client"
+    "start": "npm run start -w @noauth/client"
   }
 }

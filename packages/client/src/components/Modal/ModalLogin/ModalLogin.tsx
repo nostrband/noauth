@@ -15,7 +15,7 @@ import { fetchNpubNames } from '@/utils/helpers/helpers'
 import { usePassword } from '@/hooks/usePassword'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { fetchNip05 } from '@noauth/common'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 const FORM_DEFAULT_VALUES = {
   username: '',

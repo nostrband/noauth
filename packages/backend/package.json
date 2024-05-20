@@ -1,15 +1,17 @@
 {
   "name": "@noauth/backend",
   "version": "1.0.0",
-  "main": "dist/index.esm.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "dependencies": {
-    "tseep": "^1.2.1"
+    "tseep": "^1.2.1",
+    "ws": "^8.17.0"
   },
   "scripts": {
     "build": "rollup -c",
-    "format": "npx prettier --write src"
+    "format": "npx prettier --write src",
+    "start": "npm run build && node ./dist/index.js"
   },
   "keywords": [],
   "author": "bekbolsun22",
@@ -25,6 +27,7 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@types/ws": "^8.5.10",
     "assert": "^2.1.0",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
@@ -32,6 +35,7 @@
     "os-browserify": "^0.3.0",
     "process": "^0.11.10",
     "rollup": "^4.17.2",
+    "rollup-plugin-serve": "^1.1.1",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.3"

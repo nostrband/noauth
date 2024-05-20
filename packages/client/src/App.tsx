@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { client } from './modules/swic'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
@@ -11,6 +10,7 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
 import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
+import { client } from './modules/websocket'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -20,9 +20,11 @@ function App() {
   const [_, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
 
   const [isConnected, setIsConnected] = useState(false)
+  const [isSocketConnected, setIsSocketConnected] = useState(false)
 
   const load = useCallback(async () => {
     const keys = await client.getListKeys()
+
     dispatch(setKeys({ keys }))
 
     const loadProfiles = async () => {
@@ -72,8 +74,11 @@ function App() {
   }, [dispatch])
 
   useEffect(() => {
-    if (isConnected) load()
-  }, [render, isConnected, load])
+    if (isSocketConnected && isConnected)
+      load().catch((err) => {
+        console.log(err)
+      })
+  }, [isSocketConnected, isConnected, load, render])
 
   useEffect(() => {
     ndk.connect().then(() => {
@@ -81,6 +86,13 @@ function App() {
       setIsConnected(true)
     })
     // eslint-disable-next-line
+  }, [])
+
+  useEffect(() => {
+    client.connect().then(() => {
+      console.log('WS connected')
+      setIsSocketConnected(true)
+    })
   }, [])
 
   // subscribe to updates from the service worker
@@ -99,7 +111,6 @@ function App() {
     const handleBeforeUnload = () => {
       setNeedReload(false)
     }
-
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)

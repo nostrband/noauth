@@ -84,6 +84,7 @@
     "@types/lodash.isequal": "^4.5.8",
     "customize-cra": "^1.0.0",
     "react-app-rewired": "^2.2.1",
-    "serve": "^14.2.1"
+    "serve": "^14.2.1",
+    "stream-http": "^3.2.0"
   }
 }

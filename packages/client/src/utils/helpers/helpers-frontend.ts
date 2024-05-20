@@ -1,5 +1,5 @@
 import { DbHistory, DbPending } from '@noauth/common'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 import { nip19 } from 'nostr-tools'
 
 function printPrettyJson(json: string) {

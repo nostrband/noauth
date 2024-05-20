@@ -17,7 +17,8 @@ import { useDebounce } from 'use-debounce'
 import { StyledSettingContainer } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { fetchNip05 } from '@noauth/common'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
+
 
 export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)

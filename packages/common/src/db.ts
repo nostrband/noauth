@@ -1,5 +1,6 @@
 import Dexie from 'dexie'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm, DbSyncHistory } from './db-types'
+import { indexedDB, IDBKeyRange } from 'fake-indexeddb'
 
 export interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>
@@ -11,7 +12,7 @@ export interface DbSchema extends Dexie {
   connectTokens: Dexie.Table<DbConnectToken, string>
 }
 
-export const db = new Dexie('noauthdb') as DbSchema
+export const db = new Dexie('noauthdb', { indexedDB, IDBKeyRange }) as DbSchema
 
 db.version(12).stores({
   keys: 'npub',

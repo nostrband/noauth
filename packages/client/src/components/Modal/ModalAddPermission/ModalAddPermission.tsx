@@ -13,7 +13,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { KINDS } from '@/utils/consts'
 import { StyledAutocomplete, StyledPlaceholder, StyledSelect, StyledSwitch } from './styled'
 import { isNotANumber } from './utils'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 export interface KindOptionType {
   inputValue?: string

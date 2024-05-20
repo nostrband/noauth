@@ -40,8 +40,6 @@ import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
 
-//const PERF_TEST = false
-
 export interface BackendRequest {
   id: number
   method: string
@@ -587,7 +585,8 @@ export class NoauthBackend extends EventEmitter {
       url: appUrl,
       updateTimestamp: Date.now(),
       permUpdateTimestamp: Date.now(),
-      userAgent: navigator?.userAgent || '',
+      // userAgent: navigator?.userAgent || '',
+      userAgent: '',
     })
 
     // reload
@@ -724,7 +723,8 @@ export class NoauthBackend extends EventEmitter {
               url: options.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
-              userAgent: navigator?.userAgent || '',
+              // userAgent: navigator?.userAgent || '',
+              userAgent: '',
               token: token || '',
               subNpub,
             })

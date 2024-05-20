@@ -21,7 +21,7 @@ import useStepper from '@/hooks/useStepper'
 import { InputsContainer } from './styled'
 import { getNameHelperTextProps } from './utils'
 import { fetchNip05 } from '@noauth/common'
-import { client } from '@/modules/swic'
+import { client } from '@/modules/websocket'
 
 const steps = ['Username field', 'Password fields']
 
