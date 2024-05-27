@@ -1,6 +1,6 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { swr } from '@/modules/swic'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 import { askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
 

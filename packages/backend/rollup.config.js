@@ -21,11 +21,11 @@ export default {
     alias({
       entries: [
         { find: 'assert', replacement: 'assert' },
-        // { find: 'crypto', replacement: 'crypto-browserify' },
+        { find: 'crypto', replacement: 'crypto-browserify' },
         { find: 'https', replacement: 'https-browserify' },
         { find: 'os', replacement: 'os-browserify' },
         { find: 'stream', replacement: 'stream-browserify' },
-        // { find: 'http', replacement: 'stream-http' },
+        { find: 'http', replacement: 'stream-http' },
         { find: 'url', replacement: 'url' },
       ],
     }),
@@ -46,5 +46,4 @@ export default {
       },
     }),
   ],
-  external: ['ws', 'http'],
 }

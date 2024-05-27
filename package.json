@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "lerna": "^8.1.2",
+    "npm-run-all": "^4.1.5",
     "prettier": "^3.2.5"
   },
   "overrides": {
@@ -20,8 +21,11 @@
   },
   "scripts": {
     "format": "lerna run format",
-    "build": "lerna run build",
     "clean": "rm -rf node_modules && lerna clean",
-    "start": "npm run start -w @noauth/client"
+    "build": "lerna run build --scope '{@noauth/client,@noauth/common,@noauth/backend}'",
+    "build:hosted": "lerna run build --scope '{@noauth/backend,@noauth/server}' && npm run build:hosted -w @noauth/common && npm run build:hosted -w @noauth/client",
+    "start:server": "npm run start -w @noauth/server",
+    "start": "npm run start -w @noauth/client",
+    "start:hosted": "npm run start:hosted -w @noauth/client"
   }
 }

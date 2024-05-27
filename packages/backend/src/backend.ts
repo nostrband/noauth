@@ -85,6 +85,7 @@ export class NoauthBackend extends EventEmitter {
 
     // global ndk is needed to pre-fetch pending requests while we haven't
     // yet unlocked a key and created a separate ndk for it
+
     this.ndk = new NDK({
       explicitRelayUrls: [...global.getNip46Relays(), ...OUTBOX_RELAYS, BROADCAST_RELAY],
       enableOutboxModel: false,
@@ -585,8 +586,7 @@ export class NoauthBackend extends EventEmitter {
       url: appUrl,
       updateTimestamp: Date.now(),
       permUpdateTimestamp: Date.now(),
-      // userAgent: navigator?.userAgent || '',
-      userAgent: '',
+      userAgent: window?.navigator?.userAgent || '',
     })
 
     // reload
@@ -723,8 +723,7 @@ export class NoauthBackend extends EventEmitter {
               url: options.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
-              // userAgent: navigator?.userAgent || '',
-              userAgent: '',
+              userAgent: window?.navigator?.userAgent || '',
               token: token || '',
               subNpub,
             })

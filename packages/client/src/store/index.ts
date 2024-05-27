@@ -10,7 +10,7 @@ import isDeepEqual from 'lodash.isequal'
 const persistConfig = {
   key: 'root',
   storage,
-  whiteList: [uiSlice.name],
+  whitelist: ['ui'],
 }
 
 const rootReducer = combineReducers({

@@ -12,7 +12,11 @@ export interface DbSchema extends Dexie {
   connectTokens: Dexie.Table<DbConnectToken, string>
 }
 
-export const db = new Dexie('noauthdb', { indexedDB, IDBKeyRange }) as DbSchema
+const DexieOptions = process.env.COMMON_HOSTED === 'true' ? { indexedDB, IDBKeyRange } : undefined
+
+console.log(process.env.COMMON_HOSTED)
+
+export const db = new Dexie('noauthdb', DexieOptions) as DbSchema
 
 db.version(12).stores({
   keys: 'npub',

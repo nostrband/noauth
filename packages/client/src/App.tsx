@@ -10,7 +10,7 @@ import { ModalLogin } from './components/Modal/ModalLogin/ModalLogin'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
 import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
-import { client } from './modules/websocket'
+import { client } from './modules/client'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -19,12 +19,11 @@ function App() {
   // eslint-disable-next-line
   const [_, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
 
-  const [isConnected, setIsConnected] = useState(false)
-  const [isSocketConnected, setIsSocketConnected] = useState(false)
+  const [isNdkConnected, setIsNdkConnected] = useState(false)
+  const [isClientConnected, setIsClientConnected] = useState(false)
 
   const load = useCallback(async () => {
     const keys = await client.getListKeys()
-
     dispatch(setKeys({ keys }))
 
     const loadProfiles = async () => {
@@ -46,6 +45,7 @@ function App() {
     loadProfiles()
 
     const apps = await client.getListApps()
+
     const loadApps = async () => {
       const updatedApps = []
       for (const app of apps) {
@@ -71,27 +71,24 @@ function App() {
     await client.checkpoint()
 
     // eslint-disable-next-line
-  }, [dispatch])
+  }, [])
 
   useEffect(() => {
-    if (isSocketConnected && isConnected)
-      load().catch((err) => {
-        console.log(err)
-      })
-  }, [isSocketConnected, isConnected, load, render])
+    if (isNdkConnected && isClientConnected) load()
+  }, [isNdkConnected, isClientConnected, load, render])
 
   useEffect(() => {
     ndk.connect().then(() => {
       console.log('NDK connected')
-      setIsConnected(true)
+      setIsNdkConnected(true)
     })
     // eslint-disable-next-line
   }, [])
 
   useEffect(() => {
     client.connect().then(() => {
-      console.log('WS connected')
-      setIsSocketConnected(true)
+      console.log('Client connected')
+      setIsClientConnected(true)
     })
   }, [])
 

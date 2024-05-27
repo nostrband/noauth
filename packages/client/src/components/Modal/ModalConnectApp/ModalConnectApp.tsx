@@ -17,7 +17,7 @@ import { nip19 } from 'nostr-tools'
 import { usePrepareSubNpubList } from '@/hooks/usePrepareSubNpubList'
 import { SubNpubMenuItem } from './components/SubNpubMenuItem'
 import { NIP46_RELAYS } from '@/utils/consts'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 
 export interface SubNpubOptionType {
   inputValue?: string

@@ -1,6 +1,6 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
-import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { DbApp, DbConnectToken, dbi } from '@noauth/common'
 
 export class ClientWebSocket implements BackendClient {
   private ws: WebSocket
@@ -28,6 +28,24 @@ export class ClientWebSocket implements BackendClient {
       this.isConnected = false
       console.log('WS closed:', event.code, event.reason)
     }
+  }
+
+  public async connect(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (this.isConnected) {
+        return resolve(true)
+      }
+
+      this.ws.onopen = () => {
+        this.onStarted()
+        resolve(true)
+      }
+
+      this.ws.onerror = (error: Event) => {
+        console.log('WebSocket connection error:', error)
+        reject(false)
+      }
+    })
   }
 
   private async onStarted() {
@@ -101,34 +119,12 @@ export class ClientWebSocket implements BackendClient {
 
     this.reqs.delete(id)
 
-    if (error) req.rej(error)
-    else req.ok(result)
-
     this.checkpointQueue.push(() => {
       // a hacky way to let App handle onRender first
       // to update redux and only then we deliver the
       // reply
       if (error) req.rej(error)
       else req.ok(result)
-    })
-  }
-
-  public connect(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      if (this.isConnected) {
-        resolve(true)
-        return
-      }
-
-      this.ws.onopen = () => {
-        this.onStarted()
-        resolve(true)
-      }
-
-      this.ws.onerror = (error: Event) => {
-        console.log('WebSocket connection error:', error)
-        reject(false)
-      }
     })
   }
 
@@ -225,24 +221,24 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public getListKeys() {
-    return this.call<DbKey[]>('listKeys')
+    return dbi.listKeys()
   }
 
   public getListApps() {
-    return this.call<DbApp[]>('listApps')
+    return dbi.listApps()
   }
 
   public getListPerms() {
-    return this.call<DbPerm[]>('listPerms')
+    return dbi.listPerms()
   }
 
   public getListPendingRequests() {
-    return this.call<DbPending[]>('listPending')
+    return dbi.listPending()
   }
 
   public getAppLastActiveRecord(app: DbApp) {
-    return this.call<number>('appLastActiveRecord', app)
+    return dbi.getAppLastActiveRecord(app)
   }
 }
 
-export const client = new ClientWebSocket('ws://localhost:8080')
+export const clientWebSocket = new ClientWebSocket('ws://localhost:8080')

@@ -15,7 +15,11 @@ export const StyledAppLogo = styled((props) => (
 })
 
 export const InputsContainer = styled(
-  forwardRef<HTMLDivElement, StackProps & { show: boolean }>((props, ref) => <Stack {...props} ref={ref} />)
+  forwardRef<HTMLDivElement, StackProps & { show: boolean }>((props, ref) => {
+    const exclude = new Set(['show'])
+    const omitProps = Object.fromEntries(Object.entries(props).filter((e) => !exclude.has(e[0])))
+    return <Stack {...omitProps} ref={ref} />
+  })
 )(({ show = false }) => ({
   gap: '1rem',
   height: show ? 'auto' : '0',

@@ -87,11 +87,12 @@ export class Keys {
   }
 
   private isSafari() {
-    return false
-    // if (!navigator) return false
-    // const chrome = navigator.userAgent.indexOf('Chrome') > -1
-    // const safari = navigator.userAgent.indexOf('Safari') > -1
-    // return safari && !chrome
+    if (typeof window === 'undefined' || !('navigator' in window)) {
+      return false
+    }
+    const chrome = navigator.userAgent.indexOf('Chrome') > -1
+    const safari = navigator.userAgent.indexOf('Safari') > -1
+    return safari && !chrome
   }
 
   public async generateLocalKey(): Promise<CryptoKey | {}> {

@@ -1,5 +1,7 @@
 import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { clientWebSocket } from './websocket'
+import { clientServiceWorker } from './swic'
 
 export interface BackendReply {
   id: number
@@ -25,6 +27,8 @@ export interface BackendClient {
   // after UI has made all updates using the call's
   // side effects
   checkpoint: () => Promise<void>
+
+  connect: () => Promise<boolean>
 
   addPerm: (appNpub: string, npub: string, permission: string, allow: AllowType) => Promise<void>
 
@@ -78,3 +82,5 @@ export interface BackendClient {
 
   getAppLastActiveRecord: (app: DbApp) => Promise<number>
 }
+
+export const client: BackendClient = process.env.REACT_APP_HOSTED === 'true' ? clientWebSocket : clientServiceWorker

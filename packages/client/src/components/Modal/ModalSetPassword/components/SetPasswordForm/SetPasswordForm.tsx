@@ -11,7 +11,7 @@ import { useParams } from 'react-router-dom'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Input } from '@/shared/Input/Input'
 import { usePassword } from '@/hooks/usePassword'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',

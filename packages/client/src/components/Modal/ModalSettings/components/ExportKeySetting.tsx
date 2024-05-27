@@ -5,7 +5,7 @@ import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { useCopyToClipboard } from 'usehooks-ts'
 import { useParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 
 export const ExportKeySetting = () => {
   const { npub = '' } = useParams<{ npub: string }>()

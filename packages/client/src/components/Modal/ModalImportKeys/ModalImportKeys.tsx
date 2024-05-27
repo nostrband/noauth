@@ -22,7 +22,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 import { fetchNip05 } from '@noauth/common'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 
 const FORM_DEFAULT_VALUES = {
   username: '',

@@ -27,7 +27,7 @@ import { usePrepareExistingAppPerms } from './hooks/usePrepareExistingAppPerms'
 import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
 import { getReqParams, getShortenNpub, packageToPerms, ACTION_TYPE } from '@noauth/common'
-import { client } from '@/modules/websocket'
+import { client } from '@/modules/client'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
