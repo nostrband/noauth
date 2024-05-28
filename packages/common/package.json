@@ -39,6 +39,7 @@
     "url": "^0.11.3"
   },
   "dependencies": {
-    "fake-indexeddb": "^5.0.2"
+    "fake-indexeddb": "^5.0.2",
+    "indexeddbshim": "^13.0.0"
   }
 }

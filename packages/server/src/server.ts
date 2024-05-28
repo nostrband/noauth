@@ -1,11 +1,13 @@
 import WebSocket from 'ws'
 import { Api, BackendRequest, GlobalContext, Key, NoauthBackend } from '@noauth/backend'
 import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB } from './consts'
+import http from 'http'
 
 export class WebSocketBackend extends NoauthBackend {
   private socket: WebSocket
+  private wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>
 
-  constructor(ws: WebSocket, baseUrl: string) {
+  constructor(ws: WebSocket, baseUrl: string, wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>) {
     let self: WebSocketBackend
     const global: GlobalContext = {
       btoa(data) {
@@ -39,13 +41,13 @@ export class WebSocketBackend extends NoauthBackend {
 
     self = this
     this.socket = ws
+    this.wss = wss
     this.setupListeners()
   }
 
   private setupListeners(): void {
     this.socket.on('message', this.onMessageEvent.bind(this))
     this.socket.on('close', this.onClose.bind(this))
-    this.socket.on('open', () => this.start())
   }
 
   private async onMessageEvent(message: string): Promise<void> {
@@ -67,6 +69,6 @@ export class WebSocketBackend extends NoauthBackend {
   }
 
   protected async updateUI() {
-    this.socket.emit('re-render')
+    this.wss.emit('re-render')
   }
 }

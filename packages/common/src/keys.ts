@@ -87,9 +87,8 @@ export class Keys {
   }
 
   private isSafari() {
-    if (typeof window === 'undefined' || !('navigator' in window)) {
-      return false
-    }
+    if (!('navigator' in globalThis)) return false
+
     const chrome = navigator.userAgent.indexOf('Chrome') > -1
     const safari = navigator.userAgent.indexOf('Safari') > -1
     return safari && !chrome

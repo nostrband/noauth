@@ -1,6 +1,6 @@
 import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
-import { clientWebSocket } from './websocket'
+import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
 
 export interface BackendReply {
@@ -83,4 +83,9 @@ export interface BackendClient {
   getAppLastActiveRecord: (app: DbApp) => Promise<number>
 }
 
-export const client: BackendClient = process.env.REACT_APP_HOSTED === 'true' ? clientWebSocket : clientServiceWorker
+const defineClient = (): BackendClient => {
+  if (process.env.REACT_APP_HOSTED === 'true') return startClientWebSocket()
+  return clientServiceWorker
+}
+
+export const client = defineClient()

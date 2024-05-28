@@ -586,7 +586,7 @@ export class NoauthBackend extends EventEmitter {
       url: appUrl,
       updateTimestamp: Date.now(),
       permUpdateTimestamp: Date.now(),
-      userAgent: window?.navigator?.userAgent || '',
+      userAgent: globalThis?.navigator?.userAgent || '',
     })
 
     // reload
@@ -723,7 +723,7 @@ export class NoauthBackend extends EventEmitter {
               url: options.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
-              userAgent: window?.navigator?.userAgent || '',
+              userAgent: globalThis?.navigator?.userAgent || '',
               token: token || '',
               subNpub,
             })

@@ -7,10 +7,11 @@ export const wss = new WebSocketServer({ noServer: true })
 
 wss.on('connection', (ws, req) => {
   const baseUrl = req.headers.origin || ''
-  new WebSocketBackend(ws, baseUrl)
+  const backend = new WebSocketBackend(ws, baseUrl, wss)
+  backend.start()
 })
 
-wss.on('re-render', (ws, req) => {
+wss.on('re-render', () => {
   wss.clients.forEach((client) => {
     client.send(JSON.stringify({ result: 're-render' }))
   })

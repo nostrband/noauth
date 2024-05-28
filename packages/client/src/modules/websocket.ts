@@ -5,7 +5,7 @@ import { DbApp, DbConnectToken, dbi } from '@noauth/common'
 export class ClientWebSocket implements BackendClient {
   private ws: WebSocket
   private reqs: Map<number, { ok: (value: any) => void; rej: (reason?: any) => void }> = new Map()
-  private messageId: number = 0
+  private messageId: number = 1
   private isConnected: boolean = false
   private onRender: (() => void) | null = null
   private onReload: (() => void) | null = null
@@ -31,27 +31,28 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public async connect(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      if (this.isConnected) {
-        return resolve(true)
-      }
+    return new Promise((resolve) => {
+      if (this.isConnected) return resolve(true)
 
       this.ws.onopen = () => {
         this.onStarted()
-        resolve(true)
+        if (this.ws.readyState === WebSocket.OPEN) resolve(true)
+        else resolve(false)
       }
 
       this.ws.onerror = (error: Event) => {
         console.log('WebSocket connection error:', error)
-        reject(false)
+        resolve(false)
       }
     })
   }
 
   private async onStarted() {
-    this.isConnected = true
-    console.log('WS started, queue', this.queue.length)
-    while (this.queue.length) await this.queue.shift()!()
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.isConnected = true
+      console.log('WS started, queue', this.queue.length)
+      while (this.queue.length) await this.queue.shift()!()
+    }
   }
 
   private callWhenStarted(cb: () => void) {
@@ -241,4 +242,4 @@ export class ClientWebSocket implements BackendClient {
   }
 }
 
-export const clientWebSocket = new ClientWebSocket('ws://localhost:8080')
+export const startClientWebSocket = () => new ClientWebSocket('ws://localhost:8080')
