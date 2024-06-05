@@ -86,4 +86,4 @@ async function start() {
   await backend.start()
 }
 
-start()
+process.env.REACT_APP_HOSTED === 'false' && start()

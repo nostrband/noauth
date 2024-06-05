@@ -1,6 +1,8 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
-import { DbApp, DbConnectToken, dbi } from '@noauth/common'
+import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
+
+const DB_METHODS = ['listKeys', 'listApps', 'listPerms', 'listPending', 'getAppLastActiveRecord']
 
 export class ClientWebSocket implements BackendClient {
   private ws: WebSocket
@@ -71,6 +73,17 @@ export class ClientWebSocket implements BackendClient {
     this.messageId++
 
     return new Promise((ok, rej) => {
+      if (DB_METHODS.includes(method)) {
+        const msg = {
+          id,
+          method,
+          args: [...args],
+        }
+        this.ws.send(JSON.stringify(msg))
+        this.reqs.set(id, { ok, rej })
+        return
+      }
+
       const call = async () => {
         if (!this.isConnected) {
           rej(new Error('No WS connection!'))
@@ -99,7 +112,7 @@ export class ClientWebSocket implements BackendClient {
 
   private onMessage(data: string) {
     const response: BackendReply = JSON.parse(data)
-    const { id, result, error } = response
+    const { id, result, error, method = '' } = response
 
     if (!id) {
       if (result === 'reload') {
@@ -120,13 +133,18 @@ export class ClientWebSocket implements BackendClient {
 
     this.reqs.delete(id)
 
-    this.checkpointQueue.push(() => {
-      // a hacky way to let App handle onRender first
-      // to update redux and only then we deliver the
-      // reply
+    if (DB_METHODS.includes(method)) {
       if (error) req.rej(error)
       else req.ok(result)
-    })
+    } else {
+      this.checkpointQueue.push(() => {
+        // a hacky way to let App handle onRender first
+        // to update redux and only then we deliver the
+        // reply
+        if (error) req.rej(error)
+        else req.ok(result)
+      })
+    }
   }
 
   public setOnRender(onRender: () => void) {
@@ -221,24 +239,30 @@ export class ClientWebSocket implements BackendClient {
     return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
   }
 
-  public getListKeys() {
-    return dbi.listKeys()
+  public async getListKeys() {
+    // return dbi.listKeys()
+    // return [] as DbKey[]
+    return this.call<DbKey[]>('listKeys')
   }
 
-  public getListApps() {
-    return dbi.listApps()
+  public async getListApps() {
+    // return dbi.listApps()
+    return [] as DbApp[]
   }
 
-  public getListPerms() {
-    return dbi.listPerms()
+  public async getListPerms() {
+    // return dbi.listPerms()
+    return [] as DbPerm[]
   }
 
-  public getListPendingRequests() {
-    return dbi.listPending()
+  public async getListPendingRequests() {
+    // return dbi.listPending()
+    return [] as DbPending[]
   }
 
-  public getAppLastActiveRecord(app: DbApp) {
-    return dbi.getAppLastActiveRecord(app)
+  public async getAppLastActiveRecord(app: DbApp) {
+    // return dbi.getAppLastActiveRecord(app)
+    return 0
   }
 }
 

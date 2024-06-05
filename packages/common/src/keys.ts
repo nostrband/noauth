@@ -106,7 +106,7 @@ export class Keys {
       { name: ALGO_LOCAL, length: KEY_SIZE_LOCAL },
       // NOTE: important to make sure it's not visible in
       // dev console in IndexedDB
-      /*extractable*/ false,
+      /*extractable*/ true, // !IMPORTANT
       ['encrypt', 'decrypt']
     )
   }

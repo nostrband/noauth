@@ -2,6 +2,9 @@ import WebSocket from 'ws'
 import { Api, BackendRequest, GlobalContext, Key, NoauthBackend } from '@noauth/backend'
 import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB } from './consts'
 import http from 'http'
+import { dbi } from '@noauth/common'
+
+const DB_METHODS = ['listKeys', 'listApps', 'listPerms', 'listPending', 'getAppLastActiveRecord']
 
 export class WebSocketBackend extends NoauthBackend {
   private socket: WebSocket
@@ -53,8 +56,27 @@ export class WebSocketBackend extends NoauthBackend {
   private async onMessageEvent(message: string): Promise<void> {
     try {
       const { args, id, method }: BackendRequest = JSON.parse(message)
+
+      if (DB_METHODS.includes(method)) {
+        let result
+        if (method === 'listKeys') {
+          result = await dbi.listKeys()
+        } else if (method === 'listApps') {
+          result = await dbi.listApps()
+        } else if (method === 'listPerms') {
+          result = await dbi.listPerms()
+        } else if (method === 'listPending') {
+          result = await dbi.listPending()
+        } else if (method === 'getAppLastActiveRecord') {
+          result = await dbi.getAppLastActiveRecord(args[0])
+        }
+        this.socket.send(JSON.stringify({ id, result, method }))
+        return
+      }
+
       const result = await this.onMessage({ args, id, method })
-      this.socket.send(JSON.stringify({ id, result }))
+      console.log(result)
+      this.socket.send(JSON.stringify({ id, result, method }))
 
       this.updateUI()
     } catch (error) {

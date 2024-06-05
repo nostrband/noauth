@@ -7,6 +7,7 @@ export interface BackendReply {
   id: number
   result: any
   error: string
+  method: string
 }
 
 export type AllowType = '1' | '0'

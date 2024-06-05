@@ -1,21 +1,20 @@
-import commonjs from '@rollup/plugin-commonjs'
-import typescript from '@rollup/plugin-typescript'
-import terser from '@rollup/plugin-terser'
-import dotenv from 'rollup-plugin-dotenv'
+const commonjs = require('@rollup/plugin-commonjs')
+const typescript = require('@rollup/plugin-typescript')
+const terser = require('@rollup/plugin-terser')
+const dotenv = require('rollup-plugin-dotenv')
 
-export default {
+module.exports = {
   input: 'index.ts',
   output: [
     {
       file: 'dist/index.js',
-      format: 'esm',
-      sourcemap: true,
+      format: 'cjs',
     },
   ],
 
   plugins: [
     commonjs(),
-    dotenv(),
+    dotenv.default(),
     typescript({
       tsconfig: 'tsconfig.json',
     }),

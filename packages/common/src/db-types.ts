@@ -9,6 +9,7 @@ export interface DbKey {
   enckey: string
   profile?: MetaEvent | null
   ncryptsec?: string
+  localKey?: CryptoKey
 }
 
 export interface DbApp {
@@ -65,4 +66,37 @@ export interface DbConnectToken {
   timestamp: number
   expiry: number
   subNpub?: string
+}
+
+export interface DbInterface {
+  addKey: (key: DbKey) => Promise<void>
+  getKey: (npub: string) => Promise<DbKey | undefined>
+  listKeys: () => Promise<DbKey[]>
+  editName: (npub: string, name: string) => Promise<void>
+  editNcryptsec: (npub: string, ncryptsec: string) => Promise<void>
+
+  addApp: (app: DbApp) => Promise<void>
+  getApp: (appNpub: string) => Promise<DbApp | undefined>
+  listApps: () => Promise<DbApp[]>
+  updateApp: (app: DbApp) => Promise<void>
+  removeApp: (appNpub: string, npub: string) => Promise<void>
+  updateAppPermTimestamp: (appNpub: string, npub: string, timestamp: number) => Promise<number>
+  getAppLastActiveRecord: (app: DbApp) => Promise<number>
+
+  addPerm: (perm: DbPerm) => Promise<void>
+  listPerms: () => Promise<DbPerm[]>
+  removePerm: (id: string) => Promise<void>
+  removeAppPerms: (appNpub: string, npub: string) => Promise<number | undefined>
+
+  addPending: (pending: DbPending) => Promise<boolean>
+  listPending: () => Promise<DbPending[]>
+  removePending: (id: string) => Promise<void>
+  confirmPending: (id: string, allowed: boolean) => Promise<void>
+  addConfirmed: (r: DbHistory) => Promise<false | undefined>
+  setSynced: (npub: string) => Promise<false | undefined>
+
+  addConnectToken: (token: DbConnectToken) => Promise<boolean | undefined>
+  getConnectToken: (npub: string, subNpub?: string) => Promise<DbConnectToken | undefined>
+  listConnectTokens: () => Promise<DbConnectToken[]>
+  removeConnectToken: (token: string) => Promise<void>
 }

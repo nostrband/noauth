@@ -1,9 +1,9 @@
 {
   "name": "@noauth/backend",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
+  "main": "dist/node/index.js",
+  "browser": "dist/browser/index.js",
+  "types": "dist/node/index.d.ts",
   "dependencies": {
     "tseep": "^1.2.1"
   },

@@ -30,6 +30,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
   private notifCallback: (() => void) | null = null
 
   constructor(swg: ServiceWorkerGlobalScope) {
+    console.log('works in browser')
     let self: ServiceWorkerBackend
     const global: GlobalContext = {
       btoa(data) {

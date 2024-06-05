@@ -1,9 +1,9 @@
 {
   "name": "@noauth/common",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
+  "main": "dist/node/index.js",
+  "browser": "dist/browser/index.js",
+  "types": "dist/node/index.d.ts",
   "scripts": {
     "build": "dotenv -e .env -- rollup -c",
     "build:hosted": "dotenv -e .env.hosted -- rollup -c",
@@ -30,8 +30,10 @@
     "dotenv-cli": "^7.4.2",
     "https-browserify": "^1.0.0",
     "os-browserify": "^0.3.0",
+    "prisma": "^5.14.0",
     "process": "^0.11.10",
     "rollup": "^4.17.2",
+    "rollup-plugin-conditional": "^3.1.2",
     "rollup-plugin-dotenv": "^0.5.1",
     "rollup-plugin-node-globals": "^1.4.0",
     "stream-browserify": "^3.0.0",
@@ -39,7 +41,6 @@
     "url": "^0.11.3"
   },
   "dependencies": {
-    "fake-indexeddb": "^5.0.2",
-    "indexeddbshim": "^13.0.0"
+    "@prisma/client": "^5.14.0"
   }
 }
