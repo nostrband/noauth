@@ -4,7 +4,15 @@ import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB } from './consts'
 import http from 'http'
 import { dbi } from '@noauth/common'
 
-const DB_METHODS = ['listKeys', 'listApps', 'listPerms', 'listPending', 'getAppLastActiveRecord']
+const DB_METHODS = [
+  'listKeys',
+  'listApps',
+  'listPerms',
+  'listPending',
+  'listHistory',
+  'getAppLastActiveRecord',
+  'getSynced',
+]
 
 export class WebSocketBackend extends NoauthBackend {
   private socket: WebSocket
@@ -67,15 +75,18 @@ export class WebSocketBackend extends NoauthBackend {
           result = await dbi.listPerms()
         } else if (method === 'listPending') {
           result = await dbi.listPending()
+        } else if (method === 'listHistory') {
+          result = await dbi.listHistory(args[0])
         } else if (method === 'getAppLastActiveRecord') {
           result = await dbi.getAppLastActiveRecord(args[0])
+        } else if (method === 'getSynced') {
+          result = await dbi.getSynced(args[0])
         }
         this.socket.send(JSON.stringify({ id, result, method }))
         return
       }
 
       const result = await this.onMessage({ args, id, method })
-      console.log(result)
       this.socket.send(JSON.stringify({ id, result, method }))
 
       this.updateUI()

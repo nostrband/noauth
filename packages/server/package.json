@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup -c",
     "format": "npx prettier --write src",
-    "start": "npm run build && node ./dist/index.js"
+    "start": "node ./dist/index.js"
   },
   "keywords": [],
   "author": "bekbolsun22",

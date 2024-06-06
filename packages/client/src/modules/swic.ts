@@ -206,8 +206,15 @@ class ClientServiceWorker implements BackendClient {
     return dbi.listPending()
   }
 
+  public getListHistory(appNpub: string) {
+    return dbi.listHistory(appNpub)
+  }
+
   public getAppLastActiveRecord(app: DbApp) {
     return dbi.getAppLastActiveRecord(app)
+  }
+  public async getSynced(npub: string) {
+    return await dbi.getSynced(npub)
   }
 }
 

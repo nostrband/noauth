@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { History, Pending, PrismaClient } from '@prisma/client'
 import { DbApp, DbConnectToken, DbHistory, DbInterface, DbKey, DbPending, DbPerm } from './db-types'
 
@@ -46,10 +45,10 @@ const dbiPrisma: DbInterface = {
       throw error
     }
   },
-  getKey: async (npub: string) => {
+  getKey: async (npub: string): Promise<DbKey> => {
     try {
       const result = await prisma.keys.findUnique({ where: { npub } })
-      return result
+      return result as unknown as DbKey
     } catch (error: any) {
       console.error(`Error retrieving key: ${error.message}`)
       throw error
@@ -59,7 +58,7 @@ const dbiPrisma: DbInterface = {
     try {
       const keys = await prisma.keys.findMany()
 
-      const parseKeys = []
+      const parseKeys: DbKey[] = []
       for (const key of keys) {
         const parseJson = JSON.parse(key.jsonData || '{}')
         const localKey = await importCryptoKey(parseJson.localKey, {
@@ -77,27 +76,27 @@ const dbiPrisma: DbInterface = {
   },
   editName: async (npub: string, name: string) => {
     try {
-      return await prisma.keys.update({ where: { npub }, data: { name } })
+      await prisma.keys.update({ where: { npub }, data: { name } })
     } catch (error: any) {
       console.error(`Error editing name: ${error.message}`)
       throw error
     }
   },
-
-  editNcryptsec: async (npub: string, ncryptsec: string): Promise<void> => {
+  editNcryptsec: async (npub: string, ncryptsec: string) => {
     try {
       await prisma.keys.update({
         where: { npub },
         data: { ncryptsec },
       })
     } catch (error: any) {
-      console.log(`db editNcryptsec error: ${error.message}`)
+      console.log(`Error editing ncryptsec: ${error.message}`)
       throw error
     }
   },
   getApp: async (appNpub: string) => {
     try {
-      return await prisma.apps.findUnique({ where: { appNpub } })
+      const result = await prisma.apps.findUnique({ where: { appNpub } })
+      return result as unknown as DbApp
     } catch (error: any) {
       console.error(`Error retrieving app: ${error.message}`)
       throw error
@@ -106,7 +105,7 @@ const dbiPrisma: DbInterface = {
 
   addApp: async (app: DbApp) => {
     try {
-      return await prisma.apps.create({ data: app })
+      await prisma.apps.create({ data: app })
     } catch (error: any) {
       console.error(`Error adding app: ${error.message}`)
       throw error
@@ -114,7 +113,7 @@ const dbiPrisma: DbInterface = {
   },
   updateApp: async (app: DbApp) => {
     try {
-      return await prisma.apps.update({
+      await prisma.apps.update({
         where: { appNpub: app.appNpub },
         data: app,
       })
@@ -125,7 +124,7 @@ const dbiPrisma: DbInterface = {
   },
   listApps: async () => {
     try {
-      return await prisma.apps.findMany()
+      return (await prisma.apps.findMany()) as unknown as DbApp[]
     } catch (error: any) {
       console.error(`Error listing apps: ${error.message}`)
       throw error
@@ -133,13 +132,13 @@ const dbiPrisma: DbInterface = {
   },
   removeApp: async (appNpub: string) => {
     try {
-      return await prisma.apps.delete({ where: { appNpub } })
+      await prisma.apps.delete({ where: { appNpub } })
     } catch (error: any) {
       console.error(`Error removing app: ${error.message}`)
       throw error
     }
   },
-  updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0): Promise<number> => {
+  updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
     try {
       const permUpdateTimestamp = timestamp || Date.now()
       await prisma.apps.update({
@@ -152,11 +151,11 @@ const dbiPrisma: DbInterface = {
       })
       return permUpdateTimestamp
     } catch (error: any) {
-      console.error(`db updatePermTimestamp error: ${error.message}`)
+      console.error(`Error editing app permission timestamp: ${error.message}`)
       return 0
     }
   },
-  getAppLastActiveRecord: async (app: DbApp): Promise<number> => {
+  getAppLastActiveRecord: async (app: DbApp) => {
     try {
       const records = await prisma.history.findMany({
         where: {
@@ -169,15 +168,15 @@ const dbiPrisma: DbInterface = {
         take: 1,
       })
       const lastActive = records[0]
-      return lastActive ? lastActive.timestamp : 0
+      return lastActive ? Number(lastActive.timestamp) : 0
     } catch (error: any) {
-      console.error(`db getAppLastActiveRecord error: ${error.message}`)
+      console.error(`Error retrieving app last active record: ${error.message}`)
       return 0
     }
   },
   addPerm: async (perm: DbPerm) => {
     try {
-      return await prisma.perms.create({ data: perm })
+      await prisma.perms.create({ data: perm })
     } catch (error: any) {
       console.error(`Error adding permission: ${error.message}`)
       throw error
@@ -185,7 +184,18 @@ const dbiPrisma: DbInterface = {
   },
   listPerms: async () => {
     try {
-      return await prisma.perms.findMany()
+      const perms = await prisma.perms.findMany()
+      const parsePerms: DbPerm[] = perms.map((p) => {
+        return {
+          appNpub: p.appNpub,
+          id: p.id,
+          npub: p.npub,
+          perm: p.perm,
+          timestamp: Number(p.timestamp),
+          value: p.value,
+        }
+      })
+      return parsePerms
     } catch (error: any) {
       console.error(`Error listing permissions: ${error.message}`)
       throw error
@@ -193,7 +203,7 @@ const dbiPrisma: DbInterface = {
   },
   removePerm: async (id: string) => {
     try {
-      return await prisma.perms.delete({ where: { id } })
+      await prisma.perms.delete({ where: { id } })
     } catch (error: any) {
       console.error(`Error removing permission: ${error.message}`)
       throw error
@@ -201,9 +211,9 @@ const dbiPrisma: DbInterface = {
   },
   removeAppPerms: async (appNpub: string, npub: string) => {
     try {
-      return await prisma.perms.deleteMany({ where: { appNpub } })
+      await prisma.perms.deleteMany({ where: { appNpub, npub } })
     } catch (error) {
-      console.log(`db removeAppPerms error: ${error}`)
+      console.log(`Error removing app permissions: ${error}`)
     }
   },
   addPending: async (r: DbPending) => {
@@ -224,35 +234,47 @@ const dbiPrisma: DbInterface = {
 
       return true
     } catch (error) {
-      console.log(`db addPending error: ${error}`)
+      console.log(`Error adding pending request: ${error}`)
       return false
     }
   },
   removePending: async (id: string) => {
     try {
-      return await prisma.pending.delete({ where: { id } })
+      await prisma.pending.delete({ where: { id } })
     } catch (error) {
-      console.log(`db removePending error: ${error}`)
+      console.log(`Error removing pending request: ${error}`)
     }
   },
-  listPending: async (): Promise<DbPending[]> => {
+  listPending: async () => {
     try {
-      return (await prisma.pending.findMany()) as unknown as DbPending[]
+      const pending = await prisma.pending.findMany()
+      const parsePending: DbPending[] = pending.map((p) => {
+        return {
+          appNpub: p.appNpub,
+          id: p.id,
+          method: p.method,
+          npub: p.npub,
+          timestamp: Number(p.timestamp),
+          ...JSON.parse(p.jsonData || '{}'),
+        }
+      })
+      return parsePending
     } catch (error) {
-      console.log(`db listPending error: ${error}`)
+      console.log(`Error listing pending requests: ${error}`)
       return []
     }
   },
   confirmPending: async (id: string, allowed: boolean) => {
     try {
-      const r: DbPending | null = await prisma.pending.findUnique({
+      const result = await prisma.pending.findUnique({
         where: { id: id },
       })
 
-      if (!r) throw new Error('Pending not found ' + id)
+      if (!result) throw new Error('Pending not found ' + id)
 
+      // @ts-ignore
       const h: DbHistory = {
-        ...r,
+        ...result,
         allowed,
       }
 
@@ -264,14 +286,23 @@ const dbiPrisma: DbInterface = {
         data: h,
       })
     } catch (error) {
-      console.log(`db confirmPending error: ${error}`)
+      console.log(`Error confirm pending request: ${error}`)
     }
   },
   addConfirmed: async (r: DbHistory) => {
     try {
       await prisma.history.create({ data: r })
     } catch (error) {
-      console.log(`db addConfirmed error: ${error}`)
+      console.log(`Error adding confirm: ${error}`)
+      return false
+    }
+  },
+  getSynced: async (npub: string) => {
+    try {
+      const result = await prisma.syncHistory.count({ where: { npub } })
+      return result > 0
+    } catch (error) {
+      console.log(`Error getting sync: ${error}`)
       return false
     }
   },
@@ -283,8 +314,8 @@ const dbiPrisma: DbInterface = {
         },
       })
     } catch (error) {
-      console.log(`Prisma setSynced error: ${error}`)
-      return false
+      console.log(`Error setting sync: ${error}`)
+      throw error
     }
   },
   addConnectToken: async (r: DbConnectToken) => {
@@ -293,41 +324,89 @@ const dbiPrisma: DbInterface = {
         data: r,
       })
     } catch (error) {
-      console.log(`Prisma addConnectToken error: ${error}`)
+      console.log(`Error adding connect token: ${error}`)
       return false
     }
   },
   getConnectToken: async (npub: string, subNpub?: string) => {
     try {
-      let req: { npub: string; subNpub?: string } = { npub }
-      if (subNpub) req = { ...req, subNpub }
-      const token = await prisma.connectTokens.findUnique({
-        where: req,
+      const whereClause = {
+        npub: npub,
+        ...(subNpub && { subNpub: subNpub }),
+      }
+
+      const token = await prisma.connectTokens.findFirst({
+        where: whereClause,
       })
-      if (token && token.expiry > Date.now())
+
+      if (token && Number(token.expiry) > Date.now()) {
         return {
-          ...token,
           expiry: Number(token.expiry),
           timestamp: Number(token.timestamp),
+          npub: token.npub,
+          token: token.token,
+          subNpub: token.subNpub || undefined,
         }
+      }
+
       return undefined
     } catch (error) {
-      console.log(`Prisma getConnectToken error: ${error}`)
+      console.error(`Error retrieving connect token: ${error}`)
+      return undefined
     }
   },
-  listConnectTokens: async (): Promise<DbConnectToken[]> => {
+  listConnectTokens: async () => {
     try {
-      return await prisma.connectTokens.findMany()
+      const result = await prisma.connectTokens.findMany()
+      const parseTokens: DbConnectToken[] = result.map((ct) => {
+        return {
+          npub: ct.npub,
+          expiry: Number(ct.expiry),
+          timestamp: Number(ct.timestamp),
+          token: ct.token,
+          subNpub: ct.subNpub || undefined,
+        }
+      })
+      return parseTokens
     } catch (error) {
-      console.log(`db connectTokens error: ${error}`)
+      console.log(`Error listing connect tokens: ${error}`)
       return []
     }
   },
   removeConnectToken: async (token: string) => {
     try {
-      return await prisma.connectTokens.delete({ where: { token } })
+      await prisma.connectTokens.delete({ where: { token } })
     } catch (error) {
-      console.log(`db connectTokens error: ${error}`)
+      console.log(`Error removing connect token: ${error}`)
+    }
+  },
+  listHistory: async (appNpub: string) => {
+    try {
+      const history = await prisma.history.findMany({
+        where: {
+          appNpub,
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 30,
+      })
+      const parseHistory: DbHistory[] = history.map((h) => {
+        return {
+          id: h.id,
+          appNpub: h.appNpub,
+          allowed: h.allowed,
+          method: h.method,
+          npub: h.npub,
+          timestamp: Number(h.timestamp),
+          ...JSON.parse(h.jsonData || '{}'),
+        }
+      })
+
+      return parseHistory
+    } catch (error) {
+      console.error(`Error listing history: ${error}`)
+      return []
     }
   },
 }

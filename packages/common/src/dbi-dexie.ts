@@ -157,7 +157,7 @@ const dbiDexie: DbInterface = {
   },
   removeAppPerms: async (appNpub: string, npub: string) => {
     try {
-      return await db.perms.where({ appNpub, npub }).delete()
+      await db.perms.where({ appNpub, npub }).delete()
     } catch (error) {
       console.log(`db removeAppPerms error: ${error}`)
     }
@@ -217,12 +217,20 @@ const dbiDexie: DbInterface = {
       return false
     }
   },
+  getSynced: async (npub: string) => {
+    try {
+      const result = await db.syncHistory.where('npub').equals(npub).count()
+      return result > 0
+    } catch (error) {
+      console.log(`db getSynced error: ${error}`)
+      return false
+    }
+  },
   setSynced: async (npub: string) => {
     try {
       await db.syncHistory.put({ npub })
     } catch (error) {
       console.log(`db setSynced error: ${error}`)
-      return false
     }
   },
   addConnectToken: async (r: DbConnectToken) => {
@@ -257,6 +265,15 @@ const dbiDexie: DbInterface = {
       return await db.connectTokens.delete(token)
     } catch (error) {
       console.log(`db connectTokens error: ${error}`)
+    }
+  },
+  listHistory: async (appNpub: string) => {
+    try {
+      const history = await db.history.where('appNpub').equals(appNpub).reverse().sortBy('timestamp')
+      return history.slice(0, 30)
+    } catch (error) {
+      console.log(`db listHistory error: ${error}`)
+      return []
     }
   },
 }

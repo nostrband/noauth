@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAppSelector } from '../../store/hooks/redux'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Box, IconButton, Stack } from '@mui/material'
@@ -16,23 +16,21 @@ import { useBackgroundSigning } from './hooks/useBackgroundSigning'
 import { BackgroundSigningWarning } from './components/BackgroundSigningWarning'
 import UserValueSection from './components/UserValueSection'
 import { useTriggerConfirmModal } from './hooks/useTriggerConfirmModal'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { checkNpubSyncQuerier } from './utils'
 import { DOMAIN } from '@/utils/consts'
 import { InputCopyButton } from '@/shared/InputCopyButton/InputCopyButton'
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
 import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPassword'
+import { client } from '@/modules/client'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
   const { keys, pending, perms } = useAppSelector((state) => state.content)
   const [searchParams] = useSearchParams()
 
+  const [isSynced, setIsSynced] = useState(false)
   const [isCheckingSync, setIsChecking] = useState(true)
   const handleStopChecking = () => setIsChecking(false)
-
-  const isSynced = useLiveQuery(checkNpubSyncQuerier(npub, handleStopChecking), [npub], false)
 
   const { handleOpen } = useModalSearchParams()
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
@@ -51,6 +49,16 @@ const KeyPage = () => {
 
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
+
+  useEffect(() => {
+    const load = async () => {
+      const synced = await client.getSynced(npub)
+      setIsSynced(synced)
+      handleStopChecking()
+    }
+    load()
+    // eslint-disable-next-line
+  }, [npub])
 
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')

@@ -86,17 +86,21 @@ export interface DbInterface {
   addPerm: (perm: DbPerm) => Promise<void>
   listPerms: () => Promise<DbPerm[]>
   removePerm: (id: string) => Promise<void>
-  removeAppPerms: (appNpub: string, npub: string) => Promise<number | undefined>
+  removeAppPerms: (appNpub: string, npub: string) => Promise<void>
 
   addPending: (pending: DbPending) => Promise<boolean>
   listPending: () => Promise<DbPending[]>
   removePending: (id: string) => Promise<void>
   confirmPending: (id: string, allowed: boolean) => Promise<void>
-  addConfirmed: (r: DbHistory) => Promise<false | undefined>
-  setSynced: (npub: string) => Promise<false | undefined>
+  addConfirmed: (r: DbHistory) => Promise<boolean | undefined>
+
+  getSynced: (npub: string) => Promise<boolean>
+  setSynced: (npub: string) => Promise<void>
 
   addConnectToken: (token: DbConnectToken) => Promise<boolean | undefined>
   getConnectToken: (npub: string, subNpub?: string) => Promise<DbConnectToken | undefined>
   listConnectTokens: () => Promise<DbConnectToken[]>
   removeConnectToken: (token: string) => Promise<void>
+
+  listHistory: (appNpub: string) => Promise<DbHistory[]>
 }

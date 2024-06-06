@@ -1,5 +1,5 @@
 import { KeyInfo, CreateConnectParams } from '@noauth/backend'
-import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
 
@@ -81,7 +81,11 @@ export interface BackendClient {
 
   getListPendingRequests: () => Promise<DbPending[]>
 
+  getListHistory: (appNpub: string) => Promise<DbHistory[]>
+
   getAppLastActiveRecord: (app: DbApp) => Promise<number>
+
+  getSynced: (npub: string) => Promise<boolean>
 }
 
 const defineClient = (): BackendClient => {

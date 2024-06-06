@@ -1,8 +1,16 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
-import { DbApp, DbConnectToken, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 
-const DB_METHODS = ['listKeys', 'listApps', 'listPerms', 'listPending', 'getAppLastActiveRecord']
+const DB_METHODS = [
+  'listKeys',
+  'listApps',
+  'listPerms',
+  'listPending',
+  'listHistory',
+  'getAppLastActiveRecord',
+  'getSynced',
+]
 
 export class ClientWebSocket implements BackendClient {
   private ws: WebSocket
@@ -123,7 +131,7 @@ export class ClientWebSocket implements BackendClient {
       return
     }
 
-    console.log('receive from WS => ', { id, result, error })
+    console.log('receive from WS => ', { id, result, error, method })
     const req = this.reqs.get(id)
 
     if (!req) {
@@ -240,29 +248,31 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public async getListKeys() {
-    // return dbi.listKeys()
-    // return [] as DbKey[]
     return this.call<DbKey[]>('listKeys')
   }
 
   public async getListApps() {
-    // return dbi.listApps()
-    return [] as DbApp[]
+    return this.call<DbApp[]>('listApps')
   }
 
   public async getListPerms() {
-    // return dbi.listPerms()
-    return [] as DbPerm[]
+    return this.call<DbPerm[]>('listPerms')
   }
 
   public async getListPendingRequests() {
-    // return dbi.listPending()
-    return [] as DbPending[]
+    return this.call<DbPending[]>('listPending')
+  }
+
+  public async getListHistory(appNpub: string) {
+    return this.call<DbHistory[]>('listHistory', appNpub)
   }
 
   public async getAppLastActiveRecord(app: DbApp) {
-    // return dbi.getAppLastActiveRecord(app)
-    return 0
+    return this.call<number>('getAppLastActiveRecord', app)
+  }
+
+  public async getSynced(npub: string) {
+    return this.call<boolean>('getSynced', npub)
   }
 }
 
