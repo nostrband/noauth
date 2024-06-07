@@ -19,7 +19,6 @@ db.version(12).stores({
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
-  requestHistory: 'id',
   syncHistory: 'npub',
   connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]',
 })
