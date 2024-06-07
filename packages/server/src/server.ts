@@ -28,7 +28,8 @@ export class WebSocketBackend extends NoauthBackend {
         return baseUrl
       },
       getCryptoSubtle() {
-        return globalThis.crypto.subtle
+        // @ts-ignore
+        return crypto.subtle;
       },
       getKey(npub: string): Key {
         return self!.getKey(npub)

@@ -26,6 +26,7 @@
     "ws": "^8.17.0"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "dotenv": "^16.4.5"
   }
 }

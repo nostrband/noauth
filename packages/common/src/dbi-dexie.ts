@@ -1,7 +1,7 @@
 import Dexie from 'dexie'
 import { DbApp, DbConnectToken, DbHistory, DbInterface, DbKey, DbPending, DbPerm, DbSyncHistory } from './db-types'
 
-export interface DbSchema extends Dexie {
+interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>
   apps: Dexie.Table<DbApp, string>
   perms: Dexie.Table<DbPerm, string>
@@ -11,7 +11,7 @@ export interface DbSchema extends Dexie {
   connectTokens: Dexie.Table<DbConnectToken, string>
 }
 
-export const db = new Dexie('noauthdb') as DbSchema
+const db = new Dexie('noauthdb') as DbSchema
 
 db.version(12).stores({
   keys: 'npub',

@@ -7,7 +7,9 @@
   "dependencies": {
     "@nostr-dev-kit/ndk": "^2.8.1",
     "dexie": "^4.0.4",
-    "nostr-tools": "^1.17.0"
+    "dotenv": "^16.4.5",
+    "nostr-tools": "^1.17.0",
+    "rollup": "^4.18.0"
   },
   "devDependencies": {
     "lerna": "^8.1.2",

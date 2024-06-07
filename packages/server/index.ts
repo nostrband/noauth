@@ -1,3 +1,7 @@
+import { webcrypto } from 'node:crypto'
+// @ts-ignore
+if (!globalThis.crypto) globalThis.crypto = webcrypto
+
 import http from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { WebSocketBackend } from './src/server'
