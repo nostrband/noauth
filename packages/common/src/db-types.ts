@@ -76,7 +76,7 @@ export interface DbInterface {
   editNcryptsec: (npub: string, ncryptsec: string) => Promise<void>
 
   addApp: (app: DbApp) => Promise<void>
-  getApp: (appNpub: string) => Promise<DbApp | undefined>
+  // getApp: (appNpub: string) => Promise<DbApp | undefined>
   listApps: () => Promise<DbApp[]>
   updateApp: (app: DbApp) => Promise<void>
   removeApp: (appNpub: string, npub: string) => Promise<void>

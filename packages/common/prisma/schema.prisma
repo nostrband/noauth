@@ -19,11 +19,13 @@ model Keys {
 }
 
 model Apps {
-  appNpub   String @id
+  appNpub   String
   npub      String
   name      String
   timestamp BigInt
   jsonData  String
+
+  @@id(name: "appId", [appNpub, npub])
 }
 
 model Perms {

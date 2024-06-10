@@ -111,24 +111,24 @@ const dbiPrisma: DbInterface = {
       throw error
     }
   },
-  getApp: async (appNpub: string) => {
-    try {
-      const app = await prisma.apps.findUnique({ where: { appNpub } })
-      if (!app) throw new Error('App not found!')
+  // getApp: async (appNpub: string) => {
+  //   try {
+  //     const app = await prisma.apps.findUnique({ where: { appNpub } })
+  //     if (!app) throw new Error('App not found!')
 
-      const parseJsonData = JSON.parse(app.jsonData)
-      return {
-        appNpub: app.appNpub,
-        npub: app.appNpub,
-        name: app.name,
-        timestamp: Number(app.timestamp),
-        ...parseJsonData,
-      }
-    } catch (error: any) {
-      console.error(`Error retrieving app: ${error.message}`)
-      throw error
-    }
-  },
+  //     const parseJsonData = JSON.parse(app.jsonData)
+  //     return {
+  //       appNpub: app.appNpub,
+  //       npub: app.appNpub,
+  //       name: app.name,
+  //       timestamp: Number(app.timestamp),
+  //       ...parseJsonData,
+  //     }
+  //   } catch (error: any) {
+  //     console.error(`Error retrieving app: ${error.message}`)
+  //     throw error
+  //   }
+  // },
 
   addApp: async (app: DbApp) => {
     try {
@@ -151,7 +151,7 @@ const dbiPrisma: DbInterface = {
     try {
       const { appNpub, name, npub, timestamp, ...appRest } = app
       await prisma.apps.update({
-        where: { appNpub },
+        where: { appId: { appNpub, npub } },
         data: {
           appNpub,
           name,
@@ -174,7 +174,7 @@ const dbiPrisma: DbInterface = {
         const parseJsonData = JSON.parse(app.jsonData)
         parseApps.push({
           appNpub: app.appNpub,
-          npub: app.appNpub,
+          npub: app.npub,
           name: app.name,
           timestamp: Number(app.timestamp),
           ...parseJsonData,
@@ -186,9 +186,9 @@ const dbiPrisma: DbInterface = {
       throw error
     }
   },
-  removeApp: async (appNpub: string) => {
+  removeApp: async (appNpub: string, npub: string) => {
     try {
-      await prisma.apps.delete({ where: { appNpub } })
+      await prisma.apps.delete({ where: { appId: { appNpub, npub } } })
     } catch (error: any) {
       console.error(`Error removing app: ${error.message}`)
       throw error
@@ -196,7 +196,7 @@ const dbiPrisma: DbInterface = {
   },
   updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
     try {
-      const app = await prisma.apps.findUnique({ where: { appNpub, npub } })
+      const app = await prisma.apps.findUnique({ where: { appId: { appNpub, npub }   } })
       if (!app) throw new Error('App not found!')
 
       const permUpdateTimestamp = timestamp || Date.now()
@@ -205,7 +205,7 @@ const dbiPrisma: DbInterface = {
 
       await prisma.apps.update({
         where: {
-          appNpub,
+          appId: { appNpub, npub },
         },
         data: {
           ...app,
@@ -311,8 +311,10 @@ const dbiPrisma: DbInterface = {
   removePending: async (id: string) => {
     try {
       await prisma.pending.delete({ where: { id } })
-    } catch (error) {
-      console.log(`Error removing pending request: ${error}`)
+    } catch (error: any) {
+      // not found? that's fine
+      if (error.code !== "P2025")
+        console.log(`Error removing pending request: ${error}`)
     }
   },
   listPending: async () => {

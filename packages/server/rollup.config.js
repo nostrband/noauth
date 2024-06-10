@@ -24,5 +24,5 @@ module.exports = {
       },
     }),
   ],
-  external: ['http', 'ws'], //, '@noauth/common', '@noauth/backend'],
+  external: ['http', 'ws', '@noauth/common', '@noauth/backend'],
 }

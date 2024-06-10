@@ -66,13 +66,13 @@ const dbiDexie: DbInterface = {
       return
     }
   },
-  getApp: async (appNpub: string) => {
-    try {
-      return await db.apps.get(appNpub)
-    } catch (error) {
-      console.log(`db getApp error: ${error}`)
-    }
-  },
+  // getApp: async (appNpub: string) => {
+  //   try {
+  //     return await db.apps.get(appNpub)
+  //   } catch (error) {
+  //     console.log(`db getApp error: ${error}`)
+  //   }
+  // },
   addApp: async (app: DbApp) => {
     try {
       await db.apps.add(app)
