@@ -8,7 +8,7 @@ import { Button } from '@/shared/Button/Button'
 import { ItemApp } from './ItemApp'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectPermsByNpub } from '@/store'
-import { Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { groupAppsByURL } from './utils'
 import { AppGroup } from './AppGroup'
 
@@ -21,9 +21,6 @@ export const Apps: FC = () => {
   const { npub = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const perms = useAppSelector((state) => selectPermsByNpub(state, npub))
-  const keys = useAppSelector((state) => state.content.keys)
-  const key = keys.find((k) => k.npub === npub)
-  const isKeyExists = npub.trim().length && key
 
   const [sortAppsBy, setSortAppsBy] = useState(npub)
 
@@ -47,8 +44,6 @@ export const Apps: FC = () => {
     }
     // eslint-disable-next-line
   }, [subNpub, onResetSubNpub])
-
-  if (!isKeyExists) return <Navigate to={`/home`} />
 
   const openAppStore = () => {
     window.open('https://nostrapp.link', '_blank')

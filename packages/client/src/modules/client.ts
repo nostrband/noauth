@@ -21,6 +21,9 @@ export interface BackendClient {
   // sw is ready and we need to show 'Reload' button to user
   setOnReload: (onReload: () => void) => void
 
+  // for websocket only, when connection closed
+  setOnClose: (onClose: () => void) => void
+
   // called by app after it handles the onRender
   // and updates all UI with all new data received
   // from backend, this will deliver all pending

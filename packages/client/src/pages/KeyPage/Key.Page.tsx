@@ -64,10 +64,10 @@ const KeyPage = () => {
     searchParams.set('login', 'true')
     searchParams.set('npub', npub)
     const url = `/home?${searchParams.toString()}`
-    return <Navigate to={url} />
+    return <Navigate to={url} replace />
   }
 
-  if (!isKeyExists) return <Navigate to={`/home`} />
+  if (!isKeyExists) return <Navigate to={`/home`} replace />
 
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)

@@ -21,13 +21,13 @@ const AppRoutes = () => {
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route path="/" element={<Navigate to={'/home'} />} />
+          <Route path="/" element={<Navigate to={'/home'} replace />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/key/:npub" element={<KeyPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />
         </Route>
-        <Route path="*" element={<Navigate to={'/home'} />} />
+        <Route path="*" element={<Navigate to={'/home'} replace />} />
       </Routes>
     </Suspense>
   )

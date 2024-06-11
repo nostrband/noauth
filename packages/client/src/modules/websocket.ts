@@ -19,6 +19,7 @@ export class ClientWebSocket implements BackendClient {
   private isConnected: boolean = false
   private onRender: (() => void) | null = null
   private onReload: (() => void) | null = null
+  private onClose: (() => void) | null = null
   private queue: (() => Promise<void> | void)[] = []
   private checkpointQueue: (() => Promise<void> | void)[] = []
 
@@ -53,6 +54,7 @@ export class ClientWebSocket implements BackendClient {
       this.ws.onerror = (error: Event) => {
         console.log('WebSocket connection error:', error)
         resolve(false)
+        this.onClose && this.onClose()
       }
     })
   }
@@ -161,6 +163,10 @@ export class ClientWebSocket implements BackendClient {
 
   public setOnReload(onReload: () => void) {
     this.onReload = onReload
+  }
+
+  public setOnClose(onClose: () => void) {
+    this.onClose = onClose
   }
 
   public async addPerm(appNpub: string, npub: string, permission: string, allow: AllowType) {

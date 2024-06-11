@@ -11,10 +11,14 @@ import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from './utils/consts'
 import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExplanation'
 import { client } from './modules/client'
+import { LoadingSpinner } from './shared/LoadingSpinner/LoadingSpinner'
+import { Stack } from '@mui/material'
 
 function App() {
   const [render, setRender] = useState(0)
   const dispatch = useAppDispatch()
+
+  const [isLoading, setIsLoading] = useState(true)
 
   // eslint-disable-next-line
   const [_, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
@@ -69,6 +73,7 @@ function App() {
     // all updates from backend reloaded,
     // backend replies can be delivered now
     await client.checkpoint()
+    setIsLoading(false)
 
     // eslint-disable-next-line
   }, [])
@@ -86,9 +91,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    client.connect().then(() => {
-      console.log('Client connected')
+    client.connect().then((connected) => {
+      if (!connected) return
       setIsClientConnected(true)
+      console.log('Client connected')
     })
   }, [])
 
@@ -104,16 +110,24 @@ function App() {
     setNeedReload(true)
   })
 
+  client.setOnClose(() => {
+    setIsLoading(false)
+  })
+
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      setNeedReload(false)
-    }
+    const handleBeforeUnload = () => setNeedReload(false)
     window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     // eslint-disable-next-line
   }, [])
+
+  if (isLoading) {
+    return (
+      <Stack alignItems={'center'} justifyContent={'center'} height={'100%'}>
+        <LoadingSpinner mode="secondary" size={'2rem'} />
+      </Stack>
+    )
+  }
 
   return (
     <>

@@ -35,7 +35,7 @@ export const StyledAutocomplete = styled(
           />
         )
       }}
-      clearIcon={<ClearRoundedIcon htmlColor="white" fontSize="small" />}
+      clearIcon={<ClearRoundedIcon fontSize="small" />}
       classes={{
         endAdornment: 'icon',
       }}

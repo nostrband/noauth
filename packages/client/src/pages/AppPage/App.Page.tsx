@@ -64,7 +64,7 @@ const AppPage = () => {
   const handleShowAppDetailsModal = () => handleOpenModal(MODAL_PARAMS_KEYS.APP_DETAILS)
 
   if (!isNpubExists || !currentApp) {
-    return <Navigate to={`/key/${npub}`} />
+    return <Navigate to={`/key/${npub}`} replace />
   }
 
   const connectDate = formatDistanceToNow(new Date(currentApp.timestamp), {

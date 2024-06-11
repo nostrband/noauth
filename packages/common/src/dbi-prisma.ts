@@ -196,7 +196,7 @@ const dbiPrisma: DbInterface = {
   },
   updateAppPermTimestamp: async (appNpub: string, npub: string, timestamp = 0) => {
     try {
-      const app = await prisma.apps.findUnique({ where: { appId: { appNpub, npub }   } })
+      const app = await prisma.apps.findUnique({ where: { appId: { appNpub, npub } } })
       if (!app) throw new Error('App not found!')
 
       const permUpdateTimestamp = timestamp || Date.now()
@@ -313,8 +313,7 @@ const dbiPrisma: DbInterface = {
       await prisma.pending.delete({ where: { id } })
     } catch (error: any) {
       // not found? that's fine
-      if (error.code !== "P2025")
-        console.log(`Error removing pending request: ${error}`)
+      if (error.code !== 'P2025') console.log(`Error removing pending request: ${error}`)
     }
   },
   listPending: async () => {

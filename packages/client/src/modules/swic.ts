@@ -13,6 +13,7 @@ class ClientServiceWorker implements BackendClient {
   private nextReqId = 1
   private onRender: (() => void) | null = null
   private onReload: (() => void) | null = null
+  private onClose: (() => void) | null = null
   private queue: (() => Promise<void> | void)[] = []
   private checkpointQueue: (() => Promise<void> | void)[] = []
 
@@ -75,6 +76,9 @@ class ClientServiceWorker implements BackendClient {
 
   public setOnReload(onReload: () => void) {
     this.onReload = onReload
+  }
+  public setOnClose(onClose: () => void) {
+    this.onClose = onClose
   }
 
   public onMessage(data: BackendReply) {
