@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: .
+      target: client
+    ports:
+      - '3000:80'
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: .
+      target: server
+    ports:
+      - '8080:8080'
