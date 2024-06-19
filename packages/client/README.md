@@ -92,6 +92,10 @@ To run the hosted version of the project using Docker Compose, follow these step
    docker-compose up --build -d
    ```
 
+2. **Access the application:**
+
+Open your browser and navigate to http://localhost:3000 to access the hosted version of the project.
+
 ## TODO
 
 - Show details of requested operations
