@@ -14,5 +14,11 @@ services:
     build:
       context: .
       target: server
+    volumes:
+      - db-data:/app/packages/common/prisma
     ports:
       - '8080:8080'
+
+volumes:
+  db-data:
+    driver: local

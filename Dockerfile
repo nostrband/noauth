@@ -50,6 +50,9 @@ WORKDIR /app
 # Копируем файлы из предыдущего этапа
 COPY --from=build /app /app
 
+# Запускаем миграции Prisma
+RUN npx prisma migrate deploy --schema /app/packages/common/prisma/schema.prisma
+
 # Открываем порт
 EXPOSE 8080
 

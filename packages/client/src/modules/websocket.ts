@@ -282,4 +282,4 @@ export class ClientWebSocket implements BackendClient {
   }
 }
 
-export const startClientWebSocket = () => new ClientWebSocket('ws://localhost:8080')
+export const startClientWebSocket = () => new ClientWebSocket(`ws://${document.location.hostname}:8080`)
