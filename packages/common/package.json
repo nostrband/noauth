@@ -6,7 +6,7 @@
   "types": "dist/node/index.d.ts",
   "scripts": {
     "build": "dotenv -e .env -- rollup -c",
-    "build:hosted": "npx prisma generate && dotenv -e .env.hosted -- rollup -c",
+    "build:hosted": "npx prisma generate --schema=../../prisma/schema.prisma && dotenv -e .env.hosted -- rollup -c",
     "format": "npx prettier --write src"
   },
   "keywords": [],
