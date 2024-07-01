@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Keys {
+  npub     String @id
+  jsonData String
+}
+
+model Apps {
+  appNpub   String
+  npub      String
+  name      String
+  timestamp BigInt
+  jsonData  String
+
+  @@id(name: "appId", [appNpub, npub])
+}
+
+model Perms {
+  id        String @id
+  npub      String
+  appNpub   String
+  perm      String
+  value     String
+  timestamp BigInt
+}
+
+model Pending {
+  id        String @id
+  npub      String
+  appNpub   String
+  timestamp BigInt
+  method    String
+  jsonData  String
+}
+
+model History {
+  id        String   @id
+  npub      String
+  appNpub   String
+  timestamp BigInt
+  method    String
+  allowed   Boolean?
+  jsonData  String
+
+  @@index([npub, appNpub])
+}
+
+model SyncHistory {
+  npub String @id
+}
+
+model ConnectTokens {
+  token     String  @id
+  npub      String
+  timestamp BigInt
+  expiry    BigInt
+  subNpub   String?
+  jsonData  String
+
+  @@index([npub, subNpub])
+}

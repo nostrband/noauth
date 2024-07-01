@@ -1,0 +1,32 @@
+{
+  "name": "@noauth/server",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rollup -c",
+    "format": "npx prettier --write src",
+    "start": "node ./dist/index.js"
+  },
+  "keywords": [],
+  "author": "bekbolsun22",
+  "license": "ISC",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@noauth/backend": "^1.0.0",
+    "@noauth/common": "^1.0.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/ws": "^8.5.10",
+    "rollup": "^4.17.2",
+    "rollup-plugin-dotenv": "^0.5.1",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "dotenv": "^16.4.5"
+  }
+}
