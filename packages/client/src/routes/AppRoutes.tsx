@@ -9,6 +9,7 @@ import HomePage from '../pages/HomePage/Home.Page'
 
 const KeyPage = lazy(() => import('@/pages/KeyPage/Key.Page'))
 const AppPage = lazy(() => import('@/pages/AppPage/App.Page'))
+const NostrConnectPage = lazy(() => import('@/pages/NostrConnectPage/NostrConnect.Page'))
 
 const LoadingSpinner = () => (
   <Stack height={'100%'} justifyContent={'center'} alignItems={'center'}>
@@ -26,6 +27,7 @@ const AppRoutes = () => {
           <Route path="/key/:npub" element={<KeyPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />
+          <Route path="/nostrconnect/:pubkey" element={<NostrConnectPage />} />
         </Route>
         <Route path="*" element={<Navigate to={'/home'} replace />} />
       </Routes>
