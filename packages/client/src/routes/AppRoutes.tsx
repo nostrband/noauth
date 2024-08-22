@@ -1,5 +1,5 @@
-import { Suspense, lazy } from 'react'
-import { Route, Routes, Navigate } from 'react-router-dom'
+import { Suspense, lazy, useEffect } from 'react'
+import { Route, Routes, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Layout } from '../layout/Layout'
 import { CircularProgress, Stack } from '@mui/material'
 
@@ -17,7 +17,19 @@ const LoadingSpinner = () => (
   </Stack>
 )
 
+const NOSTR_CONNECT_PROTOCOL = 'nostrconnect://'
+
 const AppRoutes = () => {
+  const navigate = useNavigate()
+  const { pathname, search } = useLocation()
+
+  useEffect(() => {
+    if (!pathname.includes(NOSTR_CONNECT_PROTOCOL)) return
+    const pubkey = pathname.split(NOSTR_CONNECT_PROTOCOL)[1]
+    navigate({ pathname: `/nostrconnect/${pubkey}`, search })
+    // eslint-disable-next-line
+  }, [])
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
