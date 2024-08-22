@@ -1,6 +1,4 @@
-import React from 'react'
-import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-
+import { useParams, useSearchParams } from 'react-router-dom'
 import { Modal } from '@/shared/Modal/Modal'
 import { Box, Stack, Typography } from '@mui/material'
 import { IconApp } from '@/shared/IconApp/IconApp'
@@ -24,9 +22,9 @@ export const ModalNostrConnect = () => {
   const appUrl = url || ''
   const appIcon = icon || ''
 
-  if (!metadataJson || !pubkey || !metadata) {
-    return <Navigate to={'/'} />
-  }
+  // if (!metadataJson || !pubkey || !metadata) {
+  //   return <Navigate to={'/'} />
+  // }
 
   return (
     <Modal title="Connect" open withCloseButton={false}>
@@ -34,7 +32,7 @@ export const ModalNostrConnect = () => {
         <IconApp picture={appIcon} alt={appName} size="large" domain={appUrl} />
         <Box overflow={'auto'}>
           <Typography variant="h5" fontWeight={600} noWrap>
-            {appName}
+            {appUrl || appName}
           </Typography>
           <Typography variant="body2" color={'GrayText'} noWrap>
             New app would like to connect
@@ -42,11 +40,14 @@ export const ModalNostrConnect = () => {
         </Box>
       </Stack>
 
-      <Stack>
-        <Typography textAlign={'center'} p={'0.5rem'} variant="subtitle1">
+      <Stack gap={'1rem'}>
+        <Typography textAlign={'center'} variant="subtitle1">
           Choose account to connect to this app:
         </Typography>
         <Keys keys={keys} />
+        <Typography variant="subtitle2" color={'GrayText'}>
+          Please check that app provided the correct name, address and icon to avoid confusion.
+        </Typography>
       </Stack>
     </Modal>
   )
