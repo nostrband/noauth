@@ -84,19 +84,17 @@ export class Nip46Backend extends NDKNip46Backend {
     this.handleIncomingEvent(event)
   }
 
-  protected async handleIncomingEvent(event: NDKEvent) {
-    const { id, method, params } = (await this.rpc.parseEvent(event)) as any
-    const remotePubkey = event.pubkey
-    let response: string | undefined
-
-    this.debug('incoming event', { id, method, params })
-
-    // validate signature explicitly
-    if (!verifySignature(event.rawEvent() as Event)) {
-      this.debug('invalid signature', event.rawEvent())
-      return
-    }
-
+  public async handleRequest({
+    remotePubkey,
+    id,
+    method,
+    params,
+  }: {
+    remotePubkey: string
+    id: string
+    method: string
+    params?: any
+  }) {
     const [decision, resultCb] = await this.allowCb({
       backend: this,
       npub: this.npub,
@@ -108,6 +106,7 @@ export class Nip46Backend extends NDKNip46Backend {
     console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params })
     if (decision === DECISION.IGNORE) return
 
+    let response: string | undefined
     let error
     const allow = decision === DECISION.ALLOW
     const strategy = this.handlers[method]
@@ -143,5 +142,25 @@ export class Nip46Backend extends NDKNip46Backend {
     } else {
       this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
     }
+  }
+
+  protected async handleIncomingEvent(event: NDKEvent) {
+    const { id, method, params } = (await this.rpc.parseEvent(event)) as any
+    const remotePubkey = event.pubkey
+
+    this.debug('incoming event', { id, method, params })
+
+    // validate signature explicitly
+    if (!verifySignature(event.rawEvent() as Event)) {
+      this.debug('invalid signature', event.rawEvent())
+      return
+    }
+
+    return await this.handleRequest({
+      id,
+      method,
+      params,
+      remotePubkey,
+    })
   }
 }

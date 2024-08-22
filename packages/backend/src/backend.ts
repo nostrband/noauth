@@ -1304,6 +1304,38 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
+  private async nostrConnect(npub: string, nostrconnect: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+    const id = 'nostr-connect-' + Date.now()
+    const url = new URL(nostrconnect)
+
+    // returns request id if pending, or empty string if done
+    return new Promise<string>((ok) => {
+      // set request listeners first
+      const pendingEventName = `pending-${id}`
+      const doneEventName = `done-${id}`
+      this.once(pendingEventName, () => {
+        ok(id) // need confirm
+      })
+
+      this.once(doneEventName, () => {
+        ok("") // processed
+      })
+
+      // post a synthetic request as if it's coming from
+      // the client, when req is confirmed the backend
+      // will reply properly
+      const be = key.backend as Nip46Backend;
+      be.handleRequest({
+        id,
+        method: 'connect',
+        remotePubkey: url.hostname,
+        params: [url.hostname, '', url.searchParams.get('perms')],
+      })
+    })
+  }
+
   public async onMessage(data: BackendRequest) {
     const { method, args } = data
 
@@ -1326,6 +1358,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.confirm(args[0], args[1], args[2], args[3])
     } else if (method === 'connectApp') {
       result = await this.connectApp(args[0])
+    } else if (method === 'nostrConnect') {
+      result = await this.nostrConnect(args[0], args[1])
     } else if (method === 'updateApp') {
       result = await this.updateApp(args[0])
     } else if (method === 'deleteApp') {
