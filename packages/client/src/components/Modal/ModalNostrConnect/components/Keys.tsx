@@ -12,7 +12,7 @@ export const Keys: FC<KeysProps> = ({ keys }) => {
     console.log(key)
   }
   return (
-    <Box flex={1} overflow={'auto'} borderRadius={'8px'} padding={'0.25rem'} maxHeight={'30rem'}>
+    <Box flex={1} overflow={'auto'} borderRadius={'8px'} maxHeight={'30rem'}>
       {keys.map((key) => (
         <ItemKey {...key} key={key.npub} onKeyClick={() => handleKeyClick(key)} />
       ))}

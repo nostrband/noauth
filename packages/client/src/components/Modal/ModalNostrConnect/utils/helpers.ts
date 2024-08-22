@@ -7,7 +7,7 @@ export const parseMetadata = (json: string): Metadata | null => {
     const parsedJson: Metadata = JSON.parse(json)
     return parsedJson
   } catch (error) {
-    console.log('Failed to parse metadata =>', { error })
+    // console.log('Failed to parse metadata =>', { error })
     return null
   }
 }
