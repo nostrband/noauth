@@ -15,8 +15,10 @@ export interface IAllowCallbackParams {
   id: string
   method: string
   remotePubkey: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // provided by peers
   params?: any
+  // used for internal options 
+  options?: any
 }
 
 export interface Key {

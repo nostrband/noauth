@@ -621,6 +621,7 @@ export class NoauthBackend extends EventEmitter {
     method,
     remotePubkey,
     params,
+    options: reqOptions,
   }: IAllowCallbackParams): Promise<[DECISION, ((result: string | undefined) => void) | undefined]> {
     // same reqs usually come on reconnects
     if (this.doneReqIds.includes(id)) {
@@ -659,6 +660,11 @@ export class NoauthBackend extends EventEmitter {
       subNpub,
       params: JSON.stringify(params),
       timestamp: Date.now(),
+    }
+    if (reqOptions) {
+      if (reqOptions.appUrl) req.appUrl = reqOptions.appUrl
+      if (reqOptions.appName) req.appName = reqOptions.appName
+      if (reqOptions.appIcon) req.appIcon = reqOptions.appIcon
     }
 
     const self = this
@@ -1304,11 +1310,13 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
-  private async nostrConnect(npub: string, nostrconnect: string) {
+  private async nostrConnect(npub: string, nostrconnect: string, options: any) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Npub not found')
     const id = 'nostr-connect-' + Date.now()
     const url = new URL(nostrconnect)
+    const pubkey = url.hostname || url.pathname.replace('//', '')
+    console.log('nostrconnect url', url, pubkey)
 
     // returns request id if pending, or empty string if done
     return new Promise<string>((ok) => {
@@ -1320,18 +1328,19 @@ export class NoauthBackend extends EventEmitter {
       })
 
       this.once(doneEventName, () => {
-        ok("") // processed
+        ok('') // processed
       })
 
       // post a synthetic request as if it's coming from
       // the client, when req is confirmed the backend
       // will reply properly
-      const be = key.backend as Nip46Backend;
+      const be = key.backend as Nip46Backend
       be.handleRequest({
         id,
         method: 'connect',
-        remotePubkey: url.hostname,
-        params: [url.hostname, '', url.searchParams.get('perms')],
+        remotePubkey: pubkey,
+        params: [pubkey, '', options?.perms || ''],
+        options
       })
     })
   }
@@ -1359,7 +1368,7 @@ export class NoauthBackend extends EventEmitter {
     } else if (method === 'connectApp') {
       result = await this.connectApp(args[0])
     } else if (method === 'nostrConnect') {
-      result = await this.nostrConnect(args[0], args[1])
+      result = await this.nostrConnect(args[0], args[1], args[2])
     } else if (method === 'updateApp') {
       result = await this.updateApp(args[0])
     } else if (method === 'deleteApp') {

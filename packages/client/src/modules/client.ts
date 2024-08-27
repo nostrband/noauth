@@ -68,7 +68,7 @@ export interface BackendClient {
 
   exportKey: (npub: string) => Promise<string>
 
-  nostrConnect: (npub: string, nostrconnect: string) => Promise<string>
+  nostrConnect: (npub: string, nostrconnect: string, options: any) => Promise<string>
 
   generateKey: (name: string, passphrase: string) => Promise<KeyInfo>
 

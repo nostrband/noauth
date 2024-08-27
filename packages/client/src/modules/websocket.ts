@@ -233,8 +233,8 @@ export class ClientWebSocket implements BackendClient {
     return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
   }
 
-  public async nostrConnect(npub: string, nostrconnect: string) {
-    return this.call<string>('nostrConnect', npub, nostrconnect)
+  public async nostrConnect(npub: string, nostrconnect: string, options: any) {
+    return this.call<string>('nostrConnect', npub, nostrconnect, options)
   }
 
   public async exportKey(npub: string) {

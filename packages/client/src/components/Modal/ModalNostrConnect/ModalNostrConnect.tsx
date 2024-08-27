@@ -27,6 +27,7 @@ export const ModalNostrConnect = () => {
     url: searchParams.get('url'),
     name: searchParams.get('name'),
     icon: searchParams.get('image'),
+    perms: searchParams.get('perms'),
   }
 
   const { icon, name, url } = metadata || {}
@@ -35,20 +36,38 @@ export const ModalNostrConnect = () => {
   const appDomain = getDomainPort(appUrl)
   const appIcon = icon || ''
 
-  if (!pubkey || !metadata) {
+  // default
+  const isPopup = true // searchParams.get('popup') === 'true'
+
+  if (!pubkey || !metadata || !keys.length) {
     return <Navigate to={'/'} />
+  }
+
+  const closePopup = (result?: string) => {
+    if (isPopup) return window.close()
   }
 
   const connect = async (npub: string) => {
     setIsLoading(true)
     try {
       const nostrconnect = `nostrconnect://${pubkey}?${searchParams.toString()}`
-      const requestId = await client.nostrConnect(npub, nostrconnect)
+      console.log('nostrconnect', nostrconnect)
+      const requestId = await client.nostrConnect(npub, nostrconnect, {
+        appName,
+        appUrl,
+        appIcon,
+        perms: metadata.perms || '',
+      })
       setIsLoading(false)
 
       console.log('requestId', requestId)
-      if (!requestId) return notify('Connected!', 'success')
-      return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}`)
+      if (!requestId) {
+        notify('App connected! Closing...', 'success')
+        if (isPopup) setTimeout(() => closePopup(pubkey as string), 3000)
+        else navigate(`/key/${npub}`, { replace: true })
+      } else {
+        return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`)
+      }
     } catch (e) {
       notify('Error: ' + e, 'error')
       setIsLoading(false)
@@ -60,7 +79,7 @@ export const ModalNostrConnect = () => {
   }
 
   return (
-    <Modal title="Connect to app" open onClose={handleClose}>
+    <Modal title="Choose account" open onClose={handleClose}>
       <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1.5rem'}>
         <IconApp picture={appIcon} alt={appName} size="large" domain={appUrl} />
         <Box overflow={'auto'}>

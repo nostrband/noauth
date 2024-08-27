@@ -72,7 +72,7 @@ export class Nip46Backend extends NDKNip46Backend {
       {
         kinds: [24133 as number],
         '#p': [this.localUser.hexpubkey],
-        since: Math.floor(Date.now() / 1000 - 10),
+        since: Math.floor(Date.now() / 1000 - 60),
       },
       { closeOnEose: false }
     )
@@ -89,12 +89,15 @@ export class Nip46Backend extends NDKNip46Backend {
     id,
     method,
     params,
+    options,
   }: {
     remotePubkey: string
     id: string
     method: string
     params?: any
+    options?: any
   }) {
+    // console.log("handle request", { remotePubkey, id, method, params });
     const [decision, resultCb] = await this.allowCb({
       backend: this,
       npub: this.npub,
@@ -102,6 +105,7 @@ export class Nip46Backend extends NDKNip46Backend {
       method,
       remotePubkey,
       params,
+      options,
     })
     console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params })
     if (decision === DECISION.IGNORE) return

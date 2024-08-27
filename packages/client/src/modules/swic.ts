@@ -182,8 +182,8 @@ class ClientServiceWorker implements BackendClient {
     return this.call<KeyInfo>('generateKey', name, passphrase)
   }
 
-  public async nostrConnect(npub: string, nostrconnect: string) {
-    return this.call<string>('nostrConnect', npub, nostrconnect)
+  public async nostrConnect(npub: string, nostrconnect: string, options: any) {
+    return this.call<string>('nostrConnect', npub, nostrconnect, options)
   }
 
   public async generateKeyConnect(params: CreateConnectParams) {

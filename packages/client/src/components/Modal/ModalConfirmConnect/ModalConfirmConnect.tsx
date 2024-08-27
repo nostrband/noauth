@@ -73,9 +73,9 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
-  const appUrl = url || getReferrerAppUrl()
+  const appUrl = url || req?.appUrl || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
-  const appName = name || appDomain || getShortenNpub(appNpub)
+  const appName = name || appDomain || req?.appName || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
 
@@ -180,24 +180,30 @@ export const ModalConfirmConnect = () => {
 
   const closePopup = (result?: string) => {
     if (!isPopup) return
-    if (!redirectUri) return window.close()
 
-    setIsPending(false)
-    // add done marker first
-    searchParams.append('done', 'true')
-    setSearchParams(searchParams)
+    notify('App connected! Closing...', 'success')
 
-    // and then do the redirect
-    const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
-    window.location.href = url
+    if (redirectUri) {
+      // add done marker first
+      setIsPending(false)
+      searchParams.append('done', 'true')
+      setSearchParams(searchParams)
+    }
+
+    setTimeout(() => {
+      if (!redirectUri) return window.close()
+      // do the redirect
+      const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
+      window.location.href = url
+    }, 3000)
   }
 
   async function confirmPending(id: string, allow: boolean, remember: boolean, options?: any) {
     try {
       const result = await client.confirmPendingRequest(id, allow, remember, options)
-      console.log('confirmed', { id, allow, remember, options, result })
-      if (!isPopup) closeModalAfterRequest()
-      closePopup(result as string)
+      console.log('confirmed', { id, allow, remember, options, result, isPopup })
+      closeModalAfterRequest()
+      if (isPopup) closePopup(result as string)
     } catch (e) {
       console.log(`Error: ${e}`)
       notify('Error: ' + e, 'error')
@@ -211,7 +217,8 @@ export const ModalConfirmConnect = () => {
     if (pendingReqId) {
       const options = { perms: allowedPerms, appUrl }
       setIsPending(true)
-      await confirmPending(pendingReqId, true, true, options).finally(() => setIsPending(false))
+      await confirmPending(pendingReqId, true, true, options)
+      setIsPending(false)
     } else {
       setIsPending(true)
       try {
@@ -247,18 +254,17 @@ export const ModalConfirmConnect = () => {
         }
       }
 
-      notify('App connected! Closing...', 'success')
-
       const { data: pubkey } = nip19.decode(npub)
-      if (isPopup) setTimeout(() => closePopup(pubkey as string), 3000)
+      if (isPopup) closePopup(pubkey as string)
       else navigate(`/key/${npub}`, { replace: true })
     }
   }
 
-  const disallow = () => {
+  const disallow = async () => {
     if (pendingReqId) {
       setIsPending(true)
-      confirmPending(pendingReqId, false, true).finally(() => setIsPending(false))
+      await confirmPending(pendingReqId, false, true)
+      setIsPending(false)
     } else {
       closeModalAfterRequest()
     }
