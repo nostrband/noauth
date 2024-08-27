@@ -6,5 +6,5 @@ export * from './src/nostr'
 export * from './src/meta'
 export * from './src/meta-event'
 
-import dbi from './src/dbi-dexie'
+import dbi from './src/dbi-prisma'
 export { dbi }

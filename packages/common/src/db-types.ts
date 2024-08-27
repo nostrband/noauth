@@ -43,6 +43,8 @@ export interface DbPending {
   method: string
   params: string
   appUrl?: string
+  appName?: string
+  appIcon?: string
   subNpub?: string
 }
 
