@@ -127,9 +127,8 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   public setNotifCallback(cb: () => void) {
-    if (this.notifCallback) {
-      // this.notify()
-    }
+    // make sure the previous promise is resolved
+    if (this.notifCallback) this.notifCallback()
     this.notifCallback = cb
   }
 
@@ -165,12 +164,12 @@ export class ServiceWorkerBackend extends NoauthBackend {
     }
   }
 
-  protected notifyNpub(npub: string) {
+  protected async notifyNpub(npub: string) {
     const icon = '/favicon-32x32.png'
     const tag = npub
     const title = this.getNpubName(npub)
     const body = `Processing key access...`
-    this.swg.registration.showNotification(title, {
+    await this.swg.registration.showNotification(title, {
       body,
       tag,
       icon,
