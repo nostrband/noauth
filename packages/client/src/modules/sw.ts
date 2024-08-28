@@ -66,17 +66,18 @@ export class ServiceWorkerBackend extends NoauthBackend {
     this.browserApi = api
     this.swg = swg
 
-    swg.addEventListener('activate', (event) => {
+    swg.addEventListener('activate', () => {
       console.log('activate new sw worker')
       this.reloadUI()
     })
 
     swg.addEventListener('push', (event) => {
       console.log('got push', event)
-      self.onPush(event)
       event.waitUntil(
+        // wait until the sw loads and shows a notification
         new Promise((ok: any) => {
           self.setNotifCallback(ok)
+          self.onPush(event)
         })
       )
     })
@@ -110,11 +111,13 @@ export class ServiceWorkerBackend extends NoauthBackend {
               }
 
               // confirm screen url
-              const req = event.notification.data.req
-              console.log('req', req)
-              // const url = `${self.swg.location.origin}/key/${req.npub}?confirm-connect=true&appNpub=${req.appNpub}&reqId=${req.id}`
-              const url = `${self.swg.location.origin}/key/${req.npub}`
-              self.swg.clients.openWindow(url)
+              if (!event.notification.data) return
+              const npub = event.notification.data.req ? event.notification.data.req.npub : event.notification.data.npub
+
+              if (npub) {
+                const url = `${self.swg.location.origin}/key/${npub}`
+                self.swg.clients.openWindow(url)
+              }
             })
           )
         }
@@ -160,6 +163,24 @@ export class ServiceWorkerBackend extends NoauthBackend {
     for (const client of clients) {
       client.postMessage({ result: 'reload' })
     }
+  }
+
+  protected notifyNpub(npub: string) {
+    const icon = '/favicon-32x32.png'
+    const tag = npub
+    const title = this.getNpubName(npub)
+    const body = `Processing key access...`
+    this.swg.registration.showNotification(title, {
+      body,
+      tag,
+      icon,
+      data: { npub },
+    })
+
+    // unlock the onPush to let browser know we're done,
+    // FIXME what if it shuts us down immediately?
+    if (this.notifCallback) this.notifCallback()
+    this.notifCallback = null
   }
 
   protected notifyConfirmTODO() {
