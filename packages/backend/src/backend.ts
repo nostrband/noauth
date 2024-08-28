@@ -1438,7 +1438,7 @@ export class NoauthBackend extends EventEmitter {
     return false
   }
 
-  protected notifyNpub(npub: string) {
+  protected async notifyNpub(npub: string) {
     npub;
     // implemented in sw
   }
