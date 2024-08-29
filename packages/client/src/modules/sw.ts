@@ -1,6 +1,7 @@
 import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+import { dbi } from '@noauth/common/dist/dbi-client'
 
 class BrowserApi extends Api {
   // send push api subsciption to server
@@ -60,7 +61,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
     }
 
     const api = new BrowserApi(global)
-    super(global, api)
+    super(global, api, dbi)
 
     self = this
     this.browserApi = api
