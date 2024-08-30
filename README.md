@@ -92,6 +92,9 @@ To run the hosted version of the project using Docker Compose, follow these step
    docker-compose up --build -d
    ```
 
+   Adjust SERVER_APP_ORIGIN in packages/server/.env if you want auth
+   url that are sent to apps to be accessible on other devices.
+
 2. **Access the application:**
 
 Open your browser and navigate to http://localhost:3000 to access the hosted version of the project.
