@@ -1,6 +1,5 @@
 import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
 import {
-  dbi,
   DbApp,
   DbConnectToken,
   DbKey,
@@ -19,6 +18,7 @@ import {
   REQ_TTL,
   SEED_RELAYS,
   getShortenNpub,
+  DbInterface,
 } from '@noauth/common'
 import NDK, {
   NDKEvent,
@@ -33,26 +33,13 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { sha256 } from '@noble/hashes/sha256'
 import { EventEmitter } from 'tseep'
 import { Watcher } from './watcher'
-import { CreateConnectParams, DECISION, IAllowCallbackParams, Key } from './types'
+import { BackendRequest, CreateConnectParams, DECISION, IAllowCallbackParams, Key, KeyInfo } from './types'
 import { Nip46Backend } from './nip46'
 import { Api } from './api'
 import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
-
-export interface BackendRequest {
-  id: number
-  method: string
-  args: any[]
-}
-
-export interface KeyInfo {
-  npub: string
-  nip05?: string
-  name?: string
-  locked: boolean
-}
 
 interface Pending {
   req: DbPending
@@ -78,12 +65,14 @@ export class NoauthBackend extends EventEmitter {
   private permSub?: NDKSubscription
   private pushNpubs: string[] = []
 
-  public constructor(global: GlobalContext, api: Api) {
+  private dbi: DbInterface
+
+  public constructor(global: GlobalContext, api: Api, dbi: DbInterface) {
     super()
     this.global = global
     this.api = api
     this.keysModule = new Keys(global.getCryptoSubtle())
-
+    this.dbi = dbi
     // global ndk is needed to pre-fetch pending requests while we haven't
     // yet unlocked a key and created a separate ndk for it
 
@@ -97,24 +86,24 @@ export class NoauthBackend extends EventEmitter {
 
   public async start() {
     console.log(Date.now(), 'starting')
-    this.enckeys = await dbi.listKeys()
+    this.enckeys = await this.dbi.listKeys()
     console.log('started encKeys', this.listKeys())
-    this.perms = await dbi.listPerms()
+    this.perms = await this.dbi.listPerms()
     console.log('started perms', this.perms)
-    this.apps = await dbi.listApps()
+    this.apps = await this.dbi.listApps()
     console.log('started apps', this.apps)
 
-    const tokens = await dbi.listConnectTokens()
+    const tokens = await this.dbi.listConnectTokens()
     for (const t of tokens) {
-      if (t.timestamp < Date.now() - TOKEN_TTL) await dbi.removeConnectToken(t.token)
+      if (t.timestamp < Date.now() - TOKEN_TTL) await this.dbi.removeConnectToken(t.token)
     }
-    this.connectTokens = await dbi.listConnectTokens()
+    this.connectTokens = await this.dbi.listConnectTokens()
     console.log('started connect tokens', this.connectTokens)
 
     // drop old pending reqs
-    const pending = await dbi.listPending()
+    const pending = await this.dbi.listPending()
     for (const p of pending) {
-      if (p.timestamp < Date.now() - REQ_TTL) await dbi.removePending(p.id)
+      if (p.timestamp < Date.now() - REQ_TTL) await this.dbi.removePending(p.id)
     }
 
     // start keys, only pushed ones, or all of them if
@@ -123,7 +112,7 @@ export class NoauthBackend extends EventEmitter {
     for (const k of this.enckeys) {
       if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
         await this.unlock(k.npub)
-        this.notifyNpub(k.npub);
+        this.notifyNpub(k.npub)
       }
     }
 
@@ -213,7 +202,7 @@ export class NoauthBackend extends EventEmitter {
 
   private async updateAppPermTimestamp(appNpub: string, npub: string, timestamp = 0) {
     // write to db then update our cache
-    const tm = await dbi.updateAppPermTimestamp(appNpub, npub, timestamp)
+    const tm = await this.dbi.updateAppPermTimestamp(appNpub, npub, timestamp)
     const app = this.apps.find((a) => a.appNpub === appNpub && a.npub === npub)
     if (app) app.permUpdateTimestamp = tm
   }
@@ -248,17 +237,17 @@ export class NoauthBackend extends EventEmitter {
     } else if (!app) {
       // new app
       const newApp = appFromData()
-      await dbi.addApp(newApp)
+      await this.dbi.addApp(newApp)
       console.log('New app from event', { data, newApp })
     } else if (newAppInfo) {
       // update existing app
       if (data.deleted) {
-        await dbi.removeApp(data.appNpub, data.npub)
-        await dbi.removeAppPerms(data.appNpub, data.npub)
+        await this.dbi.removeApp(data.appNpub, data.npub)
+        await this.dbi.removeAppPerms(data.appNpub, data.npub)
         console.log('Delete app from event', { data })
       } else {
         const appUpdate = appFromData()
-        await dbi.updateApp(appUpdate)
+        await this.dbi.updateApp(appUpdate)
         console.log('Update app from event', { data, appUpdate })
       }
     } else {
@@ -278,7 +267,7 @@ export class NoauthBackend extends EventEmitter {
     // sounds fine and simple enough!
     if (newPerms && !data.deleted) {
       // drop all existing perms
-      await dbi.removeAppPerms(data.appNpub, data.npub)
+      await this.dbi.removeAppPerms(data.appNpub, data.npub)
 
       // set timestamp from the peer
       await this.updateAppPermTimestamp(data.appNpub, data.npub, data.permUpdateTimestamp)
@@ -293,16 +282,16 @@ export class NoauthBackend extends EventEmitter {
           value: p.value,
           timestamp: p.timestamp,
         }
-        await dbi.addPerm(perm)
+        await this.dbi.addPerm(perm)
       }
 
       console.log('updated perms from data', data)
     }
 
     // reload from db
-    this.perms = await dbi.listPerms()
+    this.perms = await this.dbi.listPerms()
     console.log('updated perms', this.perms)
-    this.apps = await dbi.listApps()
+    this.apps = await this.dbi.listApps()
     console.log('updated apps', this.apps)
   }
 
@@ -374,7 +363,7 @@ export class NoauthBackend extends EventEmitter {
     // FIXME this is all one big complex TX and if something fails
     // we have to gracefully proceed somehow
 
-    await dbi.addKey(dbKey)
+    await this.dbi.addKey(dbKey)
 
     this.enckeys.push(dbKey)
     await this.startKey({ npub, sk })
@@ -389,7 +378,7 @@ export class NoauthBackend extends EventEmitter {
       } catch (e) {
         console.log('create name failed', e)
         // clear it
-        await dbi.editName(npub, '')
+        await this.dbi.editName(npub, '')
         dbKey.name = ''
       }
     }
@@ -581,7 +570,7 @@ export class NoauthBackend extends EventEmitter {
   }) {
     // used by create_account flow after keys are generated
 
-    await dbi.addApp({
+    await this.dbi.addApp({
       appNpub: appNpub,
       npub: npub,
       timestamp: Date.now(),
@@ -594,11 +583,11 @@ export class NoauthBackend extends EventEmitter {
     })
 
     // reload
-    this.apps = await dbi.listApps()
+    this.apps = await this.dbi.listApps()
 
     // write new perms confirmed by user
     for (const p of perms) {
-      await dbi.addPerm({
+      await this.dbi.addPerm({
         id: Math.random().toString(36).substring(7),
         npub: npub,
         appNpub: appNpub,
@@ -612,7 +601,7 @@ export class NoauthBackend extends EventEmitter {
     await this.updateAppPermTimestamp(appNpub, npub)
 
     // reload
-    this.perms = await dbi.listPerms()
+    this.perms = await this.dbi.listPerms()
 
     // async
     this.publishAppPerms({ npub, appNpub })
@@ -691,8 +680,8 @@ export class NoauthBackend extends EventEmitter {
           // consume the token even if app not allowed, reload
           console.log('consume connect token', token)
           if (token) {
-            await dbi.removeConnectToken(token)
-            self.connectTokens = await dbi.listConnectTokens()
+            await this.dbi.removeConnectToken(token)
+            self.connectTokens = await this.dbi.listConnectTokens()
           }
         }
 
@@ -703,7 +692,7 @@ export class NoauthBackend extends EventEmitter {
             throw new Error('Make a decision!')
           case DECISION.IGNORE:
             // don't store this any longer!
-            if (manual) await dbi.removePending(id)
+            if (manual) await this.dbi.removePending(id)
             return // noop
           case DECISION.ALLOW:
           case DECISION.DISALLOW:
@@ -716,7 +705,7 @@ export class NoauthBackend extends EventEmitter {
         const allow = decision === DECISION.ALLOW
 
         if (manual) {
-          await dbi.confirmPending(id, allow)
+          await this.dbi.confirmPending(id, allow)
 
           // add app on 'allow connect'
           if (method === 'connect' && allow) {
@@ -724,7 +713,7 @@ export class NoauthBackend extends EventEmitter {
             const token = params && params.length >= 2 ? params[1] : ''
 
             // add app if it's allowed
-            await dbi.addApp({
+            await this.dbi.addApp({
               appNpub: req.appNpub,
               npub: req.npub,
               timestamp: Date.now(),
@@ -739,11 +728,11 @@ export class NoauthBackend extends EventEmitter {
             })
 
             // reload
-            self.apps = await dbi.listApps()
+            self.apps = await this.dbi.listApps()
           }
         } else {
           // just send to db w/o waiting for it
-          dbi.addConfirmed({
+          this.dbi.addConfirmed({
             ...req,
             allowed: allow,
           })
@@ -762,7 +751,7 @@ export class NoauthBackend extends EventEmitter {
 
           // write new perms confirmed by user
           for (const p of newPerms) {
-            await dbi.addPerm({
+            await this.dbi.addPerm({
               id: `${req.id}-${p}`,
               npub: req.npub,
               appNpub: req.appNpub,
@@ -773,7 +762,7 @@ export class NoauthBackend extends EventEmitter {
           }
 
           // reload
-          this.perms = await dbi.listPerms()
+          this.perms = await this.dbi.listPerms()
 
           // publish updated apps if app is added
           if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
@@ -824,7 +813,7 @@ export class NoauthBackend extends EventEmitter {
         this.emit(`done-${req.id}`, req)
       } else {
         // put pending req to db
-        await dbi.addPending(req)
+        await this.dbi.addPending(req)
 
         // need manual confirmation
         console.log('need confirm', req)
@@ -886,7 +875,7 @@ export class NoauthBackend extends EventEmitter {
       // drop pending request
       const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
       if (index >= 0) self.confirmBuffer.splice(index, 1)
-      dbi.removePending(id).then(() => this.updateUI())
+      this.dbi.removePending(id).then(() => this.updateUI())
     })
     this.keys.push({ npub, backend, signer, ndk, backoff, watcher })
 
@@ -1099,7 +1088,7 @@ export class NoauthBackend extends EventEmitter {
       passphrase,
     })
     await this.api.sendKeyToServer(npub, enckey, pwh)
-    await dbi.setSynced(npub)
+    await this.dbi.setSynced(npub)
   }
 
   private async setPassword(npub: string, passphrase: string, existingPassphrase: string) {
@@ -1127,7 +1116,7 @@ export class NoauthBackend extends EventEmitter {
 
     // encrypt with new password
     info.ncryptsec = encryptNip49(hexToBytes(sk), passphrase, 16, 0x01)
-    await dbi.editNcryptsec(npub, info.ncryptsec)
+    await this.dbi.editNcryptsec(npub, info.ncryptsec)
 
     // upload key to server using new password
     await this.uploadKey(npub, passphrase)
@@ -1195,7 +1184,7 @@ export class NoauthBackend extends EventEmitter {
     const req = this.confirmBuffer.find((r) => r.req.id === id)
     if (!req) {
       console.log('req ', id, 'not found')
-      await dbi.removePending(id)
+      await this.dbi.removePending(id)
       this.updateUI()
       return undefined
     } else {
@@ -1205,8 +1194,8 @@ export class NoauthBackend extends EventEmitter {
   }
 
   private async updateApp(app: DbApp) {
-    await dbi.updateApp(app)
-    this.apps = await dbi.listApps()
+    await this.dbi.updateApp(app)
+    this.apps = await this.dbi.listApps()
     console.log('updated app', app)
     this.publishAppPerms({ appNpub: app.appNpub, npub: app.npub })
     this.updateUI()
@@ -1215,8 +1204,8 @@ export class NoauthBackend extends EventEmitter {
   private async deleteApp(appNpub: string, npub: string) {
     this.apps = this.apps.filter((a) => a.appNpub !== appNpub || a.npub !== npub)
     this.perms = this.perms.filter((p) => p.appNpub !== appNpub || p.npub !== npub)
-    await dbi.removeApp(appNpub, npub)
-    await dbi.removeAppPerms(appNpub, npub)
+    await this.dbi.removeApp(appNpub, npub)
+    await this.dbi.removeAppPerms(appNpub, npub)
     this.publishAppPerms({ appNpub, npub, deleted: true })
     this.updateUI()
   }
@@ -1225,7 +1214,7 @@ export class NoauthBackend extends EventEmitter {
     const perm = this.perms.find((p) => p.id === id)
     if (!perm) throw new Error('Perm not found')
     this.perms = this.perms.filter((p) => p.id !== id)
-    await dbi.removePerm(id)
+    await this.dbi.removePerm(id)
     await this.updateAppPermTimestamp(perm.appNpub, perm.npub)
     this.publishAppPerms({ appNpub: perm.appNpub, npub: perm.npub })
     this.updateUI()
@@ -1242,7 +1231,7 @@ export class NoauthBackend extends EventEmitter {
     }
 
     this.perms.push(p)
-    await dbi.addPerm(p)
+    await this.dbi.addPerm(p)
     await this.updateAppPermTimestamp(appNpub, npub)
     this.publishAppPerms({ appNpub, npub })
     this.updateUI()
@@ -1264,7 +1253,7 @@ export class NoauthBackend extends EventEmitter {
     if (name) {
       await this.api.sendNameToServer(npub, name)
     }
-    await dbi.editName(npub, name)
+    await this.dbi.editName(npub, name)
     key.name = name
     this.updateUI()
   }
@@ -1275,13 +1264,13 @@ export class NoauthBackend extends EventEmitter {
     if (!name) throw new Error('Empty name')
     if (key.name !== name) throw new Error('Name changed, please reload')
     await this.api.sendTransferNameToServer(npub, key.name, newNpub)
-    await dbi.editName(npub, '')
+    await this.dbi.editName(npub, '')
     key.name = ''
     this.updateUI()
   }
 
   private async exportKey(npub: string): Promise<string> {
-    const dbKey = await dbi.getKey(npub)
+    const dbKey = await this.dbi.getKey(npub)
     if (!dbKey) throw new Error('Key not found')
     return dbKey.ncryptsec || ''
   }
@@ -1299,7 +1288,7 @@ export class NoauthBackend extends EventEmitter {
   }
 
   private async getConnectToken(npub: string, subNpub?: string) {
-    let t: DbConnectToken | undefined = await dbi.getConnectToken(npub, subNpub)
+    let t: DbConnectToken | undefined = await this.dbi.getConnectToken(npub, subNpub)
     if (t) return t
     t = {
       npub,
@@ -1308,9 +1297,9 @@ export class NoauthBackend extends EventEmitter {
       expiry: Date.now() + TOKEN_TTL,
       token: bytesToHex(randomBytes(TOKEN_SIZE)),
     }
-    await dbi.addConnectToken(t)
+    await this.dbi.addConnectToken(t)
     // update
-    this.connectTokens = await dbi.listConnectTokens()
+    this.connectTokens = await this.dbi.listConnectTokens()
     return t
   }
 
@@ -1344,7 +1333,7 @@ export class NoauthBackend extends EventEmitter {
         method: 'connect',
         remotePubkey: pubkey,
         params: [pubkey, '', options?.perms || ''],
-        options
+        options,
       })
     })
   }
@@ -1410,12 +1399,12 @@ export class NoauthBackend extends EventEmitter {
     try {
       const data = event.data?.json()
       console.log('push', JSON.stringify(data))
-      const npub = nip19.npubEncode(data.pubkey);
+      const npub = nip19.npubEncode(data.pubkey)
       this.pushNpubs.push(npub)
-      return npub;
+      return npub
     } catch (e) {
       console.log('Failed to process push event', e)
-      return "";
+      return ''
     }
   }
 
@@ -1428,9 +1417,9 @@ export class NoauthBackend extends EventEmitter {
   }
 
   protected getNpubName(npub: string) {
-    const key = this.enckeys.find(k => k.npub === npub);
-    if (!key) return "";
-    return key.name || key.nip05 || getShortenNpub(key.npub);
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key) return ''
+    return key.name || key.nip05 || getShortenNpub(key.npub)
   }
 
   protected async enablePush(): Promise<boolean> {
@@ -1439,7 +1428,7 @@ export class NoauthBackend extends EventEmitter {
   }
 
   protected async notifyNpub(npub: string) {
-    npub;
+    npub
     // implemented in sw
   }
 

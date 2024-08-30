@@ -6,7 +6,8 @@ require('websocket-polyfill')
 import http from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { WebSocketBackend } from './src/server'
-import { dbi } from '@noauth/common'
+// @ts-ignore
+import { dbi } from '@noauth/common/dist/dbi'
 
 const server = http.createServer()
 const wss = new WebSocketServer({ noServer: true })
@@ -31,13 +32,13 @@ server.on('upgrade', (req, socket: any, head: Buffer) => {
 
 // wait until prisma is dynamically imported
 async function waitDbi(cb: () => void) {
-  if (!dbi) setTimeout(() => waitDbi(cb), 100);
-  else cb();
+  if (!dbi) setTimeout(() => waitDbi(cb), 100)
+  else cb()
 }
 
 waitDbi(() => {
-  backend.start();
+  backend.start()
   server.listen(8080, () => {
     console.log('Server running on http://localhost:8080/')
-  })  
+  })
 })

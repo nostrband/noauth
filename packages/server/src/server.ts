@@ -2,7 +2,8 @@ import WebSocket from 'ws'
 import { Api, BackendRequest, GlobalContext, Key, NoauthBackend } from '@noauth/backend'
 import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, ORIGIN } from './consts'
 import http from 'http'
-import { dbi } from '@noauth/common'
+// @ts-ignore
+import { dbi } from '@noauth/common/dist/dbi'
 
 const DB_METHODS = [
   'listKeys',
@@ -28,7 +29,7 @@ export class WebSocketBackend extends NoauthBackend {
       },
       getCryptoSubtle() {
         // @ts-ignore
-        return crypto.subtle;
+        return crypto.subtle
       },
       getKey(npub: string): Key {
         return self!.getKey(npub)
@@ -48,7 +49,7 @@ export class WebSocketBackend extends NoauthBackend {
     }
 
     const api = new Api(global)
-    super(global, api)
+    super(global, api, dbi)
 
     self = this
     this.wss = wss

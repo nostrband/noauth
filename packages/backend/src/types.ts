@@ -17,7 +17,7 @@ export interface IAllowCallbackParams {
   remotePubkey: string
   // provided by peers
   params?: any
-  // used for internal options 
+  // used for internal options
   options?: any
 }
 
@@ -36,4 +36,17 @@ export interface CreateConnectParams {
   appNpub: string
   perms: string
   appUrl: string
+}
+
+export interface BackendRequest {
+  id: number
+  method: string
+  args: any[]
+}
+
+export interface KeyInfo {
+  npub: string
+  nip05?: string
+  name?: string
+  locked: boolean
 }

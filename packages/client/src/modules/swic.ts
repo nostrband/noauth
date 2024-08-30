@@ -2,7 +2,8 @@
 // works on the frontend, not sw
 import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
 import { KeyInfo, CreateConnectParams } from '@noauth/backend'
-import { dbi, DbApp, DbConnectToken } from '@noauth/common'
+import { DbApp, DbConnectToken } from '@noauth/common'
+import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
 
 export let swr: ServiceWorkerRegistration | null = null

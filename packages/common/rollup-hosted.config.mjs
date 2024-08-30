@@ -6,7 +6,7 @@ import dotenv from 'rollup-plugin-dotenv'
 
 export default [
   {
-    input: 'index.hosted.ts',
+    input: 'index.ts',
     output: {
       file: 'dist/node/index.js',
       format: 'cjs',
@@ -21,6 +21,22 @@ export default [
       typescript({
         tsconfig: 'tsconfig.json',
       }),
+    ],
+  },
+  {
+    input: 'src/index.hosted.ts',
+    output: {
+      file: 'dist/dbi/index.js',
+      format: 'cjs',
+      sourcemap: false,
+      inlineDynamicImports: true,
+    },
+    plugins: [
+      resolve({ browser: false, preferBuiltins: true }),
+      commonjs(),
+      dotenv(),
+      terser(),
+      typescript({ declaration: false }),
     ],
   },
 ]
