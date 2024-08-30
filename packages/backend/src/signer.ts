@@ -1,8 +1,7 @@
 import type { UnsignedEvent } from 'nostr-tools'
 import { generatePrivateKey, getPublicKey, getSignature } from 'nostr-tools'
 
-import type { NostrEvent } from '@nostr-dev-kit/ndk'
-import { NDKPrivateKeySigner } from '@nostr-dev-kit/ndk'
+import { NDKPrivateKeySigner, NostrEvent } from '@nostr-dev-kit/ndk'
 import { NDKUser } from '@nostr-dev-kit/ndk'
 import type { NDKSigner } from '@nostr-dev-kit/ndk'
 import { Nip04 } from './nip04'

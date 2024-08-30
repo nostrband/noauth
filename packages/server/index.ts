@@ -6,38 +6,42 @@ require('websocket-polyfill')
 import http from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { WebSocketBackend } from './src/server'
-import { dbi } from '@noauth/common'
+// @ts-ignore
+import { dbi } from '@noauth/common/dist/dbi'
+import { getOrigin } from './src/helpers'
 
 const server = http.createServer()
-const wss = new WebSocketServer({ noServer: true })
-const backend = new WebSocketBackend(wss)
+getOrigin().then((origin) => {
+  const wss = new WebSocketServer({ noServer: true })
+  const backend = new WebSocketBackend(wss, origin)
 
-wss.on('connection', (ws, req) => {
-  ws.on('message', (msg) => backend.onMessageEvent(ws, msg.toString('utf-8')))
-  ws.on('close', backend.onClose.bind(backend))
-})
-
-wss.on('re-render', () => {
-  wss.clients.forEach((client) => {
-    client.send(JSON.stringify({ result: 're-render' }))
+  wss.on('connection', (ws, req) => {
+    ws.on('message', (msg) => backend.onMessageEvent(ws, msg.toString('utf-8')))
+    ws.on('close', backend.onClose.bind(backend))
   })
-})
 
-server.on('upgrade', (req, socket: any, head: Buffer) => {
-  wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-    wss.emit('connection', ws, req)
+  wss.on('re-render', () => {
+    wss.clients.forEach((client) => {
+      client.send(JSON.stringify({ result: 're-render' }))
+    })
   })
-})
 
-// wait until prisma is dynamically imported
-async function waitDbi(cb: () => void) {
-  if (!dbi) setTimeout(() => waitDbi(cb), 100);
-  else cb();
-}
+  server.on('upgrade', (req, socket: any, head: Buffer) => {
+    wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+      wss.emit('connection', ws, req)
+    })
+  })
 
-waitDbi(() => {
-  backend.start();
-  server.listen(8080, () => {
-    console.log('Server running on http://localhost:8080/')
-  })  
+  // wait until prisma is dynamically imported
+  async function waitDbi(cb: () => void) {
+    if (!dbi) setTimeout(() => waitDbi(cb), 100)
+    else cb()
+  }
+
+  waitDbi(() => {
+    backend.start()
+    server.listen(8080, () => {
+      console.log('Server running on http://localhost:8080/')
+    })
+  })
 })

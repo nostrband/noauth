@@ -2,7 +2,8 @@ import WebSocket from 'ws'
 import { Api, BackendRequest, GlobalContext, Key, NoauthBackend } from '@noauth/backend'
 import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, ORIGIN } from './consts'
 import http from 'http'
-import { dbi } from '@noauth/common'
+// @ts-ignore
+import { dbi } from '@noauth/common/dist/dbi'
 
 const DB_METHODS = [
   'listKeys',
@@ -17,18 +18,18 @@ const DB_METHODS = [
 export class WebSocketBackend extends NoauthBackend {
   private wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>
 
-  constructor(wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>) {
+  constructor(wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>, origin: string) {
     let self: WebSocketBackend
     const global: GlobalContext = {
       btoa(data) {
         return Promise.resolve(Buffer.from(data, 'binary').toString('base64'))
       },
       getOrigin() {
-        return ORIGIN
+        return origin
       },
       getCryptoSubtle() {
         // @ts-ignore
-        return crypto.subtle;
+        return crypto.subtle
       },
       getKey(npub: string): Key {
         return self!.getKey(npub)
@@ -48,7 +49,7 @@ export class WebSocketBackend extends NoauthBackend {
     }
 
     const api = new Api(global)
-    super(global, api)
+    super(global, api, dbi)
 
     self = this
     this.wss = wss
