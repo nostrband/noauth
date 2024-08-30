@@ -1,5 +1,5 @@
 # Базовый образ для сборки
-FROM node:20-alpine AS build
+FROM node:22.7-alpine AS build
 
 RUN apk add --no-cache python3 make g++
 
@@ -36,7 +36,7 @@ COPY packages/client/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 CMD ["nginx", "-g", "daemon off;"]
 
 # Образ для server
-FROM node:20-alpine AS server
+FROM node:22.7-alpine AS server
 
 # Рабочая директория
 WORKDIR /usr/src/app

@@ -18,6 +18,7 @@ import {
   REQ_TTL,
   SEED_RELAYS,
   DbInterface,
+  getShortenNpub,
 } from '@noauth/common'
 import NDK, {
   NDKEvent,
@@ -109,7 +110,10 @@ export class NoauthBackend extends EventEmitter {
     // there was no push
     console.log('pushNpubs', JSON.stringify(this.pushNpubs))
     for (const k of this.enckeys) {
-      if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) await this.unlock(k.npub)
+      if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
+        await this.unlock(k.npub)
+        this.notifyNpub(k.npub);
+      }
     }
 
     // pause to let SW processing pushed pubkey's incoming requests
@@ -1395,9 +1399,12 @@ export class NoauthBackend extends EventEmitter {
     try {
       const data = event.data?.json()
       console.log('push', JSON.stringify(data))
-      this.pushNpubs.push(nip19.npubEncode(data.pubkey))
+      const npub = nip19.npubEncode(data.pubkey);
+      this.pushNpubs.push(npub)
+      return npub;
     } catch (e) {
       console.log('Failed to process push event', e)
+      return "";
     }
   }
 
@@ -1409,9 +1416,20 @@ export class NoauthBackend extends EventEmitter {
     return this.keys.map((k) => k.npub)
   }
 
+  protected getNpubName(npub: string) {
+    const key = this.enckeys.find(k => k.npub === npub);
+    if (!key) return "";
+    return key.name || key.nip05 || getShortenNpub(key.npub);
+  }
+
   protected async enablePush(): Promise<boolean> {
     // noop stub
     return false
+  }
+
+  protected notifyNpub(npub: string) {
+    npub;
+    // implemented in sw
   }
 
   protected async updateUI() {

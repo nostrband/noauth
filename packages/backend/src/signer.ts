@@ -13,6 +13,7 @@ export interface Signer extends NDKSigner {
 }
 
 export class PrivateKeySigner extends NDKPrivateKeySigner implements Signer {
+
   private _usr: NDKUser | undefined
   private _pk?: string
   private nip04: Nip04
