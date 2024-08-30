@@ -15,7 +15,7 @@ services:
       context: .
       target: server
     volumes:
-      - db-data:/usr/src/app/packages/common/prisma
+      - db-data:/usr/src/app/prisma
     ports:
       - '8080:8080'
 
