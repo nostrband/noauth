@@ -18,14 +18,14 @@ const DB_METHODS = [
 export class WebSocketBackend extends NoauthBackend {
   private wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>
 
-  constructor(wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>) {
+  constructor(wss: WebSocket.Server<typeof WebSocket, typeof http.IncomingMessage>, origin: string) {
     let self: WebSocketBackend
     const global: GlobalContext = {
       btoa(data) {
         return Promise.resolve(Buffer.from(data, 'binary').toString('base64'))
       },
       getOrigin() {
-        return ORIGIN
+        return origin
       },
       getCryptoSubtle() {
         // @ts-ignore

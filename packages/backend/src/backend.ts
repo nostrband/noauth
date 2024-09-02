@@ -17,8 +17,8 @@ import {
   OUTBOX_RELAYS,
   REQ_TTL,
   SEED_RELAYS,
-  getShortenNpub,
   DbInterface,
+  getShortenNpub,
 } from '@noauth/common'
 import NDK, {
   NDKEvent,
