@@ -24,6 +24,7 @@
     "lodash.isequal": "^4.5.0",
     "memoize-one": "^6.0.0",
     "notistack": "^3.0.1",
+    "qr-scanner": "^1.4.2",
     "react": "^18.2.0",
     "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18.2.0",
@@ -56,9 +57,9 @@
     }
   },
   "scripts": {
-    "start": "npx react-app-rewired start",
+    "start": "env-cmd -f .env npx react-app-rewired start",
     "start:hosted": "env-cmd -f .env.hosted npx react-app-rewired start",
-    "build": "npx react-app-rewired build",
+    "build": "env-cmd -f .env npx react-app-rewired build",
     "build:hosted": "env-cmd -f .env.hosted npx react-app-rewired build",
     "serve": "npm run build && serve -s build",
     "serve:hosted": "npm run build:hosted && serve -s build",

@@ -104,6 +104,12 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
       )
       break
     }
+
+    case EXPLANATION_MODAL_KEYS.NOSTR_CONNECT: {
+      title = 'What is nostrconnect?'
+      explanationText = 'Something cool'
+      break
+    }
   }
   return (
     <Modal
