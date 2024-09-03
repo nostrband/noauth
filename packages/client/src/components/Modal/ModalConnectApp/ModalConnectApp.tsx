@@ -30,6 +30,8 @@ import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGoRounded'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScannerRounded'
 import { ModalQrScanner } from '../ModalQrScanner/ModalQrScanner'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { parseMetadata } from '../ModalNostrConnect/utils/helpers'
+import { getDomainPort } from '@/utils/helpers/helpers'
 
 const NOSTR_CONNECT = 'nostrconnect://'
 
@@ -225,7 +227,26 @@ export const ModalConnectApp = () => {
     }
     setIsLoading(true)
     try {
-      const requestId = await client.nostrConnect(npub, nostrconnect, {})
+      const searchParams = new URL(nostrconnect).searchParams;
+      const metadataJson = searchParams.get('metadata') || ''
+      const metadata = parseMetadata(metadataJson) || {
+        url: searchParams.get('url'),
+        name: searchParams.get('name'),
+        icon: searchParams.get('image'),
+        perms: searchParams.get('perms'),
+      }
+
+      const { icon, name, url } = metadata || {}
+      const appName = name || ''
+      const appUrl = url || ''
+      const appIcon = icon || ''
+
+      const requestId = await client.nostrConnect(npub, nostrconnect, {
+        appName,
+        appUrl,
+        appIcon,
+        perms: metadata.perms || '',
+      })
       setIsLoading(false)
 
       console.log('requestId', requestId)
@@ -264,14 +285,18 @@ export const ModalConnectApp = () => {
             />
 
             <InputDescriptionContainer>
-              <StyledInputHelperText>Paste nostrconnect:</StyledInputHelperText>
+              <StyledInputHelperText>Paste nostrconnect: string</StyledInputHelperText>
               <AppLink title="What is this?" onClick={handleOpenNostrConnectExplanation} />
             </InputDescriptionContainer>
           </InputGroupContainer>
 
-          <Stack gap={'0.5rem'} alignItems={'center'} marginBottom={'0.5rem'}>
-            <StyledAdvancedButton onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+          <Button onClick={connect} disabled={isLoading}>
+            Connect {isLoading && <LoadingSpinner />}
+          </Button>
 
+          <StyledAdvancedButton onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+
+          <Stack gap={'0.5rem'} alignItems={'center'} marginBottom={'0.5rem'}>
             <Fade in={showAdvancedOptions} unmountOnExit={true}>
               <Stack width={'100%'} gap={'0.75rem'}>
                 <InputGroupContainer>
@@ -305,10 +330,6 @@ export const ModalConnectApp = () => {
               </Stack>
             </Fade>
           </Stack>
-
-          <Button onClick={connect} disabled={isLoading}>
-            Connect {isLoading && <LoadingSpinner />}
-          </Button>
         </Stack>
       </Modal>
 

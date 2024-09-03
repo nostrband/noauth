@@ -106,8 +106,19 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
     }
 
     case EXPLANATION_MODAL_KEYS.NOSTR_CONNECT: {
-      title = 'What is nostrconnect?'
-      explanationText = 'Something cool'
+      title = 'What is NostrConnect: string?'
+      explanationText = (
+        <>
+          NostrConnect: is a string used to connect to Nostr apps.
+          <br />
+          <br />
+          Some apps will show you the QR code with this string, or let you copy 
+          it to paste into key storage to establish a connection.
+          <br />
+          <br />
+          Do not share your NostrConnect: strings publicly! Only copy and paste them to the key storage.
+        </>
+      )
       break
     }
   }
