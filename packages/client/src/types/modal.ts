@@ -21,4 +21,5 @@ export enum EXPLANATION_MODAL_KEYS {
   LOGIN = 'login',
   HOW = 'how',
   NOSTR_CONNECT = 'nostrconnect',
+  SHARED = 'shared',
 }

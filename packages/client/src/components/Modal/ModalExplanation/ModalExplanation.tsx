@@ -121,6 +121,24 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
       )
       break
     }
+
+    case EXPLANATION_MODAL_KEYS.SHARED: {
+      title = 'What is access sharing?'
+      explanationText = (
+        <>
+          You might share access to your keys by giving other people
+          your bunker URL and confirming the connection they make.
+          <br />
+          <br />
+          This way, another person might use the app on your behalf and
+          get limited access to your keys.
+          <br />
+          <br />
+          Make sure you only share bunker URLs with people you trust.
+        </>
+      )
+      break
+    }
   }
   return (
     <Modal

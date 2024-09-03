@@ -99,6 +99,7 @@ export const ModalConnectApp = () => {
         await navigator.share(shareData)
       } else {
         navigator.clipboard.writeText(bunkerStr)
+        notify('Copied to clipboard', 'success')
       }
     } catch (err) {
       console.log(err)
@@ -188,6 +189,10 @@ export const ModalConnectApp = () => {
     handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.BUNKER } })
   }
 
+  const handleOpenSharedNpubExplanation = () => {
+    handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.SHARED } })
+  }
+
   const handlePasteNostrconnect = async () => {
     try {
       const text = await navigator.clipboard.readText()
@@ -227,7 +232,7 @@ export const ModalConnectApp = () => {
     }
     setIsLoading(true)
     try {
-      const searchParams = new URL(nostrconnect).searchParams;
+      const searchParams = new URL(nostrconnect).searchParams
       const metadataJson = searchParams.get('metadata') || ''
       const metadata = parseMetadata(metadataJson) || {
         url: searchParams.get('url'),
@@ -269,6 +274,7 @@ export const ModalConnectApp = () => {
         <Stack gap={'0.5rem'}>
           <InputGroupContainer>
             <StyledInput
+              label="Connection string"
               value={nostrconnect}
               onChange={handleNostrConnectChange}
               placeholder="nostrconnect://"
@@ -294,25 +300,33 @@ export const ModalConnectApp = () => {
             Connect {isLoading && <LoadingSpinner />}
           </Button>
 
-          <StyledAdvancedButton onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+          <Box width={'100%'} marginTop={'1rem'} marginBottom={'0.5rem'}>
+            <StyledAdvancedButton fullWidth={true} onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+          </Box>
 
           <Stack gap={'0.5rem'} alignItems={'center'} marginBottom={'0.5rem'}>
             <Fade in={showAdvancedOptions} unmountOnExit={true}>
               <Stack width={'100%'} gap={'0.75rem'}>
+
                 <InputGroupContainer>
                   <StyledInput
-                    label="Connection string"
+                    label="Bunker URL"
                     value={token ? bunkerStr : 'Loading...'}
                     endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
                   />
                   <InputDescriptionContainer>
-                    <StyledInputHelperText>Paste it into an app.</StyledInputHelperText>
+                    <StyledInputHelperText>Copy and paste it into an app.</StyledInputHelperText>
                     <AppLink title="What is this?" onClick={handleOpenBunkerExplanation} />
                   </InputDescriptionContainer>
                 </InputGroupContainer>
 
-                <Box width={'100%'} marginBottom={'0.5rem'}>
+                {/* <Button varianttype="secondary" onClick={handleShareBunker}>
+                  Share bunker URL
+                </Button> */}
+
+                <InputGroupContainer width={'100%'} marginTop={'0.5rem'}>
                   <StyledAutocomplete
+                    fullWidth={true}
                     value={subNpubOption}
                     onChange={handleSelectKind}
                     filterOptions={handleFilterOptions}
@@ -323,10 +337,12 @@ export const ModalConnectApp = () => {
                       return <SubNpubMenuItem {...props} option={option} />
                     }}
                   />
-                </Box>
-                <Button varianttype="secondary" onClick={handleShareBunker}>
-                  Share
-                </Button>
+                  <InputDescriptionContainer>
+                    <StyledInputHelperText>Set if sharing this bunker URL with someone</StyledInputHelperText>
+                    <AppLink title="What is this?" onClick={handleOpenSharedNpubExplanation} />
+                  </InputDescriptionContainer>
+                </InputGroupContainer>
+
               </Stack>
             </Fade>
           </Stack>
