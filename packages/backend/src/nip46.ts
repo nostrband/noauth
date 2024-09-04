@@ -1,26 +1,38 @@
-import NDK, { IEventHandlingStrategy, NDKEvent, NDKNip46Backend } from '@nostr-dev-kit/ndk'
+import NDK, { NDKEvent, NDKNip46Backend } from '@nostr-dev-kit/ndk'
 import { Event, getEventHash, nip19, verifySignature } from 'nostr-tools'
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
 
-class ConnectEventHandlingStrategy implements IEventHandlingStrategy {
+export interface IEventHandlingStrategyOptioned {
+  handle(
+    backend: NDKNip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[],
+    options?: any
+  ): Promise<string | undefined>
+}
+
+class ConnectEventHandlingStrategy implements IEventHandlingStrategyOptioned {
   async handle(
     backend: NDKNip46Backend,
     id: string,
     remotePubkey: string,
-    params: string[]
+    params: string[],
+    options?: any
   ): Promise<string | undefined> {
-    return 'ack'
+    return options && options.secret ? options.secret : 'ack'
   }
 }
 
-class SignEventHandlingStrategy implements IEventHandlingStrategy {
+class SignEventHandlingStrategy implements IEventHandlingStrategyOptioned {
   async handle(
     backend: NDKNip46Backend,
     id: string,
     remotePubkey: string,
-    params: string[]
+    params: string[],
+    options?: any
   ): Promise<string | undefined> {
     // NDK messes with created_at for replaceable
     // events, and it's hard to fix it from the outside,
@@ -107,17 +119,17 @@ export class Nip46Backend extends NDKNip46Backend {
       params,
       options,
     })
-    console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params })
+    console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params, options })
     if (decision === DECISION.IGNORE) return
 
     let response: string | undefined
     let error
     const allow = decision === DECISION.ALLOW
-    const strategy = this.handlers[method]
+    const strategy = this.handlers[method] as IEventHandlingStrategyOptioned
     if (allow) {
       if (strategy) {
         try {
-          response = await strategy.handle(this, id, remotePubkey, params)
+          response = await strategy.handle(this, id, remotePubkey, params, options)
           console.log(Date.now(), 'req', id, 'method', method, 'result', response)
         } catch (e: any) {
           console.log('error handling event', e, { id, method, params })

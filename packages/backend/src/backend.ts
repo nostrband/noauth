@@ -1309,7 +1309,13 @@ export class NoauthBackend extends EventEmitter {
     const id = 'nostr-connect-' + Date.now()
     const url = new URL(nostrconnect)
     const pubkey = url.hostname || url.pathname.replace('//', '')
-    console.log('nostrconnect url', url, pubkey)
+    const secret = url.searchParams.get('secret') || ''
+    console.log('nostrconnect url', url, pubkey, secret)
+
+    // this is not nip46 connect-method's 'secret' so we can't
+    // pass it using method params, instead we will reply
+    // with this 'secret' instead of 'ack'
+    options.secret = secret;
 
     // returns request id if pending, or empty string if done
     return new Promise<string>((ok) => {
