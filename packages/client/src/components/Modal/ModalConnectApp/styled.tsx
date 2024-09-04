@@ -26,33 +26,31 @@ export const StyledAdvancedButton = styled((props: AppButtonProps) => (
   color: theme.palette.text.primary,
 }))
 
-export const StyledAutocomplete = styled(
-  (props: Omit<AutocompleteProps<SubNpubOptionType, false, false, true>, 'renderInput'>) => (
-    <Autocomplete<SubNpubOptionType, false, false, true>
-      {...props}
-      selectOnFocus
-      clearOnBlur
-      freeSolo
-      renderInput={({ inputProps, disabled, id, InputProps }) => {
-        return (
-          <Input
-            {...InputProps}
-            className="input"
-            inputProps={inputProps}
-            disabled={disabled}
-            label="Shared access with"
-            fullWidth
-            placeholder="npub1..."
-          />
-        )
-      }}
-      clearIcon={<ClearRoundedIcon fontSize="small" />}
-      classes={{
-        endAdornment: 'icon',
-      }}
-    />
-  )
-)({
+export const StyledIconButton = styled((props: IconButtonProps) => <IconButton color="inherit" {...props} />)(
+  ({ theme }) => ({
+    width: 40,
+    height: 40,
+    '@media screen and (max-width: 485px)': {
+      width: 24,
+      height: 24,
+      padding: '0.25rem',
+    },
+    color: theme.palette.textSecondaryDecorate.main,
+  })
+)
+
+export const StyledAutocomplete = styled((props: AutocompleteProps<SubNpubOptionType, false, false, true>) => (
+  <Autocomplete<SubNpubOptionType, false, false, true>
+    {...props}
+    selectOnFocus
+    clearOnBlur
+    freeSolo
+    clearIcon={<ClearRoundedIcon fontSize="small" />}
+    classes={{
+      endAdornment: 'icon',
+    }}
+  />
+))({
   '& .icon': {
     right: '1rem',
   },
@@ -85,16 +83,3 @@ export const StyledInputHelperText = styled((props: TypographyProps) => (
 ))({
   fontSize: 12,
 })
-
-export const StyledIconButton = styled((props: IconButtonProps) => <IconButton color="inherit" {...props} />)(
-  ({ theme }) => ({
-    width: 40,
-    height: 40,
-    '@media screen and (max-width: 485px)': {
-      width: 24,
-      height: 24,
-      padding: '0.25rem',
-    },
-    color: theme.palette.textSecondaryDecorate.main,
-  })
-)

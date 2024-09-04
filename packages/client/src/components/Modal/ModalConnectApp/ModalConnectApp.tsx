@@ -9,7 +9,7 @@ import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, Fade, FilterOptionsState, MenuItem, Stack } from '@mui/material'
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   InputGroupContainer,
@@ -31,7 +31,8 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScannerRounded'
 import { ModalQrScanner } from '../ModalQrScanner/ModalQrScanner'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { parseMetadata } from '../ModalNostrConnect/utils/helpers'
-import { getDomainPort } from '@/utils/helpers/helpers'
+import { Input } from '@/shared/Input/Input'
+import ShareIcon from '@mui/icons-material/Share'
 
 const NOSTR_CONNECT = 'nostrconnect://'
 
@@ -89,20 +90,27 @@ export const ModalConnectApp = () => {
   }, [isModalOpened, getConnectToken])
 
   const bunkerStr = getBunkerLink(npub, token?.token)
+  const shareData = useMemo(
+    () => ({
+      text: bunkerStr,
+    }),
+    [bunkerStr]
+  )
+
+  const canShare = useMemo(() => {
+    if (!('navigator' in window)) return false
+    return !!navigator.share && navigator.canShare(shareData)
+  }, [shareData])
 
   const handleShareBunker = async () => {
-    const shareData = {
-      text: bunkerStr,
-    }
     try {
-      if (navigator.share && navigator.canShare(shareData)) {
-        await navigator.share(shareData)
-      } else {
+      if (canShare) await navigator.share(shareData)
+      else {
         navigator.clipboard.writeText(bunkerStr)
         notify('Copied to clipboard', 'success')
       }
-    } catch (err) {
-      console.log(err)
+    } catch (err: any) {
+      if (err.toString().includes('AbortError')) return
       notify('Your browser does not support sharing data', 'warning')
     }
   }
@@ -268,6 +276,19 @@ export const ModalConnectApp = () => {
     }
   }
 
+  const handlePasteNpub = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (!text.startsWith('npub1')) return
+      setSubNpubOption({
+        subNpub: text,
+        inputValue: text,
+      })
+    } catch (error) {
+      notify('Failed to paste from clipboard', 'error')
+    }
+  }
+
   return (
     <>
       <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
@@ -301,18 +322,28 @@ export const ModalConnectApp = () => {
           </Button>
 
           <Box width={'100%'} marginTop={'1rem'} marginBottom={'0.5rem'}>
-            <StyledAdvancedButton fullWidth={true} onClick={handleToggleShowAdvancedOptions}>Advanced options</StyledAdvancedButton>
+            <StyledAdvancedButton fullWidth={true} onClick={handleToggleShowAdvancedOptions}>
+              Advanced options
+            </StyledAdvancedButton>
           </Box>
 
           <Stack gap={'0.5rem'} alignItems={'center'} marginBottom={'0.5rem'}>
             <Fade in={showAdvancedOptions} unmountOnExit={true}>
               <Stack width={'100%'} gap={'0.75rem'}>
-
                 <InputGroupContainer>
                   <StyledInput
                     label="Bunker URL"
                     value={token ? bunkerStr : 'Loading...'}
-                    endAdornment={<InputCopyButton value={bunkerStr} onCopy={handleCopy} />}
+                    endAdornment={
+                      <Stack direction={'row'} gap={'0.75rem'} alignItems={'center'}>
+                        {canShare && (
+                          <StyledIconButton onClick={handleShareBunker}>
+                            <ShareIcon />
+                          </StyledIconButton>
+                        )}
+                        <InputCopyButton value={bunkerStr} onCopy={handleCopy} />
+                      </Stack>
+                    }
                   />
                   <InputDescriptionContainer>
                     <StyledInputHelperText>Copy and paste it into an app.</StyledInputHelperText>
@@ -320,13 +351,9 @@ export const ModalConnectApp = () => {
                   </InputDescriptionContainer>
                 </InputGroupContainer>
 
-                {/* <Button varianttype="secondary" onClick={handleShareBunker}>
-                  Share bunker URL
-                </Button> */}
-
                 <InputGroupContainer width={'100%'} marginTop={'0.5rem'}>
                   <StyledAutocomplete
-                    fullWidth={true}
+                    fullWidth
                     value={subNpubOption}
                     onChange={handleSelectKind}
                     filterOptions={handleFilterOptions}
@@ -336,13 +363,30 @@ export const ModalConnectApp = () => {
                       if (option.inputValue) return <MenuItem {...props}>{option.subNpub}</MenuItem>
                       return <SubNpubMenuItem {...props} option={option} />
                     }}
+                    renderInput={({ inputProps, disabled, id, InputProps }) => {
+                      return (
+                        <Input
+                          {...InputProps}
+                          className="input"
+                          inputProps={inputProps}
+                          disabled={disabled}
+                          label="Shared access with"
+                          fullWidth
+                          placeholder="npub1..."
+                          endAdornment={
+                            <StyledIconButton onClick={handlePasteNpub}>
+                              <ContentPasteGoIcon />
+                            </StyledIconButton>
+                          }
+                        />
+                      )
+                    }}
                   />
                   <InputDescriptionContainer>
                     <StyledInputHelperText>Set if sharing this bunker URL with someone</StyledInputHelperText>
                     <AppLink title="What is this?" onClick={handleOpenSharedNpubExplanation} />
                   </InputDescriptionContainer>
                 </InputGroupContainer>
-
               </Stack>
             </Fade>
           </Stack>
