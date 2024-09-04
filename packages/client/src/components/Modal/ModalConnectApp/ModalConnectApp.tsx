@@ -351,7 +351,7 @@ export const ModalConnectApp = () => {
                   </InputDescriptionContainer>
                 </InputGroupContainer>
 
-                <InputGroupContainer width={'100%'} marginTop={'0.5rem'}>
+                <InputGroupContainer width={'100%'}>
                   <StyledAutocomplete
                     fullWidth
                     value={subNpubOption}

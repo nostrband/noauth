@@ -55,7 +55,7 @@ export const StyledAutocomplete = styled((props: AutocompleteProps<SubNpubOption
     right: '1rem',
   },
   '& .input': {
-    paddingRight: '1.5rem',
+    paddingRight: '1rem',
   },
 })
 
