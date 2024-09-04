@@ -9,7 +9,7 @@ import { base64 } from '@scure/base'
 
 import { IEventHandlingStrategy, NDKUser } from '@nostr-dev-kit/ndk'
 import { getPublicKey } from 'nostr-tools'
-import { Nip46Backend } from './nip46'
+import { IEventHandlingStrategyOptioned, Nip46Backend } from './nip46'
 
 // from https://github.com/nbd-wtf/nostr-tools
 
@@ -163,8 +163,14 @@ export class Nip44 {
   }
 }
 
-export class Nip44EncryptHandlingStrategy implements IEventHandlingStrategy {
-  async handle(backend: Nip46Backend, id: string, remotePubkey: string, params: string[]): Promise<string | undefined> {
+export class Nip44EncryptHandlingStrategy implements IEventHandlingStrategyOptioned {
+  async handle(
+    backend: Nip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[],
+    options?: any
+  ): Promise<string | undefined> {
     const [recipientPubkey, payload] = params
     const recipientUser = new NDKUser({ hexpubkey: recipientPubkey })
 
@@ -188,8 +194,14 @@ export class Nip44EncryptHandlingStrategy implements IEventHandlingStrategy {
   }
 }
 
-export class Nip44DecryptHandlingStrategy implements IEventHandlingStrategy {
-  async handle(backend: Nip46Backend, id: string, remotePubkey: string, params: string[]): Promise<string | undefined> {
+export class Nip44DecryptHandlingStrategy implements IEventHandlingStrategyOptioned {
+  async handle(
+    backend: Nip46Backend,
+    id: string,
+    remotePubkey: string,
+    params: string[],
+    options?: any
+  ): Promise<string | undefined> {
     const [senderPubkey, payload] = params
     const senderUser = new NDKUser({ hexpubkey: senderPubkey })
 
