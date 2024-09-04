@@ -20,4 +20,6 @@ export enum EXPLANATION_MODAL_KEYS {
   NPUB = 'npub',
   LOGIN = 'login',
   HOW = 'how',
+  NOSTR_CONNECT = 'nostrconnect',
+  SHARED = 'shared',
 }

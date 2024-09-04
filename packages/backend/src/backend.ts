@@ -112,7 +112,7 @@ export class NoauthBackend extends EventEmitter {
     for (const k of this.enckeys) {
       if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
         await this.unlock(k.npub)
-        this.notifyNpub(k.npub);
+        this.notifyNpub(k.npub)
       }
     }
 
@@ -1399,12 +1399,12 @@ export class NoauthBackend extends EventEmitter {
     try {
       const data = event.data?.json()
       console.log('push', JSON.stringify(data))
-      const npub = nip19.npubEncode(data.pubkey);
+      const npub = nip19.npubEncode(data.pubkey)
       this.pushNpubs.push(npub)
-      return npub;
+      return npub
     } catch (e) {
       console.log('Failed to process push event', e)
-      return "";
+      return ''
     }
   }
 
@@ -1417,9 +1417,9 @@ export class NoauthBackend extends EventEmitter {
   }
 
   protected getNpubName(npub: string) {
-    const key = this.enckeys.find(k => k.npub === npub);
-    if (!key) return "";
-    return key.name || key.nip05 || getShortenNpub(key.npub);
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key) return ''
+    return key.name || key.nip05 || getShortenNpub(key.npub)
   }
 
   protected async enablePush(): Promise<boolean> {
@@ -1428,7 +1428,7 @@ export class NoauthBackend extends EventEmitter {
   }
 
   protected async notifyNpub(npub: string) {
-    npub;
+    npub
     // implemented in sw
   }
 
