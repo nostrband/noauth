@@ -10,6 +10,7 @@ import HomePage from '../pages/HomePage/Home.Page'
 const KeyPage = lazy(() => import('@/pages/KeyPage/Key.Page'))
 const AppPage = lazy(() => import('@/pages/AppPage/App.Page'))
 const NostrConnectPage = lazy(() => import('@/pages/NostrConnectPage/NostrConnect.Page'))
+const ImportConnectPage = lazy(() => import('@/pages/ImportConnectPage/ImportConnect.Page'))
 
 const LoadingSpinner = () => (
   <Stack height={'100%'} justifyContent={'center'} alignItems={'center'}>
@@ -18,14 +19,25 @@ const LoadingSpinner = () => (
 )
 
 const NOSTR_CONNECT_PROTOCOL = 'nostrconnect://'
+const IMPORT_HASH_KEY = 'import'
 
 const AppRoutes = () => {
   const navigate = useNavigate()
-  const { pathname, search } = useLocation()
+  const { pathname, search, hash } = useLocation()
 
   useEffect(() => {
     if (!pathname.includes(NOSTR_CONNECT_PROTOCOL)) return
     const pubkey = pathname.split(NOSTR_CONNECT_PROTOCOL)[1]
+    const parsedHash = new URLSearchParams(hash.substring(1))
+    const nsec = parsedHash.get(IMPORT_HASH_KEY)
+
+    if (nsec) {
+      return navigate({
+        pathname: `/importconnect/${nsec}`,
+        search: search,
+        hash: hash,
+      })
+    }
     navigate({ pathname: `/nostrconnect/${pubkey}`, search })
     // eslint-disable-next-line
   }, [])
@@ -40,6 +52,7 @@ const AppRoutes = () => {
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/nostrconnect/:pubkey" element={<NostrConnectPage />} />
+          <Route path="/importconnect/:nsec" element={<ImportConnectPage />} />
         </Route>
         <Route path="*" element={<Navigate to={'/home'} replace />} />
       </Routes>
