@@ -43,7 +43,7 @@ export const ModalNostrConnect = () => {
     return <Navigate to={'/'} />
   }
 
-  const closePopup = (result?: string) => {
+  const closePopup = () => {
     if (isPopup) return window.close()
   }
 
@@ -63,7 +63,7 @@ export const ModalNostrConnect = () => {
       console.log('requestId', requestId)
       if (!requestId) {
         notify('App connected! Closing...', 'success')
-        if (isPopup) setTimeout(() => closePopup(pubkey as string), 3000)
+        if (isPopup) setTimeout(() => closePopup(), 3000)
         else navigate(`/key/${npub}`, { replace: true })
       } else {
         return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`)

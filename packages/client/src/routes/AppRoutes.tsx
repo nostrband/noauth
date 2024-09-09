@@ -33,7 +33,7 @@ const AppRoutes = () => {
 
     if (nsec) {
       return navigate({
-        pathname: `/importconnect/${nsec}`,
+        pathname: `/importconnect/${pubkey}`,
         search: search,
         hash: hash,
       })
@@ -52,7 +52,7 @@ const AppRoutes = () => {
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/nostrconnect/:pubkey" element={<NostrConnectPage />} />
-          <Route path="/importconnect/:nsec" element={<ImportConnectPage />} />
+          <Route path="/importconnect/:pubkey" element={<ImportConnectPage />} />
         </Route>
         <Route path="*" element={<Navigate to={'/home'} replace />} />
       </Routes>

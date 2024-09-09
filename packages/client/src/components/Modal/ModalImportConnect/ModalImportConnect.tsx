@@ -2,7 +2,7 @@ import { FC, useCallback, useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { Modal } from '@/shared/Modal/Modal'
 import { Avatar, Stack, Typography } from '@mui/material'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { parseMetadata } from './utils/helpers'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -23,11 +23,17 @@ const FORM_DEFAULT_VALUES = {
   rePassword: '',
 }
 
+const IMPORT_HASH_KEY = 'import'
+
 export const ModalImportConnect: FC = () => {
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
+  const { pubkey: appPubkey = '' } = useParams()
   const [searchParams] = useSearchParams()
-  const { nsec = '' } = useParams()
+  const { hash } = useLocation()
+
+  const parsedHash = new URLSearchParams(hash.substring(1))
+  const nsec = parsedHash.get(IMPORT_HASH_KEY)
 
   const [pubkey, setPubkey] = useState('')
   const [isFetchingProfile, setIsFetchingProfile] = useState(true)
@@ -72,12 +78,13 @@ export const ModalImportConnect: FC = () => {
   // default
   const isPopup = false // searchParams.get('popup') === 'true'
 
-  const closePopup = (result?: string) => {
+  const closePopup = () => {
     if (isPopup) return window.close()
   }
 
   useEffect(() => {
     const getNpub = () => {
+      if (!nsec) return
       try {
         const { type, data } = nip19.decode(nsec)
         if (type !== 'nsec') {
@@ -107,9 +114,10 @@ export const ModalImportConnect: FC = () => {
   }, [hidePassword, hideRePassword, reset, resetPasswordValidation])
 
   const submitHandler = async (values: FormInputType) => {
+    if (!nsec) return
     hidePassword()
     hideRePassword()
-    console.log({ values, userNip05, nsec }, 'HISH')
+    // console.log({ values, userNip05, nsec }, 'HISH')
     if (isLoading || isPasswordInvalid) return undefined
     try {
       setIsLoading(true)
@@ -118,8 +126,8 @@ export const ModalImportConnect: FC = () => {
       if (!password.trim() || !userNip05 || !nsec.trim()) throw new Error('Fill out all fields!')
 
       await client.importKey(userNip05, nsec.trim(), password.trim())
-      // console.log(key.npub)
-      const nostrconnect = `nostrconnect://${pubkey}?${searchParams.toString()}`
+
+      const nostrconnect = `nostrconnect://${appPubkey}?${searchParams.toString()}`
       const requestId = await client.nostrConnect(npub, nostrconnect, {
         appName,
         appUrl,
@@ -129,7 +137,7 @@ export const ModalImportConnect: FC = () => {
 
       if (!requestId) {
         notify('App connected! Closing...', 'success')
-        if (isPopup) setTimeout(() => closePopup(npub), 3000)
+        if (isPopup) setTimeout(() => closePopup(), 3000)
         else navigate(`/key/${npub}`, { replace: true })
       } else {
         return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`, { replace: true })
@@ -139,6 +147,10 @@ export const ModalImportConnect: FC = () => {
       notify(error?.message || 'Something went wrong!', 'error')
       cleanUpStates()
     }
+  }
+
+  if (!appPubkey || !metadata || !nsec) {
+    return <Navigate to={'/'} />
   }
 
   return (
@@ -151,9 +163,9 @@ export const ModalImportConnect: FC = () => {
         <Container component={'form'} onSubmit={handleSubmit(submitHandler)}>
           <HeadingContainer>
             <Typography fontWeight={600} variant="h5">
-              Import keys
+              Import key
             </Typography>
-            <Subtitle>Would you like to import these Nostr keys?</Subtitle>
+            <Subtitle>Importing Nostr keys for this profile:</Subtitle>
           </HeadingContainer>
 
           <Stack direction={'row'} alignItems={'center'} gap="1rem" px={'0.5rem'}>
@@ -171,6 +183,16 @@ export const ModalImportConnect: FC = () => {
               )}
             </Stack>
           </Stack>
+
+          <HeadingContainer>
+            <Typography fontWeight={600} variant="h6">
+              Protect your keys
+            </Typography>
+            <Subtitle>
+              The keys are stored on your devices. Set a password that will be used to encrypt your keys and to sync
+              through the cloud.
+            </Subtitle>
+          </HeadingContainer>
 
           <InputsContainer>
             <input
@@ -203,7 +225,7 @@ export const ModalImportConnect: FC = () => {
             />
             {!errors.rePassword?.message && (
               <PasswordValidationStatus
-                isSignUp={true}
+                isImport={true}
                 boxProps={{ sx: { padding: '0 0.5rem' } }}
                 isPasswordInvalid={isPasswordInvalid}
                 passwordStrength={passwordStrength}
@@ -217,7 +239,7 @@ export const ModalImportConnect: FC = () => {
           </InputsContainer>
 
           <Button type="submit">Continue {isLoading && <LoadingSpinner />}</Button>
-          <Button varianttype="secondary" type="button">
+          <Button varianttype="secondary" type="button" disabled={!nsec}>
             Cancel
           </Button>
         </Container>
