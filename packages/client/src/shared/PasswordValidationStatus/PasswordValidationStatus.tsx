@@ -8,6 +8,7 @@ type PasswordValidationStatusProps = {
   textVariant?: TypographyProps['variant']
   boxProps?: BoxProps
   isSignUp?: boolean
+  isImport?: boolean
 }
 
 export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> = ({
@@ -16,6 +17,7 @@ export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> =
   textVariant = 'body2',
   boxProps,
   isSignUp,
+  isImport
 }) => {
   const getStatus = () => {
     if (isPasswordInvalid) {
@@ -45,6 +47,8 @@ export const PasswordValidationStatus: React.FC<PasswordValidationStatusProps> =
           Password is used to encrypt your keys and sync through the cloud.
         </Typography>
       )
+
+    if (isImport) return;
 
     return (
       <Typography variant={textVariant} color={'GrayText'}>

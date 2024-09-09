@@ -13,6 +13,7 @@ export enum MODAL_PARAMS_KEYS {
   EDIT_NAME = 'edit-name',
   SET_PASSWORD = 'set-password',
   ADD_PERMISSION = 'add-permission',
+  IMPORT_CONNECT = 'import-connect',
 }
 
 export enum EXPLANATION_MODAL_KEYS {
