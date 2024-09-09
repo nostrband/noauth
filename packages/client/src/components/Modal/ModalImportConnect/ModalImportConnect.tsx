@@ -29,10 +29,11 @@ export const ModalImportConnect: FC = () => {
   const [searchParams] = useSearchParams()
   const { nsec = '' } = useParams()
 
-  const [npub, setNpub] = useState('')
+  const [pubkey, setPubkey] = useState('')
   const [isFetchingProfile, setIsFetchingProfile] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
 
+  const npub = pubkey ? nip19.npubEncode(pubkey) : ''
   const { profile, avatarTitle, userAvatar, userName } = useProfile(npub)
 
   const userNip05 = profile?.info?.nip05 || npub
@@ -83,8 +84,7 @@ export const ModalImportConnect: FC = () => {
           navigate('/home')
           return notify('Invalid nsec!', 'error')
         }
-        const npub = nip19.npubEncode(getPublicKey(data as string))
-        setNpub(npub)
+        setPubkey(getPublicKey(data as string))
         setIsFetchingProfile(false)
       } catch {
         notify('Invalid nsec!', 'error')
@@ -117,10 +117,10 @@ export const ModalImportConnect: FC = () => {
       const { password } = values
       if (!password.trim() || !userNip05 || !nsec.trim()) throw new Error('Fill out all fields!')
 
-      const key = await client.importKey(userNip05, nsec.trim(), password.trim())
-      console.log(key.npub)
-      const nostrconnect = `nostrconnect://${key.npub}?${searchParams.toString()}`
-      const requestId = await client.nostrConnect(key.npub, nostrconnect, {
+      await client.importKey(userNip05, nsec.trim(), password.trim())
+      // console.log(key.npub)
+      const nostrconnect = `nostrconnect://${pubkey}?${searchParams.toString()}`
+      const requestId = await client.nostrConnect(npub, nostrconnect, {
         appName,
         appUrl,
         appIcon,
@@ -129,10 +129,10 @@ export const ModalImportConnect: FC = () => {
 
       if (!requestId) {
         notify('App connected! Closing...', 'success')
-        if (isPopup) setTimeout(() => closePopup(key.npub as string), 3000)
+        if (isPopup) setTimeout(() => closePopup(npub), 3000)
         else navigate(`/key/${npub}`, { replace: true })
       } else {
-        return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`)
+        return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`, { replace: true })
       }
       cleanUpStates()
     } catch (error: any) {
@@ -164,9 +164,11 @@ export const ModalImportConnect: FC = () => {
               <StyledText fontWeight={600} fontSize={'1.25rem'}>
                 {userName}
               </StyledText>
-              <StyledText variant="body2" color={'GrayText'}>
-                {npub}
-              </StyledText>
+              {profile && (
+                <StyledText variant="body2" color={'GrayText'}>
+                  {npub}
+                </StyledText>
+              )}
             </Stack>
           </Stack>
 
