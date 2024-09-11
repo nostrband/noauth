@@ -101,16 +101,10 @@ Open your browser and navigate to http://localhost:3000 to access the hosted ver
 
 ## TODO
 
-- Show details of requested operations
-- Publish a profile for new sign ups
-- Sync processed reqs across devices
-- Sync connected apps and perms across devices
 - Sync app activity across devices
-- Group apps by domain
 - Encrypt local nsec in Safari
 - Add WebAuthn to the mix
 - Add LN address to new profiles
 - Confirm relay/contact list pruning requests
-- Transfer/change nip05 name
 - Better notifs with activity summaries
 - How to send auth_url to new device if all other devices are down?
