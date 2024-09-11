@@ -29,6 +29,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
   private browserApi: BrowserApi
   private swg: ServiceWorkerGlobalScope
   private notifCallback: (() => void) | null = null
+  private lastPushTime = 0
 
   constructor(swg: ServiceWorkerGlobalScope) {
     console.log('works in browser')
@@ -165,14 +166,63 @@ export class ServiceWorkerBackend extends NoauthBackend {
     }
   }
 
+  // https://web.dev/articles/push-notifications-common-notification-patterns#the_exception_to_the_rule
+  protected isClientFocused() {
+    return this.swg.clients
+      .matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+      .then((windowClients) => {
+        let clientIsFocused = false
+
+        for (let i = 0; i < windowClients.length; i++) {
+          const windowClient = windowClients[i]
+          if (windowClient.focused) {
+            clientIsFocused = true
+            break
+          }
+        }
+
+        return clientIsFocused
+      })
+  }
+
+  protected isSafari() {
+    if (!('navigator' in globalThis)) return false
+
+    const chrome = navigator.userAgent.indexOf('Chrome') > -1
+    const safari = navigator.userAgent.indexOf('Safari') > -1
+    return safari && !chrome
+  }
+
   protected async notifyNpub(npub: string) {
-    const icon = '/favicon-32x32.png'
+    if (await this.isClientFocused()) return
+
+    // annoying when several pushes show up too fast
+    const minInterval = 1000
+    const interval = Date.now() - this.lastPushTime
+    if (interval < minInterval) await new Promise((ok) => setTimeout(ok, minInterval - interval))
+
+    // remember
+    this.lastPushTime = Date.now()
+
     const tag = npub
+
+    if (!this.isSafari()) {
+      const notifs = await this.swg.registration.getNotifications({
+        tag,
+      })
+      if (notifs.length) return
+    }
+
+    const icon = '/favicon-32x32.png'
     const title = this.getNpubName(npub)
-    const body = `Processing key access...`
+    const body = `Processed request.`
     await this.swg.registration.showNotification(title, {
       body,
       tag,
+      silent: true,
       icon,
       data: { npub },
     })
