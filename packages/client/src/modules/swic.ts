@@ -5,6 +5,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken } from '@noauth/common'
 import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
+import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 export let swr: ServiceWorkerRegistration | null = null
 
@@ -197,6 +198,10 @@ class ClientServiceWorker implements BackendClient {
 
   public async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
     return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
+  }
+
+  public async processRequest(request: NostrEvent) {
+    return this.call<NostrEvent>('processRequest', request)
   }
 
   public getListKeys() {

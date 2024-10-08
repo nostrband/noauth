@@ -6,6 +6,7 @@ import { CircularProgress, Stack } from '@mui/material'
 // Pages
 import CreatePage from '@/pages/CreatePage/Create.Page'
 import HomePage from '../pages/HomePage/Home.Page'
+import IframePage from '@/pages/IframePage/Iframe.Page'
 
 const KeyPage = lazy(() => import('@/pages/KeyPage/Key.Page'))
 const AppPage = lazy(() => import('@/pages/AppPage/App.Page'))
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Layout />}>
           <Route path="/" element={<Navigate to={'/home'} replace />} />
           <Route path="/home" element={<HomePage />} />
+          <Route path="/iframe" element={<IframePage />} />
           <Route path="/key/:npub" element={<KeyPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />

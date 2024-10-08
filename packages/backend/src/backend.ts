@@ -27,6 +27,7 @@ import NDK, {
   NDKSubscription,
   NDKSubscriptionCacheUsage,
   NDKUser,
+  NostrEvent,
 } from '@nostr-dev-kit/ndk'
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
@@ -1303,6 +1304,17 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
+  private async processRequest(req: NostrEvent) {
+    const pubkey = req.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
+    if (!pubkey) throw new Error('Bad request')
+    const npub = nip19.npubEncode(pubkey)
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+
+    const be = key.backend as Nip46Backend
+    return be.processEvent(new NDKEvent(key.ndk, req), /*iframe*/ true)
+  }
+
   private async nostrConnect(npub: string, nostrconnect: string, options: any) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Npub not found')
@@ -1315,7 +1327,7 @@ export class NoauthBackend extends EventEmitter {
     // this is not nip46 connect-method's 'secret' so we can't
     // pass it using method params, instead we will reply
     // with this 'secret' instead of 'ack'
-    options.secret = secret;
+    options.secret = secret
 
     // returns request id if pending, or empty string if done
     return new Promise<string>((ok) => {
@@ -1394,6 +1406,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.nip44Decrypt(args[0], args[1], args[2])
     } else if (method === 'getConnectToken') {
       result = await this.getConnectToken(args[0], args[1])
+    } else if (method === 'processRequest') {
+      result = await this.processRequest(args[0])
     } else {
       console.log('unknown method from UI ', method)
     }

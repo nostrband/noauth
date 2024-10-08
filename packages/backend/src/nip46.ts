@@ -1,5 +1,5 @@
-import NDK, { NDKEvent, NDKNip46Backend } from '@nostr-dev-kit/ndk'
-import { Event, getEventHash, nip19, verifySignature } from 'nostr-tools'
+import NDK, { NDKEvent, NDKKind, NDKNip46Backend, NDKRpcResponse, NostrEvent } from '@nostr-dev-kit/ndk'
+import { Event, getEventHash, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
@@ -92,11 +92,41 @@ export class Nip46Backend extends NDKNip46Backend {
     sub.on('event', (e) => this.handleIncomingEvent(e))
   }
 
-  public async processEvent(event: NDKEvent) {
-    this.handleIncomingEvent(event)
+  public async processEvent(event: NDKEvent, iframe?: boolean) {
+    if (!iframe) return this.handleIncomingEvent(event)
+
+    const req = await this.parseRequest(event)
+
+    const { response, error } = await this.processRequest({
+      ...req,
+      options: {
+        iframe: true,
+      },
+    })
+
+    // send result
+    const res = { id: req.id, result: response } as NDKRpcResponse
+    if (error) {
+      res.error = error
+    }
+
+    const localUser = await this.signer.user()
+    const remoteUser = this.ndk.getUser({ pubkey: req.remotePubkey })
+    const replyEvent = new NDKEvent(this.ndk, {
+      kind: NDKKind.NostrConnect,
+      content: JSON.stringify(res),
+      tags: [['p', req.remotePubkey]],
+      pubkey: localUser.pubkey,
+    } as NostrEvent)
+
+    replyEvent.content = await this.signer.encrypt(remoteUser, event.content)
+    await replyEvent.sign(this.signer)
+    console.log('sw iframe reply event', replyEvent.rawEvent())
+
+    return replyEvent.rawEvent()
   }
 
-  public async handleRequest({
+  private async processRequest({
     remotePubkey,
     id,
     method,
@@ -120,7 +150,7 @@ export class Nip46Backend extends NDKNip46Backend {
       options,
     })
     console.log(Date.now(), 'handle', { method, id, decision, remotePubkey, params, options })
-    if (decision === DECISION.IGNORE) return
+    if (decision === DECISION.IGNORE) return {}
 
     let response: string | undefined
     let error
@@ -152,7 +182,37 @@ export class Nip46Backend extends NDKNip46Backend {
     console.log('response', { method, response, error })
     resultCb?.(response)
 
-    // send result
+    return {
+      response,
+      error,
+    }
+  }
+
+  public async handleRequest({
+    remotePubkey,
+    id,
+    method,
+    params,
+    options,
+  }: {
+    remotePubkey: string
+    id: string
+    method: string
+    params?: any
+    options?: any
+  }) {
+    const { response, error } = await this.processRequest({
+      remotePubkey,
+      id,
+      method,
+      params,
+      options,
+    })
+
+    // Decision.IGNORE
+    if (!response && !error) return
+
+    // send over nip46
     if (response) {
       this.rpc.sendResponse(id, remotePubkey, response)
     } else {
@@ -160,7 +220,7 @@ export class Nip46Backend extends NDKNip46Backend {
     }
   }
 
-  protected async handleIncomingEvent(event: NDKEvent) {
+  private async parseRequest(event: NDKEvent) {
     const { id, method, params } = (await this.rpc.parseEvent(event)) as any
     const remotePubkey = event.pubkey
 
@@ -169,14 +229,23 @@ export class Nip46Backend extends NDKNip46Backend {
     // validate signature explicitly
     if (!verifySignature(event.rawEvent() as Event)) {
       this.debug('invalid signature', event.rawEvent())
-      return
+      throw new Error('Invalid request signature')
     }
 
-    return await this.handleRequest({
+    return {
       id,
       method,
       params,
       remotePubkey,
-    })
+    }
+  }
+
+  protected async handleIncomingEvent(event: NDKEvent) {
+    try {
+      const req = await this.parseRequest(event)
+      return this.handleRequest(req)
+    } catch (e) {
+      console.log('error processing incoming event', e, event)
+    }
   }
 }
