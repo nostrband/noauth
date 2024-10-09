@@ -1,6 +1,7 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 const DB_METHODS = [
   'listKeys',
@@ -229,6 +230,10 @@ export class ClientWebSocket implements BackendClient {
     return this.call<KeyInfo>('importKey', name, nsec, passphrase)
   }
 
+  public async importKeyIframe(nsec: string, appNpub: string): Promise<KeyInfo>{
+    throw new Error("Not supported");
+  }
+
   public async fetchKey(npub: string, passphrase: string, name: string) {
     return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
   }
@@ -255,6 +260,10 @@ export class ClientWebSocket implements BackendClient {
 
   public async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
     return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
+  }
+
+  public async processRequest(event: NostrEvent) {
+    return this.call<NostrEvent>('processRequest', event)
   }
 
   public async getListKeys() {

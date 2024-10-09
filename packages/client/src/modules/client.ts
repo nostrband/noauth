@@ -2,6 +2,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
+import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 export interface BackendReply {
   id: number
@@ -64,6 +65,8 @@ export interface BackendClient {
 
   importKey: (name: string, nsec: string, passphrase: string) => Promise<KeyInfo>
 
+  importKeyIframe: (nsec: string, appNpub: string) => Promise<KeyInfo>
+
   fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo>
 
   exportKey: (npub: string) => Promise<string>
@@ -91,6 +94,8 @@ export interface BackendClient {
   getAppLastActiveRecord: (app: DbApp) => Promise<number>
 
   getSynced: (npub: string) => Promise<boolean>
+
+  processRequest: (request: NostrEvent) => Promise<NostrEvent>
 }
 
 const defineClient = (): BackendClient => {

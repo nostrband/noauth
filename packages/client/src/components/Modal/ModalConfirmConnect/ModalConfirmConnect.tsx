@@ -29,6 +29,8 @@ import { convertPermListToOptions } from './helpers'
 import { getReqParams, getShortenNpub, packageToPerms, ACTION_TYPE } from '@noauth/common'
 import { client } from '@/modules/client'
 
+let port: MessagePort | undefined
+
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const notify = useEnqueueSnackbar()
@@ -153,6 +155,26 @@ export const ModalConfirmConnect = () => {
     }
   }, [isModalOpened])
 
+  useEffect(() => {
+    if (!isPopup) return
+
+    const onMessage = async (ev: MessageEvent) => {
+      console.log('message', ev)
+      if (ev.origin !== window.location.origin) return
+      if (!ev.source) return
+      if (ev.data && ev.data.method === 'registerIframe') {
+        console.log('registered iframe port', ev.data)
+        port = ev.ports[0];
+        return
+      }
+    }
+    window.addEventListener('message', onMessage)
+
+    return () => {
+      window.removeEventListener('message', onMessage)
+    }
+  }, [isPopup])
+
   if (isLoaded) {
     if (isModalOpened && !req) {
       // we are looking at a stale event!
@@ -215,7 +237,7 @@ export const ModalConfirmConnect = () => {
     allowedPerms.push(...selectedPerms.filter((p) => p.checked).map((p) => p.perm))
 
     if (pendingReqId) {
-      const options = { perms: allowedPerms, appUrl }
+      const options = { perms: allowedPerms, appUrl, port }
       setIsPending(true)
       await confirmPending(pendingReqId, true, true, options)
       setIsPending(false)
@@ -233,6 +255,7 @@ export const ModalConfirmConnect = () => {
       }
 
       try {
+        // FIXME pass the port
         await client.connectApp(appNpub, npub, appUrl, allowedPerms)
         console.log('connectApp done', npub, appNpub, appUrl, allowedPerms)
       } catch (e: any) {
@@ -243,6 +266,9 @@ export const ModalConfirmConnect = () => {
 
       if (token) {
         try {
+          // NOTE: this isn't nip46 bunkerUrl token/secret,
+          // it's noauthd sign-up-flow token to make server
+          // reply to the client with our npub
           await client.redeemToken(npub, token)
           console.log('redeemToken done')
         } catch (e) {
@@ -255,6 +281,7 @@ export const ModalConfirmConnect = () => {
       }
 
       const { data: pubkey } = nip19.decode(npub)
+
       if (isPopup) closePopup(pubkey as string)
       else navigate(`/key/${npub}`, { replace: true })
     }

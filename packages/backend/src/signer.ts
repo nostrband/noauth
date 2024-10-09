@@ -1,5 +1,5 @@
 import type { UnsignedEvent } from 'nostr-tools'
-import { generatePrivateKey, getPublicKey, getSignature } from 'nostr-tools'
+import { generatePrivateKey, getPublicKey, getSignature, nip19 } from 'nostr-tools'
 
 import { NDKPrivateKeySigner, NostrEvent, NDKUser } from '@nostr-dev-kit/ndk'
 import type { NDKSigner } from '@nostr-dev-kit/ndk'
@@ -27,6 +27,10 @@ export class PrivateKeySigner extends NDKPrivateKeySigner implements Signer {
     }
     this.nip04 = new Nip04()
     this.nip44 = new Nip44()
+  }
+
+  public unsafeGetNsec() {
+    return nip19.nsecEncode(this._pk!)
   }
 
   public static generate() {
