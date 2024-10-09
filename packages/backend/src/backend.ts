@@ -128,6 +128,7 @@ export class NoauthBackend extends EventEmitter {
 
       // ensure we're subscribed on the server, re-create the
       // subscription endpoint if we have permissions granted
+      // FIXME only do this if we're not in iframe mode!
       await this.subscribeAllKeys()
 
       // sync app perms
@@ -332,11 +333,13 @@ export class NoauthBackend extends EventEmitter {
     nsec,
     existingName,
     passphrase,
+    iframe,
   }: {
     name: string
     nsec?: string
     existingName?: boolean
     passphrase?: string
+    iframe?: boolean
   }): Promise<KeyInfo> {
     // lowercase
     name = name.trim().toLocaleLowerCase()
@@ -384,7 +387,7 @@ export class NoauthBackend extends EventEmitter {
       }
     }
 
-    await this.subscribeNpub(npub)
+    if (!iframe) await this.subscribeNpub(npub)
 
     // async fetching of perms from relays
     this.subscribeToAppPerms()
@@ -730,6 +733,19 @@ export class NoauthBackend extends EventEmitter {
 
             // reload
             self.apps = await this.dbi.listApps()
+
+            // notify iframe
+            if (options.port) {
+              const key = this.keys.find((k) => k.npub === req.npub)
+              options.port.postMessage({
+                method: 'importNsec',
+                nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
+                appNpub: req.appNpub,
+              })
+
+              // we no longer need it
+              options.port.close()
+            }
           }
         } else {
           // just send to db w/o waiting for it
@@ -1076,6 +1092,12 @@ export class NoauthBackend extends EventEmitter {
     return k
   }
 
+  private async importKeyIframe(nsec: string, appNpub: string) {
+    // FIXME add appNpub to iframeKeys table,
+    // and when this app is deleted - delete the key too
+    return await this.addKey({ name: '', nsec, iframe: true })
+  }
+
   private async uploadKey(npub: string, passphrase: string) {
     const info = this.enckeys.find((k) => k.npub === npub)
     if (!info) throw new Error(`Key ${npub} not found`)
@@ -1308,8 +1330,15 @@ export class NoauthBackend extends EventEmitter {
     const pubkey = req.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
     if (!pubkey) throw new Error('Bad request')
     const npub = nip19.npubEncode(pubkey)
-    const key = this.keys.find((k) => k.npub === npub)
-    if (!key) throw new Error('Npub not found')
+    console.log('pubkey', pubkey, 'npub', npub)
+    let key = this.keys.find((k) => k.npub === npub)
+    if (!key) {
+      console.log('waiting for worker to start', npub)
+      this.pushNpubs.push(npub)
+      await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
+      key = this.keys.find((k) => k.npub === npub)
+      if (!key) throw new Error('Npub not found')
+    }
 
     const be = key.backend as Nip46Backend
     return be.processEvent(new NDKEvent(key.ndk, req), /*iframe*/ true)
@@ -1370,6 +1399,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.redeemToken(args[0], args[1])
     } else if (method === 'importKey') {
       result = await this.importKey(args[0], args[1], args[2])
+    } else if (method === 'importKeyIframe') {
+      result = await this.importKeyIframe(args[0], args[1])
     } else if (method === 'setPassword') {
       result = await this.setPassword(args[0], args[1], args[2])
     } else if (method === 'fetchKey') {

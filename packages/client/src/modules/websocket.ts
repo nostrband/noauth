@@ -230,6 +230,10 @@ export class ClientWebSocket implements BackendClient {
     return this.call<KeyInfo>('importKey', name, nsec, passphrase)
   }
 
+  public async importKeyIframe(nsec: string, appNpub: string): Promise<KeyInfo>{
+    throw new Error("Not supported");
+  }
+
   public async fetchKey(npub: string, passphrase: string, name: string) {
     return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
   }

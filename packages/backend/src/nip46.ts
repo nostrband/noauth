@@ -93,8 +93,10 @@ export class Nip46Backend extends NDKNip46Backend {
   }
 
   public async processEvent(event: NDKEvent, iframe?: boolean) {
+    // default nip46 mode
     if (!iframe) return this.handleIncomingEvent(event)
 
+    // iframe mode
     const req = await this.parseRequest(event)
 
     const { response, error } = await this.processRequest({
@@ -119,7 +121,7 @@ export class Nip46Backend extends NDKNip46Backend {
       pubkey: localUser.pubkey,
     } as NostrEvent)
 
-    replyEvent.content = await this.signer.encrypt(remoteUser, event.content)
+    replyEvent.content = await this.signer.encrypt(remoteUser, replyEvent.content)
     await replyEvent.sign(this.signer)
     console.log('sw iframe reply event', replyEvent.rawEvent())
 

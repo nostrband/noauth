@@ -65,6 +65,8 @@ export interface BackendClient {
 
   importKey: (name: string, nsec: string, passphrase: string) => Promise<KeyInfo>
 
+  importKeyIframe: (nsec: string, appNpub: string) => Promise<KeyInfo>
+
   fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo>
 
   exportKey: (npub: string) => Promise<string>

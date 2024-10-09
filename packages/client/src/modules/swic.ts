@@ -38,7 +38,7 @@ class ClientServiceWorker implements BackendClient {
   }
 
   // send an RPC to the backend
-  private async call<T = void>(method: string, ...args: any[]): Promise<T> {
+  private async call<T = void>(method: string, transfer: any[], ...args: any[]): Promise<T> {
     await this.waitStarted()
 
     const id = this.nextReqId
@@ -58,7 +58,7 @@ class ClientServiceWorker implements BackendClient {
           args: [...args],
         }
         console.log('sending to SW', msg)
-        swr.active.postMessage(msg)
+        swr.active.postMessage(msg, transfer)
       }
 
       this.callWhenStarted(call)
@@ -113,95 +113,100 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async addPerm(appNpub: string, npub: string, permission: string, allow: AllowType) {
-    return this.call('addPerm', appNpub, npub, permission, allow)
+    return this.call('addPerm', [], appNpub, npub, permission, allow)
   }
 
   public async deletePerm(permId: string) {
-    return this.call('deletePerm', permId)
+    return this.call('deletePerm', [], permId)
   }
 
   public async updateApp(app: DbApp) {
-    return this.call('updateApp', app)
+    return this.call('updateApp', [], app)
   }
 
   public async connectApp(appNpub: string, npub: string, appUrl: string, perms: string[]) {
-    return this.call('connectApp', { npub, appNpub, appUrl, perms })
+    return this.call('connectApp', [], { npub, appNpub, appUrl, perms })
   }
 
   public async deleteApp(appNpub: string, npub: string) {
-    return this.call('deleteApp', appNpub, npub)
+    return this.call('deleteApp', [], appNpub, npub)
   }
 
   public async checkPendingRequest(npub: string, pendingReqId: string) {
-    return this.call('checkPendingRequest', npub, pendingReqId)
+    return this.call('checkPendingRequest', [], npub, pendingReqId)
   }
 
   public async confirmPendingRequest(id: string, allow: boolean, remember: boolean, options?: any) {
-    return this.call<string | undefined>('confirm', id, allow, remember, options)
+    const transfer = options && options.port ? [options.port] : [];
+    return this.call<string | undefined>('confirm', transfer, id, allow, remember, options)
   }
 
   public async fetchPendingRequests(npub: string) {
-    return this.call('fetchPendingRequests', npub)
+    return this.call('fetchPendingRequests', [], npub)
   }
 
   public async enablePush() {
-    return this.call<boolean>('enablePush')
+    return this.call<boolean>('enablePush', [])
   }
 
   public async redeemToken(npub: string, token: string) {
-    return this.call('redeemToken', npub, token)
+    return this.call('redeemToken', [], npub, token)
   }
 
   public async getConnectToken(npub: string, subNpub?: string) {
-    return this.call<DbConnectToken>('getConnectToken', npub, subNpub)
+    return this.call<DbConnectToken>('getConnectToken', [], npub, subNpub)
   }
 
   public async editName(npub: string, newName: string) {
-    return this.call('editName', npub, newName)
+    return this.call('editName', [], npub, newName)
   }
 
   public async transferName(npub: string, name: string, receiverNpub: string) {
-    return this.call('transferName', npub, name, receiverNpub)
+    return this.call('transferName', [], npub, name, receiverNpub)
   }
 
   public async setPassword(npub: string, passphrase: string, existingPassphrase?: string) {
-    return this.call('setPassword', npub, passphrase, existingPassphrase)
+    return this.call('setPassword', [], npub, passphrase, existingPassphrase)
   }
 
   public async importKey(name: string, nsec: string, passphrase: string) {
-    return this.call<KeyInfo>('importKey', name, nsec, passphrase)
+    return this.call<KeyInfo>('importKey', [], name, nsec, passphrase)
+  }
+
+  public async importKeyIframe(nsec: string, appNpub: string) {
+    return this.call<KeyInfo>('importKeyIframe', [], nsec, appNpub)
   }
 
   public async fetchKey(npub: string, passphrase: string, name: string) {
-    return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
+    return this.call<KeyInfo>('fetchKey', [], npub, passphrase, name)
   }
 
   public async exportKey(npub: string) {
-    return this.call<string>('exportKey', npub)
+    return this.call<string>('exportKey', [], npub)
   }
 
   public async generateKey(name: string, passphrase: string) {
-    return this.call<KeyInfo>('generateKey', name, passphrase)
+    return this.call<KeyInfo>('generateKey', [], name, passphrase)
   }
 
   public async nostrConnect(npub: string, nostrconnect: string, options: any) {
-    return this.call<string>('nostrConnect', npub, nostrconnect, options)
+    return this.call<string>('nostrConnect', [], npub, nostrconnect, options)
   }
 
   public async generateKeyConnect(params: CreateConnectParams) {
-    return this.call<string>('generateKeyConnect', params)
+    return this.call<string>('generateKeyConnect', [], params)
   }
 
   public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
-    return this.call<string>('nip04Decrypt', npub, peerPubkey, ciphertext)
+    return this.call<string>('nip04Decrypt', [], npub, peerPubkey, ciphertext)
   }
 
   public async nip44Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
-    return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
+    return this.call<string>('nip44Decrypt', [], npub, peerPubkey, ciphertext)
   }
 
   public async processRequest(request: NostrEvent) {
-    return this.call<NostrEvent>('processRequest', request)
+    return this.call<NostrEvent>('processRequest', [], request)
   }
 
   public getListKeys() {
