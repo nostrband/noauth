@@ -28,8 +28,7 @@ import { Perm } from './types'
 import { convertPermListToOptions } from './helpers'
 import { getReqParams, getShortenNpub, packageToPerms, ACTION_TYPE } from '@noauth/common'
 import { client } from '@/modules/client'
-
-let port: MessagePort | undefined
+import useIframePort from '@/hooks/useIframePort'
 
 export const ModalConfirmConnect = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -42,6 +41,15 @@ export const ModalConfirmConnect = () => {
   const [isPending, setIsPending] = useState(false)
   const [selectedPerms, setSelectedPerms] = useState<Perm[]>([])
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+
+  // popup mode for auth_url
+  const isPopup = searchParams.get('popup') === 'true'
+
+  // a port to talk to our iframe embedded by the app
+  // so that we could pass this connection (nsec+appNpub) to
+  // the iframe so it would save it to it's partitioned storage
+  const port = useIframePort(isPopup);
+  console.log("iframe port", port);
 
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
@@ -60,9 +68,6 @@ export const ModalConfirmConnect = () => {
 
   // to show 'redirecting back to your app'
   const done = searchParams.get('done') === 'true'
-
-  // popup mode for auth_url
-  const isPopup = searchParams.get('popup') === 'true'
 
   // server token for create_account callback
   const token = searchParams.get('token') || ''
@@ -154,26 +159,6 @@ export const ModalConfirmConnect = () => {
       }
     }
   }, [isModalOpened])
-
-  useEffect(() => {
-    if (!isPopup) return
-
-    const onMessage = async (ev: MessageEvent) => {
-      console.log('message', ev)
-      if (ev.origin !== window.location.origin) return
-      if (!ev.source) return
-      if (ev.data && ev.data.method === 'registerIframe') {
-        console.log('registered iframe port', ev.origin, ev.data)
-        port = ev.ports[0];
-        return
-      }
-    }
-    window.addEventListener('message', onMessage)
-
-    return () => {
-      window.removeEventListener('message', onMessage)
-    }
-  }, [isPopup])
 
   if (isLoaded) {
     if (isModalOpened && !req) {

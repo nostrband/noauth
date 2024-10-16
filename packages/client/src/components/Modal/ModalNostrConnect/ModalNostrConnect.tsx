@@ -10,6 +10,7 @@ import { getDomainPort } from '@/utils/helpers/helpers'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { client } from '@/modules/client'
 import { useState } from 'react'
+import useIframePort from '@/hooks/useIframePort'
 
 export const ModalNostrConnect = () => {
   const navigate = useNavigate()
@@ -37,7 +38,12 @@ export const ModalNostrConnect = () => {
   const appIcon = icon || ''
 
   // default
+  // FIXME make some way to declare a nostr-connect url template?
   const isPopup = true // searchParams.get('popup') === 'true'
+
+  // let this modal accept the iframe port to pass it
+  // down to ConfirmConnect modal later on
+  useIframePort(isPopup);
 
   if (!pubkey || !metadata || !keys.length) {
     return <Navigate to={'/'} />
