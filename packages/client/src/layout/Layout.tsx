@@ -10,14 +10,27 @@ export const Layout: FC = () => {
   const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
   const [searchParams] = useSearchParams()
   const isPopupMode = searchParams.get('popup') === 'true'
-  const showReloadBadge = !isPopupMode && needReload
+  const isAuthUrl = !!searchParams.get('auth_url')
+  const showReloadBadge = !isAuthUrl && !isPopupMode && needReload
   const containerClassName = showReloadBadge ? 'reload' : ''
 
   return (
     <StyledContainer maxWidth="md" className={containerClassName}>
-      <ReloadBadge />
-      <Header />
-      <main>
+      {isAuthUrl && (
+        <style>{`
+          body {
+            background-color: #ffffff00;
+            overflow: hidden;
+          }
+      `}</style>
+      )}
+      {!isAuthUrl && (
+        <>
+          <ReloadBadge />
+          <Header />
+        </>
+      )}
+      <main style={isAuthUrl ? { paddingTop: '0' } : {}}>
         <Outlet />
       </main>
     </StyledContainer>
