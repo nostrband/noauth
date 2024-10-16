@@ -15,7 +15,7 @@ async function importNsec(data: any) {
 }
 
 async function openAuthUrl(url: string) {
-  console.log('open auth url', url)
+  // console.log('open auth url', url)
   try {
     const origin = new URL(url).origin
     if (origin !== window.location.origin) throw new Error('Bad auth url origin')
@@ -72,6 +72,7 @@ const IframePage = () => {
         return
       }
 
+      console.log("iframe request event", event);
       const reply = await client.processRequest(event as NostrEvent)
       console.log('iframe reply event', reply)
       ev.source!.postMessage(reply, {

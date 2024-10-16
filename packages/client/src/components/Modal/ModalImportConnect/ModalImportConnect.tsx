@@ -17,6 +17,7 @@ import { usePassword } from '@/hooks/usePassword'
 import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { Button } from '@/shared/Button/Button'
 import { client } from '@/modules/client'
+import useIframePort from '@/hooks/useIframePort'
 
 const FORM_DEFAULT_VALUES = {
   password: '',
@@ -33,7 +34,8 @@ export const ModalImportConnect: FC = () => {
   const { hash } = useLocation()
 
   const parsedHash = new URLSearchParams(hash.substring(1))
-  const nsec = parsedHash.get(IMPORT_HASH_KEY)
+  const newNsec = parsedHash.get(IMPORT_HASH_KEY)
+  const [nsec, setNsec] = useState(newNsec)
 
   const [pubkey, setPubkey] = useState('')
   const [isFetchingProfile, setIsFetchingProfile] = useState(true)
@@ -76,30 +78,35 @@ export const ModalImportConnect: FC = () => {
   const appIcon = icon || ''
 
   // default
-  const isPopup = false // searchParams.get('popup') === 'true'
+  const isPopup = true // searchParams.get('popup') === 'true'
 
-  const closePopup = () => {
-    if (isPopup) return window.close()
-  }
+  // let this modal accept the iframe port to pass it
+  // down to ConfirmConnect modal later on
+  useIframePort(isPopup)
 
   useEffect(() => {
     const getNpub = () => {
-      if (!nsec) return
+      if (!newNsec) return
+
       try {
-        const { type, data } = nip19.decode(nsec)
+        const { type, data } = nip19.decode(newNsec)
         if (type !== 'nsec') {
           navigate('/home')
           return notify('Invalid nsec!', 'error')
         }
         setPubkey(getPublicKey(data as string))
+        setNsec(newNsec)
         setIsFetchingProfile(false)
+
+        // make sure the nsec is hidden from the url bar
+        navigate(window.location.pathname + window.location.search, { replace: true })
       } catch {
         notify('Invalid nsec!', 'error')
         navigate('/home')
       }
     }
     getNpub()
-  }, [navigate, notify, nsec])
+  }, [navigate, notify, newNsec])
 
   const handleClose = () => {
     navigate('/home')
@@ -112,6 +119,10 @@ export const ModalImportConnect: FC = () => {
     resetPasswordValidation()
     setIsLoading(false)
   }, [hidePassword, hideRePassword, reset, resetPasswordValidation])
+
+  const closePopup = () => {
+    if (isPopup) return window.close()
+  }
 
   const submitHandler = async (values: FormInputType) => {
     if (!nsec) return
