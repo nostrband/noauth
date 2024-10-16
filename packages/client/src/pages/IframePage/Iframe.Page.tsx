@@ -1,13 +1,16 @@
+import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
-import { Typography } from '@mui/material'
+import { Button, Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
 import { Event, validateEvent, verifySignature } from 'nostr-tools'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { StyledButton } from './styled'
 
 let popup: WindowProxy | null = null
 
 async function importNsec(data: any) {
-  console.log('importing nsec', data)
+  console.log('importing nsec for app', data.appNpub)
   await client.importKeyIframe(data.nsec, data.appNpub)
 }
 
@@ -35,6 +38,7 @@ async function openAuthUrl(url: string) {
         )
         channel.port1.onmessage = (ev: MessageEvent) => {
           if (!ev.data || !ev.data.method) return
+          // console.log('message from popup', ev)
           if (ev.data.method === 'importNsec') {
             channel.port1.close()
             return importNsec(ev.data)
@@ -43,15 +47,20 @@ async function openAuthUrl(url: string) {
       }, 1000)
     })
   } catch (e) {
-    console.log('bad auth url', url)
+    console.log('bad auth url', url, e)
   }
 }
 
 const IframePage = () => {
+  const [searchParams] = useSearchParams()
+
+  const authUrl = searchParams.get('auth_url') || ''
+
   useEffect(() => {
+    if (authUrl) return
+
     const onMessage = async (ev: MessageEvent) => {
       if (!ev.source) return
-      if (ev.data?.authUrl) return openAuthUrl(ev.data?.authUrl)
 
       let event: NostrEvent | undefined
       try {
@@ -74,13 +83,21 @@ const IframePage = () => {
     return () => {
       window.removeEventListener('message', onMessage)
     }
-  })
+  }, [authUrl])
 
   return (
     <>
-      <Typography>
-        Nsec.app iframe worker, please start from <a href="/">here</a>.
-      </Typography>
+      {!authUrl && (
+        <Typography>
+          Nsec.app iframe worker, please start from <a href="/">here</a>.
+        </Typography>
+      )}
+      {authUrl && (
+        <Stack direction={'row'} gap={'1rem'}>
+          <StyledAppLogo />
+          <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>
+        </Stack>
+      )}
     </>
   )
 }

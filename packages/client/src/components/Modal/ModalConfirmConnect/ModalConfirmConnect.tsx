@@ -163,7 +163,7 @@ export const ModalConfirmConnect = () => {
       if (ev.origin !== window.location.origin) return
       if (!ev.source) return
       if (ev.data && ev.data.method === 'registerIframe') {
-        console.log('registered iframe port', ev.data)
+        console.log('registered iframe port', ev.origin, ev.data)
         port = ev.ports[0];
         return
       }
