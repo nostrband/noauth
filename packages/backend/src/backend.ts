@@ -11,7 +11,7 @@ import {
   isPackagePerm,
   packageToPerms,
   ACTION_TYPE,
-  BROADCAST_RELAY,
+  BROADCAST_RELAYS,
   KIND_DATA,
   KIND_RPC,
   OUTBOX_RELAYS,
@@ -78,7 +78,7 @@ export class NoauthBackend extends EventEmitter {
     // yet unlocked a key and created a separate ndk for it
 
     this.ndk = new NDK({
-      explicitRelayUrls: [...global.getNip46Relays(), ...OUTBOX_RELAYS, BROADCAST_RELAY],
+      explicitRelayUrls: [...global.getNip46Relays(), ...BROADCAST_RELAYS],
       enableOutboxModel: false,
     })
 
@@ -113,7 +113,7 @@ export class NoauthBackend extends EventEmitter {
     for (const k of this.enckeys) {
       if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
         await this.unlock(k.npub)
-        this.notifyNpub(k.npub)
+        await this.notifyNpub(k.npub)
       }
     }
 
@@ -460,7 +460,7 @@ export class NoauthBackend extends EventEmitter {
     console.log('seed key events', { profile, contacts, nip65 })
 
     // publish in background
-    const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
+    const relayset = NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk)
     try {
       await profile.publish(relayset)
     } catch (e) {
@@ -553,7 +553,7 @@ export class NoauthBackend extends EventEmitter {
     })
     event.sig = await event.sign(key.signer)
     console.log('app perms event', event.rawEvent(), 'payload', data)
-    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk))
+    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk))
     console.log('app perm event published', event.id, 'to', relays)
   }
 
