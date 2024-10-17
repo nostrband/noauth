@@ -209,23 +209,30 @@ export class ServiceWorkerBackend extends NoauthBackend {
 
     const tag = npub
 
-    if (!this.isSafari()) {
-      const notifs = await this.swg.registration.getNotifications({
-        tag,
-      })
-      if (notifs.length) return
-    }
+    try {
+      let show = true
+      if (!this.isSafari()) {
+        const notifs = await this.swg.registration.getNotifications({
+          tag,
+        })
+        show = !notifs.length
+      }
 
-    const icon = '/favicon-32x32.png'
-    const title = this.getNpubName(npub)
-    const body = `Processed request.`
-    await this.swg.registration.showNotification(title, {
-      body,
-      tag,
-      silent: true,
-      icon,
-      data: { npub },
-    })
+      if (show) {
+        const icon = '/favicon-32x32.png'
+        const title = this.getNpubName(npub)
+        const body = `Processed request.`
+        await this.swg.registration.showNotification(title, {
+          body,
+          tag,
+          silent: true,
+          icon,
+          data: { npub },
+        })
+      }
+    } catch (e) {
+      console.log('failed to show notification', e)
+    }
 
     // unlock the onPush to let browser know we're done,
     // FIXME what if it shuts us down immediately?
