@@ -24,7 +24,8 @@ function useIframePort(isPopup: boolean) {
     // talk to the opener
     const onMessage = async (ev: MessageEvent) => {
       console.log('popup got message', ev)
-      if (ev.origin !== window.location.origin) return
+      // iframe sender might be our subdomain
+      if (!isDomainOrSubdomain(window.location.hostname, new URL(ev.origin).hostname)) return
       if (!ev.source) return
       if (ev.data && ev.data.method === 'registerIframe') {
         console.log('registered iframe port', ev.data)
