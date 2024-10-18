@@ -161,33 +161,40 @@ export class NoauthBackend extends EventEmitter {
       NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
       true // auto-start
     )
-    let count = 0
-    this.permSub.on('event', async (e) => {
-      count++
-      const npub = nip19.npubEncode(e.pubkey)
-      const key = this.keys.find((k) => k.npub === npub)
-      if (!key) return
 
-      // parse
-      try {
-        const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
-        const data = JSON.parse(payload)
-        console.log('Got app perm event', { e, data })
-        // validate first
-        if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
-        else console.log('Skip invalid app perms', data)
-      } catch (err) {
-        console.log('Bad app perm event', e, err)
-      }
+    const queue: Promise<void>[] = []
+    this.permSub.on('event', (e) => {
+      queue.push(
+        (async (e) => {
+          const npub = nip19.npubEncode(e.pubkey)
+          const key = this.keys.find((k) => k.npub === npub)
+          if (!key) return
 
-      // notify UI
-      this.updateUI()
+          // parse
+          try {
+            const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
+            const data = JSON.parse(payload)
+            console.log('Got app perm event', { e, data })
+            // validate first
+            if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
+            else console.log('Skip invalid app perms', data)
+          } catch (err) {
+            console.log('Bad app perm event', e, err)
+          }
+
+          // notify UI
+          this.updateUI()
+        })(e)
+      )
     })
 
     // wait for eose before proceeding
     await new Promise((ok) => this.permSub!.on('eose', ok))
 
-    console.log('processed app perm events', count)
+    // wait until all existing perms are processed
+    await Promise.allSettled(queue)
+
+    console.log('processed app perm events', queue.length)
   }
 
   private isValidAppPerms(d: any) {
@@ -389,8 +396,8 @@ export class NoauthBackend extends EventEmitter {
 
     if (!iframe) await this.subscribeNpub(npub)
 
-    // async fetching of perms from relays
-    this.subscribeToAppPerms()
+    // fetch perms from relays
+    await this.subscribeToAppPerms()
     console.log('synched apps', npub)
 
     // seed new key with profile, relays etc
@@ -786,6 +793,7 @@ export class NoauthBackend extends EventEmitter {
               // be able to read the perms from the network now
               if (exportToIframe && options.port) {
                 const key = this.keys.find((k) => k.npub === req.npub)
+                console.log('exporting to iframe', req.npub, req.appNpub)
                 options.port.postMessage({
                   method: 'importNsec',
                   nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
