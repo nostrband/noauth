@@ -15,11 +15,9 @@ function useIframePort(isPopup: boolean) {
     // we don't try to check opener's origin and just
     // post to whoever understands it
     console.log(new Date(), 'popup loaded, informing opener')
-    window.opener.postMessage(
-      {
-        method: 'ready',
-      }
-    )
+    window.opener.postMessage('', {
+      targetOrigin: '*',
+    })
 
     // subscribe to receive opener's port,
     // port will be passed to service worker to

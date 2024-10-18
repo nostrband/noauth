@@ -24,7 +24,7 @@ async function openAuthUrl(url: string) {
     if (!isDomainOrSubdomain(hostname, window.location.hostname)) throw new Error('Bad auth url origin')
 
     // specify non _blank to make sure popup has window.opener
-    popup = window.open(url, 'nsec_app_auth_url', 'width=400,height=700')
+    popup = window.open(url, 'nsec_app_auth_url' + Math.random(), 'width=400,height=700')
     if (!popup) throw new Error('Failed to open popup!')
 
     const onReady = async (e: MessageEvent) => {
@@ -35,6 +35,9 @@ async function openAuthUrl(url: string) {
         console.log('ignoring invalid origin event', e)
         return
       }
+
+      // NOTE: we don't really care about the payload,
+      // receiving a message from popup means it's ready
 
       console.log(new Date(), 'popup ready, registering iframe')
       const channel = new MessageChannel()
