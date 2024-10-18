@@ -36,6 +36,7 @@ export interface CreateConnectParams {
   appNpub: string
   perms: string
   appUrl: string
+  port?: MessagePort
 }
 
 export interface BackendRequest {

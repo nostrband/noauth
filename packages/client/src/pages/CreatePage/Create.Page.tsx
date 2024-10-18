@@ -23,6 +23,7 @@ import { CreateConnectParams } from '@noauth/backend/src/types'
 import { nip19 } from 'nostr-tools'
 import { Button } from '@/shared/Button/Button'
 import { client } from '@/modules/client'
+import useIframePort from '@/hooks/useIframePort'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -65,6 +66,7 @@ const CreatePage = () => {
   const nip05 = `${name}@${DOMAIN}`
 
   const isGranted = getNotificationPermission()
+  const port = useIframePort(true);
 
   // const handleLearnMore = () => {
   //   // @ts-ignore
@@ -114,6 +116,7 @@ const CreatePage = () => {
         appNpub,
         perms,
         appUrl,
+        port
       }
       const npub = await client.generateKeyConnect(params)
       console.log('Created', npub, 'app', appUrl)
