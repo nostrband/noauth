@@ -10,22 +10,14 @@ function useIframePort(isPopup: boolean) {
   useEffect(() => {
     if (!isPopup || globalPort) return
 
-    if (
-      !window.opener ||
-      !window.opener.location ||
-      // opener must be on same domain or on subdomain
-      !isDomainOrSubdomain(window.location.hostname, window.opener.location.hostname)
-    )
-      return
-
-    // ask the opener to continue
+    // ask the opener to continue,
+    // opener might be cross-origin (sub-domain) so
+    // we don't try to check opener's origin and just
+    // post to whoever understands it
     console.log(new Date(), 'popup loaded, informing opener')
     window.opener.postMessage(
       {
         method: 'ready',
-      },
-      {
-        targetOrigin: window.opener.location.origin,
       }
     )
 
