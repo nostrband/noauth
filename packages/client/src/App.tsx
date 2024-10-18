@@ -13,6 +13,7 @@ import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExpla
 import { client } from './modules/client'
 import { LoadingSpinner } from './shared/LoadingSpinner/LoadingSpinner'
 import { Stack } from '@mui/material'
+import { isDomainOrSubdomain } from './utils/helpers/helpers'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -120,6 +121,28 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     // eslint-disable-next-line
   }, [])
+
+  useEffect(() => {
+    if (
+      isLoading ||
+      !window.opener ||
+      !window.opener.location ||
+      // opener must be on same domain or on subdomain
+      !isDomainOrSubdomain(window.location.hostname, window.opener.location.hostname)
+    )
+      return
+
+    // ask the opener to continue
+    console.log(new Date(), 'app loaded, informing opener')
+    window.opener.postMessage(
+      {
+        method: 'ready',
+      },
+      {
+        targetOrigin: window.opener.origin,
+      }
+    )
+  }, [isLoading])
 
   if (isLoading) {
     return (

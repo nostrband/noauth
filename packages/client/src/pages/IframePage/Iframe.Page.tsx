@@ -6,6 +6,7 @@ import { Event, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
+import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
 
 let popup: WindowProxy | null = null
 
@@ -17,14 +18,18 @@ async function importNsec(data: any) {
 async function openAuthUrl(url: string) {
   console.log(new Date(), 'open auth url', url)
   try {
-    const origin = new URL(url).origin
-    if (origin !== window.origin) throw new Error('Bad auth url origin')
+    const hostname = new URL(url).hostname
+
+    // auth url must be on the same domain or on subdomain
+    if (!isDomainOrSubdomain(hostname, window.location.hostname)) throw new Error('Bad auth url origin')
+
     // specify non _blank to make sure popup has window.opener
     popup = window.open(url, 'nsec_app_auth_url', 'width=400,height=700')
     if (!popup) throw new Error('Failed to open popup!')
 
     const onReady = async (e: MessageEvent) => {
-      if (e.origin !== window.origin) {
+      // is the popup talking?
+      if (new URL(e.origin).hostname !== hostname) {
         console.log('ignoring invalid origin event', e)
         return
       }
@@ -36,7 +41,7 @@ async function openAuthUrl(url: string) {
           method: 'registerIframe',
         },
         {
-          targetOrigin: origin,
+          targetOrigin: e.origin,
           transfer: [channel.port2],
         }
       )
@@ -67,6 +72,10 @@ const IframePage = () => {
     if (authUrl) return
 
     const onMessage = async (ev: MessageEvent) => {
+      // NOTE: we don't do origin/source checks bcs
+      // we don't care who's sending it - the comms are
+      // e2e encrypted, we could be talking through
+      // any number of middlemen and it wouldn't matter
       if (!ev.source) return
 
       let event: NostrEvent | undefined
@@ -88,17 +97,6 @@ const IframePage = () => {
     }
     window.addEventListener('message', onMessage)
 
-    // ask the opener to continue
-    console.log(new Date(), 'popup loaded, informing opener')
-    window.opener.postMessage(
-      {
-        method: 'readyIframe',
-      },
-      {
-        targetOrigin: window.opener.origin,
-      }
-    )
-
     return () => {
       window.removeEventListener('message', onMessage)
     }
@@ -109,7 +107,6 @@ const IframePage = () => {
       {!authUrl && (
         <Typography>
           Nsec.app iframe worker, please start from <a href="/">here</a>.
-          {!window.opener && <Typography color="red">Error: empty window.opener.</Typography>}
         </Typography>
       )}
       {authUrl && (

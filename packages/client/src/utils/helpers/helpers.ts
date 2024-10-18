@@ -305,3 +305,7 @@ export const generateNip05 = async () => {
   const id = Math.floor(Math.random() * 100000)
   return `${adj}-${noun}-${id}`
 }
+
+export function isDomainOrSubdomain(domain: string, sub: string) {
+  return domain === sub || sub.endsWith('.' + domain)
+}
