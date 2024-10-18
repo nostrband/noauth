@@ -65,8 +65,8 @@ const CreatePage = () => {
 
   const nip05 = `${name}@${DOMAIN}`
 
-  const isGranted = getNotificationPermission()
   const port = useIframePort(true);
+  const isGranted = !!port || getNotificationPermission()
 
   // const handleLearnMore = () => {
   //   // @ts-ignore
