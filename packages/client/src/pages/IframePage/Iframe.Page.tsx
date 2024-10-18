@@ -89,7 +89,7 @@ const IframePage = () => {
     window.addEventListener('message', onMessage)
 
     // ask the opener to continue
-    console.log(new Date(), "popup loaded, informing opener");
+    console.log(new Date(), 'popup loaded, informing opener')
     window.opener.postMessage(
       {
         method: 'readyIframe',
@@ -109,13 +109,13 @@ const IframePage = () => {
       {!authUrl && (
         <Typography>
           Nsec.app iframe worker, please start from <a href="/">here</a>.
+          {!window.opener && <Typography color="red">Error: empty window.opener.</Typography>}
         </Typography>
       )}
       {authUrl && (
         <Stack direction={'row'} gap={'1rem'}>
           <StyledAppLogo />
-          {window.opener && <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>}
-          {!window.opener && <Typography color="red">Error: empty window.opener.</Typography>}
+          <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>
         </Stack>
       )}
     </>
