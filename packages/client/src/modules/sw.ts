@@ -332,21 +332,26 @@ export class ServiceWorkerBackend extends NoauthBackend {
       applicationServerKey: WEB_PUSH_PUBKEY,
     }
 
-    const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
-    console.log('push endpoint', JSON.stringify(pushSubscription))
+    try {
+      const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
+      console.log('push endpoint', JSON.stringify(pushSubscription))
 
-    if (!pushSubscription) {
-      console.log('failed to enable push subscription')
+      if (!pushSubscription) {
+        console.log('failed to enable push subscription')
+        return false
+      }
+
+      // subscribe to all pubkeys
+      for (const npub of this.getUnlockedNpubs()) {
+        await this.browserApi.sendSubscriptionToServer(npub, pushSubscription)
+      }
+      console.log('push enabled')
+
+      return true
+    } catch (e) {
+      console.log('Failed to enable push notifications', e)
       return false
     }
-
-    // subscribe to all pubkeys
-    for (const npub of this.getUnlockedNpubs()) {
-      await this.browserApi.sendSubscriptionToServer(npub, pushSubscription)
-    }
-    console.log('push enabled')
-
-    return true
   }
 
   protected async subscribeAllKeys(): Promise<void> {
