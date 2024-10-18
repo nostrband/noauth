@@ -64,7 +64,7 @@ const IframePage = () => {
   const authUrl = searchParams.get('auth_url') || ''
 
   useEffect(() => {
-    if (authUrl || !window.opener) return
+    if (authUrl) return
 
     const onMessage = async (ev: MessageEvent) => {
       if (!ev.source) return
