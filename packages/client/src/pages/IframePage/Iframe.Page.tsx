@@ -31,19 +31,19 @@ async function openAuthUrl(url: string) {
       console.log(new Date(), 'iframe received message from popup', e)
 
       // is the popup talking?
-      if (new URL(e.origin).hostname !== hostname) {
+      if (new URL(e.origin).hostname !== hostname || !e.source) {
         console.log('ignoring invalid origin event', e)
         return
       }
 
       console.log(new Date(), 'popup ready, registering iframe')
       const channel = new MessageChannel()
-      popup!.postMessage(
+      e.source.postMessage(
         {
           method: 'registerIframe',
         },
         {
-          targetOrigin: e.origin,
+          targetOrigin: new URL(url).origin,
           transfer: [channel.port2],
         }
       )
