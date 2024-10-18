@@ -28,6 +28,8 @@ async function openAuthUrl(url: string) {
     if (!popup) throw new Error('Failed to open popup!')
 
     const onReady = async (e: MessageEvent) => {
+      console.log(new Date(), 'iframe received message from popup', e)
+
       // is the popup talking?
       if (new URL(e.origin).hostname !== hostname) {
         console.log('ignoring invalid origin event', e)
