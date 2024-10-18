@@ -307,5 +307,6 @@ export const generateNip05 = async () => {
 }
 
 export function isDomainOrSubdomain(domain: string, sub: string) {
+  console.log("isDomainOrSubdomain", domain, sub);
   return domain === sub || sub.endsWith('.' + domain)
 }
