@@ -57,7 +57,8 @@ class ClientServiceWorker implements BackendClient {
           method,
           args: [...args],
         }
-        console.log('sending to SW', msg)
+        // don't print this one
+        if (method !== 'importKeyIframe') console.log('sending to SW', msg)
         swr.active.postMessage(msg, transfer)
       }
 
@@ -137,7 +138,7 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async confirmPendingRequest(id: string, allow: boolean, remember: boolean, options?: any) {
-    const transfer = options && options.port ? [options.port] : [];
+    const transfer = options && options.port ? [options.port] : []
     return this.call<string | undefined>('confirm', transfer, id, allow, remember, options)
   }
 
