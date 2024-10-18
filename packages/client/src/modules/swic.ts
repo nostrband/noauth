@@ -195,7 +195,8 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async generateKeyConnect(params: CreateConnectParams) {
-    return this.call<string>('generateKeyConnect', [], params)
+    const transfer = params.port ? [params.port] : []
+    return this.call<string>('generateKeyConnect', transfer, params)
   }
 
   public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
