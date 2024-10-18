@@ -19,7 +19,8 @@ async function openAuthUrl(url: string) {
   try {
     const origin = new URL(url).origin
     if (origin !== window.origin) throw new Error('Bad auth url origin')
-    popup = window.open(url, '_blank', 'width=400,height=700')
+    // specify non _blank to make sure popup has window.opener
+    popup = window.open(url, 'nsec_app_auth_url', 'width=400,height=700')
     if (!popup) throw new Error('Failed to open popup!')
 
     const onReady = async (e: MessageEvent) => {
