@@ -162,6 +162,11 @@ export class NoauthBackend extends EventEmitter {
       true // auto-start
     )
 
+    // NOTE: we want to process existing events
+    // but also want to receive and process all future events,
+    // so we launch the async handler on all events, but
+    // the first run waits until eose and blocks until queued
+    // handlers are finished
     const queue: Promise<void>[] = []
     this.permSub.on('event', (e) => {
       queue.push(
@@ -618,6 +623,19 @@ export class NoauthBackend extends EventEmitter {
     this.publishAppPerms({ npub, appNpub })
   }
 
+  private exportNsecToIframe(npub: string, appNpub: string, port: MessagePort) {
+    const key = this.keys.find((k) => k.npub === npub)
+    console.log('exporting to iframe', npub, appNpub)
+    port.postMessage({
+      method: 'importNsec',
+      nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
+      appNpub: appNpub,
+    })
+
+    // we no longer need it
+    port.close()
+  }
+
   private async allowPermitCallback({
     backend,
     npub,
@@ -791,18 +809,7 @@ export class NoauthBackend extends EventEmitter {
               // after the app perms are published we can
               // tell the iframe to import this nsec, it will
               // be able to read the perms from the network now
-              if (exportToIframe && options.port) {
-                const key = this.keys.find((k) => k.npub === req.npub)
-                console.log('exporting to iframe', req.npub, req.appNpub)
-                options.port.postMessage({
-                  method: 'importNsec',
-                  nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
-                  appNpub: req.appNpub,
-                })
-
-                // we no longer need it
-                options.port.close()
-              }
+              if (exportToIframe && options.port) this.exportNsecToIframe(req.npub, req.appNpub, options.port)
             })
           }
         }
@@ -1089,6 +1096,8 @@ export class NoauthBackend extends EventEmitter {
       appUrl: params.appUrl,
       perms,
     })
+
+    if (params.port) this.exportNsecToIframe(k.npub, params.appNpub, params.port)
 
     this.updateUI()
 
