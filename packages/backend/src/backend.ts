@@ -708,6 +708,7 @@ export class NoauthBackend extends EventEmitter {
 
         const allow = decision === DECISION.ALLOW
 
+        let exportToIframe = false
         if (manual) {
           await this.dbi.confirmPending(id, allow)
 
@@ -735,17 +736,7 @@ export class NoauthBackend extends EventEmitter {
             self.apps = await this.dbi.listApps()
 
             // notify iframe
-            if (options.port) {
-              const key = this.keys.find((k) => k.npub === req.npub)
-              options.port.postMessage({
-                method: 'importNsec',
-                nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
-                appNpub: req.appNpub,
-              })
-
-              // we no longer need it
-              options.port.close()
-            }
+            exportToIframe = true
           }
         } else {
           // just send to db w/o waiting for it
@@ -789,6 +780,21 @@ export class NoauthBackend extends EventEmitter {
             this.publishAppPerms({
               npub: req.npub,
               appNpub: req.appNpub,
+            }).finally(() => {
+              // after the app perms are published we can
+              // tell the iframe to import this nsec, it will
+              // be able to read the perms from the network now
+              if (exportToIframe && options.port) {
+                const key = this.keys.find((k) => k.npub === req.npub)
+                options.port.postMessage({
+                  method: 'importNsec',
+                  nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
+                  appNpub: req.appNpub,
+                })
+
+                // we no longer need it
+                options.port.close()
+              }
             })
           }
         }
