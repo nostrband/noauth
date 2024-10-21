@@ -79,7 +79,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
             await importNsec(ev.data)
 
             console.log('starter sending ready to parent')
-            window.parent.postMessage('ready', '*')
+            window.parent.postMessage('starterDone', '*')
           }
         }
 
@@ -145,7 +145,7 @@ const IframeWorker = () => {
     // and notify the parent that we're ready to work
     navigator.serviceWorker.ready.then(() => {
       console.log('worker sending ready to parent')
-      window.parent.postMessage('ready', '*')
+      window.parent.postMessage('workerReady', '*')
     })
 
     return () => {
