@@ -151,7 +151,7 @@ const IframeWorker = () => {
     return () => {
       window.removeEventListener('message', onMessage)
     }
-  })
+  }, [])
 
   return (
     <Stack direction={'column'} gap={'1rem'}>
