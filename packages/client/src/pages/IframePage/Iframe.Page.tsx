@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
 import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
+import { useAppSelector } from '@/store/hooks/redux'
+import { selectKeys } from '@/store'
 
 let popup: WindowProxy | null = null
 
@@ -70,10 +72,17 @@ async function openAuthUrl(url: string) {
 
 const IframePage = () => {
   const [searchParams] = useSearchParams()
+  const [logs, setLogs] = useState<string[]>([])
+  const keys = useAppSelector(selectKeys)
 
   const authUrl = searchParams.get('auth_url') || ''
 
+  const append = (s: string) => {
+    setLogs((logs) => [...logs, new Date() + ': ' + s])
+  }
+
   useEffect(() => {
+    append('authUrl ' + authUrl)
     if (authUrl) return
 
     const onMessage = async (ev: MessageEvent) => {
@@ -81,6 +90,7 @@ const IframePage = () => {
       // we don't care who's sending it - the comms are
       // e2e encrypted, we could be talking through
       // any number of middlemen and it wouldn't matter
+      append(`got event source ${!!ev.source} origin ${ev.origin} data ${JSON.stringify(ev.data)}`)
       if (!ev.source) return
 
       let event: NostrEvent | undefined
@@ -93,8 +103,10 @@ const IframePage = () => {
         return
       }
 
+      append('valid event')
       console.log('iframe request event', event)
       const reply = await client.processRequest(event as NostrEvent)
+      append('reply: ' + JSON.stringify(reply))
       console.log('iframe reply event', reply)
       ev.source!.postMessage(reply, {
         targetOrigin: ev.origin,
@@ -110,9 +122,17 @@ const IframePage = () => {
   return (
     <>
       {!authUrl && (
-        <Typography>
-          Nsec.app iframe worker, please start from <a href="/">here</a>.
-        </Typography>
+        <Stack direction={'column'} gap={'1rem'}>
+          <Typography>
+            Nsec.app iframe worker, please start from <a href="/">here</a>.
+          </Typography>
+          {keys.map(k => (
+            <Typography>{k.npub}</Typography>
+          ))}
+          {logs.map((l) => (
+            <Typography>{l}</Typography>
+          ))}
+        </Stack>
       )}
       {authUrl && (
         <Stack direction={'row'} gap={'1rem'}>
