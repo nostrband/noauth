@@ -48,6 +48,8 @@ interface Pending {
   notified?: boolean
 }
 
+export const ADMIN_DOMAIN = process.env.REACT_APP_ADMIN_DOMAIN
+
 export class NoauthBackend extends EventEmitter {
   readonly global: GlobalContext
   private keysModule: Keys
@@ -871,7 +873,8 @@ export class NoauthBackend extends EventEmitter {
         // OAuth flow
         const isConnect = method === 'connect'
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.global.getOrigin()}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
+        const authOrigin = ADMIN_DOMAIN ? `https://${ADMIN_DOMAIN}` : self.global.getOrigin();
+        const authUrl = `${authOrigin}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
