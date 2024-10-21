@@ -17,59 +17,6 @@ async function importNsec(data: any) {
   await client.importKeyIframe(data.nsec, data.appNpub)
 }
 
-async function openAuthUrl(url: string) {
-  console.log(new Date(), 'open auth url', url)
-  try {
-    const hostname = new URL(url).hostname
-
-    // auth url must be on the same domain or on subdomain
-    if (!isDomainOrSubdomain(hostname, window.location.hostname)) throw new Error('Bad auth url origin')
-
-    // specify non _blank to make sure popup has window.opener
-    popup = window.open(url, 'nsec_app_auth_url' + Math.random(), 'width=400,height=700')
-    if (!popup) throw new Error('Failed to open popup!')
-
-    const onReady = async (e: MessageEvent) => {
-      console.log(new Date(), 'iframe received message from popup', e)
-
-      // is the popup talking?
-      if (new URL(e.origin).hostname !== hostname || !e.source) {
-        console.log('ignoring invalid origin event', e)
-        return
-      }
-
-      // NOTE: we don't really care about the payload,
-      // receiving a message from popup means it's ready
-
-      console.log(new Date(), 'popup ready, registering iframe')
-      const channel = new MessageChannel()
-      e.source.postMessage(
-        {
-          method: 'registerIframe',
-        },
-        {
-          targetOrigin: new URL(url).origin,
-          transfer: [channel.port2],
-        }
-      )
-      channel.port1.onmessage = (ev: MessageEvent) => {
-        if (!ev.data || !ev.data.method) return
-        // console.log('message from popup', ev)
-        if (ev.data.method === 'importNsec') {
-          channel.port1.close()
-          return importNsec(ev.data)
-        }
-      }
-
-      window.removeEventListener('message', onReady)
-    }
-
-    window.addEventListener('message', onReady)
-  } catch (e) {
-    console.log('bad auth url', url, e)
-  }
-}
-
 const IframePage = () => {
   const [searchParams] = useSearchParams()
   const [logs, setLogs] = useState<string[]>([])
@@ -79,6 +26,65 @@ const IframePage = () => {
 
   const append = (s: string) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
+  }
+
+  const isValidAuthUrl = authUrl && isDomainOrSubdomain(new URL(authUrl).hostname, window.location.hostname)
+
+  async function openAuthUrl(url: string) {
+    console.log(new Date(), 'open auth url', url)
+
+    // auth url must be on the same domain or on subdomain
+    if (!isValidAuthUrl) throw new Error('Bad auth url origin')
+
+    try {
+      const hostname = new URL(url).hostname
+
+      // specify non _blank to make sure popup has window.opener
+      popup = window.open(url, 'nsec_app_auth_url' + Math.random(), 'width=400,height=700')
+      if (!popup) throw new Error('Failed to open popup!')
+
+      const onReady = async (e: MessageEvent) => {
+        console.log(new Date(), 'iframe received message from popup', e)
+
+        // is the popup talking?
+        if (new URL(e.origin).hostname !== hostname || !e.source) {
+          console.log('ignoring invalid origin event', e)
+          return
+        }
+
+        // NOTE: we don't really care about the payload,
+        // receiving a message from popup means it's ready
+
+        console.log(new Date(), 'popup ready, registering iframe')
+        const channel = new MessageChannel()
+        e.source.postMessage(
+          {
+            method: 'registerIframe',
+          },
+          {
+            targetOrigin: new URL(url).origin,
+            transfer: [channel.port2],
+          }
+        )
+        channel.port1.onmessage = async (ev: MessageEvent) => {
+          if (!ev.data || !ev.data.method) return
+          // console.log('message from popup', ev)
+          if (ev.data.method === 'importNsec') {
+            channel.port1.close()
+            await importNsec(ev.data)
+
+            console.log('starter sending ready to parent')
+            window.parent.postMessage('ready', '*')
+          }
+        }
+
+        window.removeEventListener('message', onReady)
+      }
+
+      window.addEventListener('message', onReady)
+    } catch (e) {
+      console.log('bad auth url', url, e)
+    }
   }
 
   useEffect(() => {
@@ -114,6 +120,13 @@ const IframePage = () => {
     }
     window.addEventListener('message', onMessage)
 
+    // now after all set wait until service worker starts
+    // and notify the parent
+    navigator.serviceWorker.ready.then(() => {
+      console.log('worker sending ready to parent')
+      window.parent.postMessage('ready', '*')
+    })
+
     return () => {
       window.removeEventListener('message', onMessage)
     }
@@ -126,7 +139,7 @@ const IframePage = () => {
           <Typography>
             Nsec.app iframe worker, please start from <a href="/">here</a>.
           </Typography>
-          {keys.map(k => (
+          {keys.map((k) => (
             <Typography>{k.npub}</Typography>
           ))}
           {logs.map((l) => (
@@ -137,7 +150,8 @@ const IframePage = () => {
       {authUrl && (
         <Stack direction={'row'} gap={'1rem'}>
           <StyledAppLogo />
-          <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>
+          {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>}
+          {isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
         </Stack>
       )}
     </>

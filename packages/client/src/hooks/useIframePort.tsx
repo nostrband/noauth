@@ -14,7 +14,7 @@ function useIframePort(isPopup: boolean) {
     // opener might be cross-origin (sub-domain) so
     // we don't try to check opener's origin and just
     // post to whoever understands it
-    console.log(new Date(), 'popup loaded, informing opener', window.opener.location.href)
+    console.log(new Date(), 'popup loaded, informing opener')
     window.opener.postMessage('', {
       targetOrigin: '*',
     })
