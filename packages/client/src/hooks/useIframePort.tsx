@@ -6,29 +6,19 @@ let globalPort: MessagePort | undefined
 function useIframePort(isPopup: boolean) {
   const [port, setPort] = useState(globalPort)
 
-  // console.log("useIframePort isPopup", isPopup, globalPort);
   useEffect(() => {
-    if (!isPopup || globalPort) return
+    if (!isPopup || globalPort || !window.opener) return
 
-    // ask the opener to continue,
-    // opener might be cross-origin (sub-domain) so
-    // we don't try to check opener's origin and just
-    // post to whoever understands it
-    console.log(new Date(), 'popup loaded, informing opener')
-    window.opener.postMessage('', {
-      targetOrigin: '*',
-    })
-
-    // subscribe to receive opener's port,
+    // subscribe to receive starter's port,
     // port will be passed to service worker to
-    // talk to the opener
+    // talk to the starter iframe embedded in the calling app
     const onMessage = async (ev: MessageEvent) => {
       console.log('popup got message', ev)
-      // iframe sender might be our subdomain
+      // check message sender (might be our subdomain)
       if (!isDomainOrSubdomain(window.location.hostname, new URL(ev.origin).hostname)) return
       if (!ev.source) return
-      if (ev.data && ev.data.method === 'registerIframe') {
-        console.log('registered iframe port', ev.data)
+      if (ev.data && ev.data.method === 'registerIframeStarter') {
+        console.log('registered starter port', ev.data)
         globalPort = ev.ports[0]
         setPort(globalPort)
         return
@@ -36,6 +26,11 @@ function useIframePort(isPopup: boolean) {
     }
     window.addEventListener('message', onMessage)
 
+    // we're ready to register the starter
+    console.log(new Date(), 'popup loaded, sending ready to starter')
+    window.opener.postMessage('ready', '*')
+
+    // cleanup
     return () => {
       window.removeEventListener('message', onMessage)
     }
