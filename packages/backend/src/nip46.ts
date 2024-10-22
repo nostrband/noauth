@@ -216,9 +216,9 @@ export class Nip46Backend extends NDKNip46Backend {
 
     // send over nip46
     if (response) {
-      this.rpc.sendResponse(id, remotePubkey, response)
+      await this.rpc.sendResponse(id, remotePubkey, response)
     } else {
-      this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
+      await this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
     }
   }
 
