@@ -168,6 +168,7 @@ const IframeWorker = () => {
       navigator.serviceWorker.ready
         .then(() => {
           console.log('worker sending ready to parent')
+          append('sw ready')
           window.parent.postMessage('workerReady', '*')
         })
         .catch((e) => append('async error ' + e))
