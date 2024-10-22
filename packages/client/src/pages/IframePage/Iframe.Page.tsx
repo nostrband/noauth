@@ -72,7 +72,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
         e.source.postMessage(
           {
             method: 'registerIframeStarter',
-            referrer: document.referrer || ''
+            referrer: document.referrer || '',
           },
           {
             // make sure only expected origin can receive it
@@ -128,7 +128,7 @@ const IframeWorker = () => {
 
   useEffect(() => {
     if (started) return
-    setStarted(started)
+    setStarted(true)
 
     // nip46 over postMessage
     const onMessage = async (ev: MessageEvent) => {
@@ -162,10 +162,17 @@ const IframeWorker = () => {
 
     // now after all set wait until service worker starts
     // and notify the parent that we're ready to work
-    navigator.serviceWorker.ready.then(() => {
-      console.log('worker sending ready to parent')
-      window.parent.postMessage('workerReady', '*')
-    })
+    append('waiting for sw')
+    try {
+      navigator.serviceWorker.ready
+        .then(() => {
+          console.log('worker sending ready to parent')
+          window.parent.postMessage('workerReady', '*')
+        })
+        .catch((e) => append('async error ' + e))
+    } catch (e) {
+      append('error ' + e)
+    }
 
     return () => {
       window.removeEventListener('message', onMessage)
