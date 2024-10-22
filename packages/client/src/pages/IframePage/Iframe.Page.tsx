@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
-import { Button, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
 import { Event, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
@@ -30,11 +30,16 @@ function parseAuthUrl(url: string) {
 }
 
 const IframeStarter: FC<{ authUrl: string }> = (props) => {
+  const [ready, setReady] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
 
   const append = (s: string) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
   }
+
+  useEffect(() => {
+    navigator.serviceWorker.ready.then(() => setReady(true))
+  }, [])
 
   const url = parseAuthUrl(props.authUrl)
   const isValidAuthUrl = !!url
@@ -106,15 +111,17 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
   }
 
   return (
-    <Stack direction={'row'} gap={'1rem'}>
-      <StyledAppLogo />
-      {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
-      {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
-      <Stack direction={'column'} gap={'0rem'}>
-        {logs.map((l) => (
-          <Typography>{l}</Typography>
-        ))}
-      </Stack>
+    <Stack direction={'column'} gap={'0rem'}>
+      {ready && (
+        <Stack direction={'row'} gap={'1rem'}>
+          <StyledAppLogo />
+          {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
+          {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
+        </Stack>
+      )}
+      {logs.map((l) => (
+        <Typography>{l}</Typography>
+      ))}
     </Stack>
   )
 }
