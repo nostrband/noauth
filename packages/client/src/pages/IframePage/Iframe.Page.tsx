@@ -126,7 +126,6 @@ const IframeWorker = () => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
   }
 
-  append('render')
   useEffect(() => {
     append('start '+started)
     if (started) return
