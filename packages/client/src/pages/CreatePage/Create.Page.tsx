@@ -65,7 +65,7 @@ const CreatePage = () => {
 
   const nip05 = `${name}@${DOMAIN}`
 
-  const port = useIframePort(true)
+  const { port, referrer } = useIframePort(true)
   const isGranted = !!port || getNotificationPermission()
 
   // const handleLearnMore = () => {
@@ -113,7 +113,7 @@ const CreatePage = () => {
         console.log('enablePush done')
       }
 
-      const appUrl = getReferrerAppUrl()
+      const appUrl = referrer || getReferrerAppUrl()
       const params: CreateConnectParams = {
         name,
         password,

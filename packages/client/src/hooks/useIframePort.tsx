@@ -2,9 +2,11 @@ import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
 import { useEffect, useState } from 'react'
 
 let globalPort: MessagePort | undefined
+let globalReferrer: string
 
 function useIframePort(isPopup: boolean) {
   const [port, setPort] = useState(globalPort)
+  const [referrer, setReferrer] = useState(globalReferrer)
 
   useEffect(() => {
     if (!isPopup || globalPort || !window.opener) return
@@ -21,6 +23,10 @@ function useIframePort(isPopup: boolean) {
         console.log('registered starter port', ev.data)
         globalPort = ev.ports[0]
         setPort(globalPort)
+        if (ev.data.referrer) {
+          globalReferrer = ev.data.referrer
+          setReferrer(ev.data.referrer)
+        }
         return
       }
     }
@@ -36,7 +42,10 @@ function useIframePort(isPopup: boolean) {
     }
   }, [isPopup])
 
-  return port
+  return {
+    port,
+    referrer,
+  }
 }
 
 export default useIframePort

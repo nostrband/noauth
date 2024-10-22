@@ -37,10 +37,10 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
   }
 
   const url = parseAuthUrl(props.authUrl)
-  const isValidAuthUrl = !!url;
+  const isValidAuthUrl = !!url
 
   async function openAuthUrl() {
-    if (!url) return;
+    if (!url) return
 
     console.log(new Date(), 'open auth url', url.href)
 
@@ -56,14 +56,14 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
 
       const onReady = async (e: MessageEvent) => {
         console.log(new Date(), 'starter received message from popup', e)
-        append("popup ready "+e.data)
+        append('popup ready ' + e.data)
 
         if (e.data !== 'ready') return
 
         // is the popup talking?
         if (new URL(e.origin).origin !== popupOrigin || !e.source) {
           console.log('ignoring invalid ready event', e)
-          append("bad ready event")
+          append('bad ready event')
           return
         }
 
@@ -72,6 +72,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
         e.source.postMessage(
           {
             method: 'registerIframeStarter',
+            referrer: document.referrer || ''
           },
           {
             // make sure only expected origin can receive it
@@ -79,9 +80,9 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
             transfer: [channel.port2],
           }
         )
-        append("sent registerIframeStarter")
+        append('sent registerIframeStarter')
         channel.port1.onmessage = async (ev: MessageEvent) => {
-          append("got port message "+ev.data)
+          append('got port message ' + ev.data)
           if (!ev.data || !ev.data.method) return
           // console.log('message from popup', ev)
           if (ev.data.method === 'importNsec') {
@@ -100,7 +101,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       window.addEventListener('message', onReady)
     } catch (e) {
       console.error('Failed to start with a popup', url, e)
-      append("error "+e)
+      append('error ' + e)
     }
   }
 
@@ -109,9 +110,9 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       <StyledAppLogo />
       {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
       {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
-      {logs.map((l) => (
-        <Typography>{l}</Typography>
-      ))}
+      <Stack direction={'column'} gap={'0rem'}>
+        {false && logs.map((l) => <Typography>{l}</Typography>)}
+      </Stack>
     </Stack>
   )
 }
@@ -126,8 +127,8 @@ const IframeWorker = () => {
   }
 
   useEffect(() => {
-    if (started) return;
-    setStarted(started);
+    if (started) return
+    setStarted(started)
 
     // nip46 over postMessage
     const onMessage = async (ev: MessageEvent) => {
@@ -176,12 +177,8 @@ const IframeWorker = () => {
       <Typography>
         Nsec.app iframe worker, please start from <a href="/">here</a>.
       </Typography>
-      {keys.map((k) => (
-        <Typography>{k.npub}</Typography>
-      ))}
-      {logs.map((l) => (
-        <Typography>{l}</Typography>
-      ))}
+      {false && keys.map((k) => <Typography>{k.npub}</Typography>)}
+      {false && logs.map((l) => <Typography>{l}</Typography>)}
     </Stack>
   )
 }
@@ -191,142 +188,6 @@ const IframePage = () => {
   const authUrl = searchParams.get('auth_url') || ''
   if (authUrl) return <IframeStarter authUrl={authUrl} />
   else return <IframeWorker />
-
-  // const [logs, setLogs] = useState<string[]>([])
-  // const keys = useAppSelector(selectKeys)
-
-  // const append = (s: string) => {
-  //   setLogs((logs) => [...logs, new Date() + ': ' + s])
-  // }
-
-  // const isValidAuthUrl = authUrl && isDomainOrSubdomain(new URL(authUrl).hostname, window.location.hostname)
-
-  // async function openAuthUrl(url: string) {
-  //   console.log(new Date(), 'open auth url', url)
-
-  //   // auth url must be on the same domain or on subdomain
-  //   if (!isValidAuthUrl) throw new Error('Bad auth url origin')
-
-  //   try {
-  //     const hostname = new URL(url).hostname
-
-  //     // specify non _blank to make sure popup has window.opener
-  //     popup = window.open(url, 'nsec_app_auth_url' + Math.random(), 'width=400,height=700')
-  //     if (!popup) throw new Error('Failed to open popup!')
-
-  //     const onReady = async (e: MessageEvent) => {
-  //       console.log(new Date(), 'iframe received message from popup', e)
-
-  //       // is the popup talking?
-  //       if (new URL(e.origin).hostname !== hostname || !e.source) {
-  //         console.log('ignoring invalid origin event', e)
-  //         return
-  //       }
-
-  //       // NOTE: we don't really care about the payload,
-  //       // receiving a message from popup means it's ready
-
-  //       console.log(new Date(), 'popup ready, registering iframe')
-  //       const channel = new MessageChannel()
-  //       e.source.postMessage(
-  //         {
-  //           method: 'registerIframe',
-  //         },
-  //         {
-  //           targetOrigin: new URL(url).origin,
-  //           transfer: [channel.port2],
-  //         }
-  //       )
-  //       channel.port1.onmessage = async (ev: MessageEvent) => {
-  //         if (!ev.data || !ev.data.method) return
-  //         // console.log('message from popup', ev)
-  //         if (ev.data.method === 'importNsec') {
-  //           channel.port1.close()
-  //           await importNsec(ev.data)
-
-  //           console.log('starter sending ready to parent')
-  //           window.parent.postMessage('ready', '*')
-  //         }
-  //       }
-
-  //       window.removeEventListener('message', onReady)
-  //     }
-
-  //     window.addEventListener('message', onReady)
-  //   } catch (e) {
-  //     console.log('bad auth url', url, e)
-  //   }
-  // }
-
-  // useEffect(() => {
-  //   append('authUrl ' + authUrl)
-  //   if (authUrl) return
-
-  //   const onMessage = async (ev: MessageEvent) => {
-  //     // NOTE: we don't do origin/source checks bcs
-  //     // we don't care who's sending it - the comms are
-  //     // e2e encrypted, we could be talking through
-  //     // any number of middlemen and it wouldn't matter
-  //     append(`got event source ${!!ev.source} origin ${ev.origin} data ${JSON.stringify(ev.data)}`)
-  //     if (!ev.source) return
-
-  //     let event: NostrEvent | undefined
-  //     try {
-  //       event = ev.data
-  //       if (!validateEvent(event)) return
-  //       if (!verifySignature(event as Event)) return
-  //     } catch (e) {
-  //       console.log('invalid frame event', e, ev)
-  //       return
-  //     }
-
-  //     append('valid event')
-  //     console.log('iframe request event', event)
-  //     const reply = await client.processRequest(event as NostrEvent)
-  //     append('reply: ' + JSON.stringify(reply))
-  //     console.log('iframe reply event', reply)
-  //     ev.source!.postMessage(reply, {
-  //       targetOrigin: ev.origin,
-  //     })
-  //   }
-  //   window.addEventListener('message', onMessage)
-
-  //   // now after all set wait until service worker starts
-  //   // and notify the parent
-  //   navigator.serviceWorker.ready.then(() => {
-  //     console.log('worker sending ready to parent')
-  //     window.parent.postMessage('ready', '*')
-  //   })
-
-  //   return () => {
-  //     window.removeEventListener('message', onMessage)
-  //   }
-  // }, [authUrl])
-
-  // return (
-  //   <>
-  //     {!authUrl && (
-  //       <Stack direction={'column'} gap={'1rem'}>
-  //         <Typography>
-  //           Nsec.app iframe worker, please start from <a href="/">here</a>.
-  //         </Typography>
-  //         {keys.map((k) => (
-  //           <Typography>{k.npub}</Typography>
-  //         ))}
-  //         {logs.map((l) => (
-  //           <Typography>{l}</Typography>
-  //         ))}
-  //       </Stack>
-  //     )}
-  //     {authUrl && (
-  //       <Stack direction={'row'} gap={'1rem'}>
-  //         <StyledAppLogo />
-  //         {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl(authUrl)}>Continue with Nsec.app</StyledButton>}
-  //         {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
-  //       </Stack>
-  //     )}
-  //   </>
-  // )
 }
 
 export default IframePage
