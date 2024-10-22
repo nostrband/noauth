@@ -30,16 +30,11 @@ function parseAuthUrl(url: string) {
 }
 
 const IframeStarter: FC<{ authUrl: string }> = (props) => {
-  const [ready, setReady] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
 
   const append = (s: string) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
   }
-
-  useEffect(() => {
-    navigator.serviceWorker.ready.then(() => setReady(true))
-  }, [])
 
   const url = parseAuthUrl(props.authUrl)
   const isValidAuthUrl = !!url
@@ -112,13 +107,11 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
 
   return (
     <Stack direction={'column'} gap={'0rem'}>
-      {ready && (
-        <Stack direction={'row'} gap={'1rem'}>
-          <StyledAppLogo />
-          {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
-          {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
-        </Stack>
-      )}
+      <Stack direction={'row'} gap={'1rem'}>
+        <StyledAppLogo />
+        {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
+        {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
+      </Stack>
       {logs.map((l) => (
         <Typography>{l}</Typography>
       ))}
