@@ -26,9 +26,8 @@ clientsClaim()
 //precacheAndRoute(self.__WB_MANIFEST)
 
 // eslint-disable-next-line no-restricted-globals
-const assets = self.__WB_MANIFEST;
-console.log("self.__WB_MANIFEST: ", assets);
-precacheAndRoute(["/index.html"])
+const ignored = self.__WB_MANIFEST;
+precacheAndRoute([process.env.PUBLIC_URL + '/index.html'])
 
 // Set up App Shell-style routing, so that all navigation requests
 // are fulfilled with your index.html shell. Learn more at
