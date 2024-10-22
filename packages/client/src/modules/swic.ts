@@ -20,7 +20,6 @@ class ClientServiceWorker implements BackendClient {
   private checkpointQueue: (() => Promise<void> | void)[] = []
 
   public async connect(): Promise<boolean> {
-    await navigator.serviceWorker.ready
     return true;
   }
 
