@@ -38,6 +38,11 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
   }
 
   useEffect(() => {
+    // NOTE: if we don't wait until sw is launched then
+    // it seems like Safari will pause the execution of it
+    // when user clicks 'Continue' and another tab opens,
+    // and then when user is done and 'importNsec arrives
+    // the SW never proceeds. 
     navigator.serviceWorker.ready.then(() => setReady(true))
   }, [])
 
