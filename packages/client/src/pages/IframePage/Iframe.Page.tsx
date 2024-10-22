@@ -111,7 +111,9 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
       {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
       <Stack direction={'column'} gap={'0rem'}>
-        {logs.map((l) => <Typography>{l}</Typography>)}
+        {logs.map((l) => (
+          <Typography>{l}</Typography>
+        ))}
       </Stack>
     </Stack>
   )
@@ -127,8 +129,7 @@ const IframeWorker = () => {
   }
 
   useEffect(() => {
-    append('start '+started)
-    if (started) return
+    append('start ' + started)
     setStarted(true)
 
     // nip46 over postMessage
@@ -163,17 +164,19 @@ const IframeWorker = () => {
 
     // now after all set wait until service worker starts
     // and notify the parent that we're ready to work
-    append('waiting for sw')
-    try {
-      navigator.serviceWorker.ready
-        .then(() => {
-          console.log('worker sending ready to parent')
-          append('sw ready')
-          window.parent.postMessage('workerReady', '*')
-        })
-        .catch((e) => append('async error ' + e))
-    } catch (e) {
-      append('error ' + e)
+    if (!started) {
+      append('waiting for sw')
+      try {
+        navigator.serviceWorker.ready
+          .then(() => {
+            console.log('worker sending ready to parent')
+            append('sw ready')
+            window.parent.postMessage('workerReady', '*')
+          })
+          .catch((e) => append('async error ' + e))
+      } catch (e) {
+        append('error ' + e)
+      }
     }
 
     return () => {
@@ -186,8 +189,12 @@ const IframeWorker = () => {
       <Typography>
         Nsec.app iframe worker, please start from <a href="/">here</a>.
       </Typography>
-      {keys.map((k) => <Typography>{k.npub}</Typography>)}
-      {logs.map((l) => <Typography>{l}</Typography>)}
+      {keys.map((k) => (
+        <Typography>{k.npub}</Typography>
+      ))}
+      {logs.map((l) => (
+        <Typography>{l}</Typography>
+      ))}
     </Stack>
   )
 }
