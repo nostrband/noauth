@@ -111,7 +111,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
       {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
       <Stack direction={'column'} gap={'0rem'}>
-        {false && logs.map((l) => <Typography>{l}</Typography>)}
+        {logs.map((l) => <Typography>{l}</Typography>)}
       </Stack>
     </Stack>
   )
@@ -185,8 +185,8 @@ const IframeWorker = () => {
       <Typography>
         Nsec.app iframe worker, please start from <a href="/">here</a>.
       </Typography>
-      {false && keys.map((k) => <Typography>{k.npub}</Typography>)}
-      {false && logs.map((l) => <Typography>{l}</Typography>)}
+      {keys.map((k) => <Typography>{k.npub}</Typography>)}
+      {logs.map((l) => <Typography>{l}</Typography>)}
     </Stack>
   )
 }
