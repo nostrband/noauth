@@ -30,6 +30,12 @@ function parseAuthUrl(url: string) {
 }
 
 const IframeStarter: FC<{ authUrl: string }> = (props) => {
+  const [logs, setLogs] = useState<string[]>([])
+
+  const append = (s: string) => {
+    setLogs((logs) => [...logs, new Date() + ': ' + s])
+  }
+
   const url = parseAuthUrl(props.authUrl)
   const isValidAuthUrl = !!url;
 
@@ -50,12 +56,14 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
 
       const onReady = async (e: MessageEvent) => {
         console.log(new Date(), 'starter received message from popup', e)
+        append("popup ready "+e.data)
 
         if (e.data !== 'ready') return
 
         // is the popup talking?
         if (new URL(e.origin).origin !== popupOrigin || !e.source) {
           console.log('ignoring invalid ready event', e)
+          append("bad ready event")
           return
         }
 
@@ -71,7 +79,9 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
             transfer: [channel.port2],
           }
         )
+        append("sent registerIframeStarter")
         channel.port1.onmessage = async (ev: MessageEvent) => {
+          append("got port message "+ev.data)
           if (!ev.data || !ev.data.method) return
           // console.log('message from popup', ev)
           if (ev.data.method === 'importNsec') {
@@ -90,6 +100,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       window.addEventListener('message', onReady)
     } catch (e) {
       console.error('Failed to start with a popup', url, e)
+      append("error "+e)
     }
   }
 
@@ -98,12 +109,16 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
       <StyledAppLogo />
       {isValidAuthUrl && <StyledButton onClick={() => openAuthUrl()}>Continue with Nsec.app</StyledButton>}
       {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
+      {logs.map((l) => (
+        <Typography>{l}</Typography>
+      ))}
     </Stack>
   )
 }
 
 const IframeWorker = () => {
   const [logs, setLogs] = useState<string[]>([])
+  const [started, setStarted] = useState(false)
   const keys = useAppSelector(selectKeys)
 
   const append = (s: string) => {
@@ -111,6 +126,9 @@ const IframeWorker = () => {
   }
 
   useEffect(() => {
+    if (started) return;
+    setStarted(started);
+
     // nip46 over postMessage
     const onMessage = async (ev: MessageEvent) => {
       // NOTE: we don't do origin/source checks bcs
@@ -151,7 +169,7 @@ const IframeWorker = () => {
     return () => {
       window.removeEventListener('message', onMessage)
     }
-  }, [])
+  }, [started])
 
   return (
     <Stack direction={'column'} gap={'1rem'}>
