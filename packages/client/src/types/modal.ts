@@ -14,6 +14,7 @@ export enum MODAL_PARAMS_KEYS {
   SET_PASSWORD = 'set-password',
   ADD_PERMISSION = 'add-permission',
   IMPORT_CONNECT = 'import-connect',
+  REBIND = 'rebind',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

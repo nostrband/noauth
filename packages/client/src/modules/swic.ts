@@ -20,7 +20,7 @@ class ClientServiceWorker implements BackendClient {
   private checkpointQueue: (() => Promise<void> | void)[] = []
 
   public async connect(): Promise<boolean> {
-    return true;
+    return true
   }
 
   public async onStarted() {
@@ -209,6 +209,11 @@ class ClientServiceWorker implements BackendClient {
 
   public async processRequest(request: NostrEvent) {
     return this.call<NostrEvent>('processRequest', [], request)
+  }
+
+  public async rebind(npub: string, appNpub: string, port: MessagePort) {
+    const transfer = port ? [port] : []
+    return this.call<void>('rebind', transfer, npub, appNpub)
   }
 
   public getListKeys() {

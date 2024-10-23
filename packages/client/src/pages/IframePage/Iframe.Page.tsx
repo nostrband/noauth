@@ -3,14 +3,15 @@ import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
 import { Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, validateEvent, verifySignature } from 'nostr-tools'
+import { Event, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
-import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
+import { isDomainOrSubdomain, parseRebindToken } from '@/utils/helpers/helpers'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { ADMIN_DOMAIN } from '@/utils/consts'
+import { DbKey } from '@noauth/common'
 
 let popup: WindowProxy | null = null
 
@@ -133,10 +134,9 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
   )
 }
 
-const IframeWorker = () => {
+const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
   const [logs, setLogs] = useState<string[]>([])
   const [started, setStarted] = useState(false)
-  const keys = useAppSelector(selectKeys)
 
   const append = (s: string) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
@@ -203,7 +203,7 @@ const IframeWorker = () => {
       <Typography>
         Nsec.app iframe worker, please start from <a href="/">here</a>.
       </Typography>
-      {keys.map((k) => (
+      {props.keys.map((k) => (
         <Typography>{k.npub}</Typography>
       ))}
       {logs.map((l) => (
@@ -217,13 +217,21 @@ const IframePage = () => {
   const [searchParams] = useSearchParams()
   const authUrl = searchParams.get('auth_url') || ''
   const token = searchParams.get('token') || ''
+  const keys = useAppSelector(selectKeys)
+
   if (authUrl) {
     return <IframeStarter authUrl={authUrl} />
   } else if (token) {
-    const url = `https://${ADMIN_DOMAIN}/rebind?token=${token}`
-    return <IframeStarter authUrl={url} />
+    try {
+      const { npub } = parseRebindToken(token)
+      const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${token}`
+      return <IframeStarter authUrl={url} />
+    } catch (e) {
+      console.log("Bad rebind token", token, e);
+      return <Typography color={"red"}>Bad token</Typography>
+    }
   } else {
-    return <IframeWorker />
+    return <IframeWorker keys={keys} />
   }
 }
 

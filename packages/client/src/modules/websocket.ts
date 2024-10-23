@@ -230,8 +230,8 @@ export class ClientWebSocket implements BackendClient {
     return this.call<KeyInfo>('importKey', name, nsec, passphrase)
   }
 
-  public async importKeyIframe(nsec: string, appNpub: string): Promise<KeyInfo>{
-    throw new Error("Not supported");
+  public async importKeyIframe(nsec: string, appNpub: string): Promise<KeyInfo> {
+    throw new Error('Not supported')
   }
 
   public async fetchKey(npub: string, passphrase: string, name: string) {
@@ -292,6 +292,10 @@ export class ClientWebSocket implements BackendClient {
 
   public async getSynced(npub: string) {
     return this.call<boolean>('getSynced', npub)
+  }
+
+  public async rebind(npub: string, appNpub: string, port: MessagePort) {
+    throw new Error('Rebind not implemented')
   }
 }
 
