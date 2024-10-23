@@ -26,7 +26,7 @@ export const ModalRebind = () => {
   const done = state === 'done' || searchParams.get('done') === 'true'
 
   // popup mode always
-  const isPopup = true
+  const isPopup = searchParams.get('popup') === 'true'
 
   // add later
   const redirectUri = ''
@@ -59,27 +59,28 @@ export const ModalRebind = () => {
     },
   })
 
-  const closePopup = useCallback((result?: string) => {
-    if (!isPopup) return
+  const closePopup = useCallback(
+    (result?: string) => {
+      if (!isPopup) return
 
-    notify('App connected! Closing...', 'success')
-// FIXME debug
-    return;
+      notify('App connected! Closing...', 'success')
 
-    // if (redirectUri) {
-    //   // add done marker first
-    //   searchParams.append('done', 'true')
-    //   setSearchParams(searchParams)
-    // }
+      if (redirectUri) {
+        // add done marker first
+        searchParams.append('done', 'true')
+        setSearchParams(searchParams)
+      }
 
-    // setTimeout(() => {
-    //   if (!redirectUri) return window.close()
-    //   // do the redirect
-    //   // @ts-ignore
-    //   const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
-    //   window.location.href = url
-    // }, 2000)
-  }, [setSearchParams, notify, redirectUri, isPopup, searchParams]);
+      setTimeout(() => {
+        if (!redirectUri) return window.close()
+        // do the redirect
+        // @ts-ignore
+        const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
+        window.location.href = url
+      }, 2000)
+    },
+    [setSearchParams, notify, redirectUri, isPopup, searchParams]
+  )
 
   const confirm = useCallback(async () => {
     if (state) return
@@ -92,7 +93,7 @@ export const ModalRebind = () => {
       if (isPopup) closePopup()
     } catch (e) {
       console.log(`Error: ${e}`)
-      setState('error');
+      setState('error')
       notify('Error: ' + e, 'error')
     }
   }, [npub, appNpub, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
