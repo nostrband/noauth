@@ -212,8 +212,8 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async rebind(npub: string, appNpub: string, port: MessagePort) {
-    const transfer = port ? [port] : []
-    return this.call<void>('rebind', transfer, npub, appNpub)
+    const transfer = [port]
+    return this.call<void>('rebind', transfer, npub, appNpub, port)
   }
 
   public getListKeys() {
