@@ -10,13 +10,13 @@ export const Layout: FC = () => {
   const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
   const [searchParams] = useSearchParams()
   const isPopupMode = searchParams.get('popup') === 'true'
-  const isAuthUrl = !!searchParams.get('auth_url')
-  const showReloadBadge = !isAuthUrl && !isPopupMode && needReload
+  const isIframe = window.location.pathname === "/iframe";
+  const showReloadBadge = !isIframe && !isPopupMode && needReload
   const containerClassName = showReloadBadge ? 'reload' : ''
 
   return (
     <StyledContainer maxWidth="md" className={containerClassName}>
-      {isAuthUrl && (
+      {isIframe && (
         <style>{`
           body {
             background-color: #ffffff00;
@@ -24,13 +24,13 @@ export const Layout: FC = () => {
           }
       `}</style>
       )}
-      {!isAuthUrl && (
+      {!isIframe && (
         <>
           <ReloadBadge />
           <Header />
         </>
       )}
-      <main style={isAuthUrl ? { paddingTop: '0' } : {}}>
+      <main style={isIframe ? { paddingTop: '0' } : {}}>
         <Outlet />
       </main>
     </StyledContainer>

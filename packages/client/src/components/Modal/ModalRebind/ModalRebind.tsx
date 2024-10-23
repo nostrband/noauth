@@ -63,20 +63,22 @@ export const ModalRebind = () => {
     if (!isPopup) return
 
     notify('App connected! Closing...', 'success')
+// FIXME debug
+    return;
 
-    if (redirectUri) {
-      // add done marker first
-      searchParams.append('done', 'true')
-      setSearchParams(searchParams)
-    }
+    // if (redirectUri) {
+    //   // add done marker first
+    //   searchParams.append('done', 'true')
+    //   setSearchParams(searchParams)
+    // }
 
-    setTimeout(() => {
-      if (!redirectUri) return window.close()
-      // do the redirect
-      // @ts-ignore
-      const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
-      window.location.href = url
-    }, 2000)
+    // setTimeout(() => {
+    //   if (!redirectUri) return window.close()
+    //   // do the redirect
+    //   // @ts-ignore
+    //   const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
+    //   window.location.href = url
+    // }, 2000)
   }, [setSearchParams, notify, redirectUri, isPopup, searchParams]);
 
   const confirm = useCallback(async () => {
