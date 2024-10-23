@@ -64,7 +64,7 @@ export const ModalRebind = () => {
     },
   })
 
-  if (isModalOpened && !triggerApp) {
+  if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
     // app not found, FIXME should we create a fake 'connect' request?
     if (!isPopup) closeModalAfterRequest()
     return null
