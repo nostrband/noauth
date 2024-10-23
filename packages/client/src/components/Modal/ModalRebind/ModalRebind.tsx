@@ -26,7 +26,7 @@ export const ModalRebind = () => {
   const done = state === 'done' || searchParams.get('done') === 'true'
 
   // popup mode always
-  const isPopup = false; // FIXME DEBUG searchParams.get('popup') === 'true'
+  const isPopup = false // FIXME DEBUG searchParams.get('popup') === 'true'
 
   // add later
   const redirectUri = ''
@@ -44,6 +44,7 @@ export const ModalRebind = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
+  console.log('tokenNpub', tokenNpub, 'npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
@@ -105,7 +106,7 @@ export const ModalRebind = () => {
 
   if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
     // app not found, FIXME should we create a fake 'connect' request?
-    if (!isPopup) closeModalAfterRequest()
+    // if (!isPopup) closeModalAfterRequest()
     return null
   }
 
