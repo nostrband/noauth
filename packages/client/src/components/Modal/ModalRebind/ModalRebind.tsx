@@ -64,7 +64,7 @@ export const ModalRebind = () => {
     (result?: string) => {
       if (!isPopup) return
 
-      notify('App connected! Closing...', 'success')
+      notify('App re-connected! Closing...', 'success')
 
       if (redirectUri) {
         // add done marker first
@@ -92,9 +92,8 @@ export const ModalRebind = () => {
       await client.rebind(npub, appNpub!, port!)
       setState('done')
       console.log('rebound', { npub, appNpub, port, isPopup })
-      closeModalAfterRequest()
-      // FIXME debug
-      // if (isPopup) closePopup()
+      if (isPopup) closePopup()
+      else closeModalAfterRequest()
     } catch (e) {
       console.log(`Error: ${e}`)
       setState('error')
