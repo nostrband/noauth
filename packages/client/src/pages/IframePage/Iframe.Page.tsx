@@ -121,7 +121,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
     <Stack direction={'column'} gap={'0rem'}>
       {ready && (
         <Stack direction={'column'} gap={'1rem'}>
-          <Stack direction={'row'} gap={'1rem'} alignItems={'center'}>
+          <Stack direction={'row'} gap={'0.2rem'} alignItems={'center'}>
             <StyledAppLogo />
             <Typography>Nsec.app</Typography>
           </Stack>
@@ -228,6 +228,7 @@ const IframePage = () => {
     const { npub } = parseRebindToken(token)
     if (!npub) return <Typography color={'red'}>Bad token</Typography>
     const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${token}&popup=true`
+    console.log("rebind url", url);
     return <IframeStarter authUrl={url} />
   } else {
     return <IframeWorker keys={keys} />
