@@ -26,7 +26,7 @@ export const ModalRebind = () => {
   const done = state === 'done' || searchParams.get('done') === 'true'
 
   // popup mode always
-  const isPopup = searchParams.get('popup') === 'true'
+  const isPopup = false; // FIXME DEBUG searchParams.get('popup') === 'true'
 
   // add later
   const redirectUri = ''
