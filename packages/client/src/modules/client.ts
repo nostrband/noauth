@@ -95,7 +95,7 @@ export interface BackendClient {
 
   getSynced: (npub: string) => Promise<boolean>
 
-  processRequest: (request: NostrEvent) => Promise<NostrEvent>
+  processRequest: (request: NostrEvent) => Promise<NostrEvent | string>
 }
 
 const defineClient = (): BackendClient => {

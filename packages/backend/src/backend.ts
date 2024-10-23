@@ -40,7 +40,7 @@ import { Api } from './api'
 import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
-import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
 
 interface Pending {
   req: DbPending
@@ -1360,11 +1360,11 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) throw new Error('Npub not found')
+      if (!key) return ERROR_NO_KEY;
     }
 
     const be = key.backend as Nip46Backend
-    return be.processEvent(new NDKEvent(key.ndk, req), /*iframe*/ true)
+    return be.processEventIframe(new NDKEvent(key.ndk, req))
   }
 
   private async nostrConnect(npub: string, nostrconnect: string, options: any) {

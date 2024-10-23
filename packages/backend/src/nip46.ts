@@ -92,10 +92,12 @@ export class Nip46Backend extends NDKNip46Backend {
     sub.on('event', (e) => this.handleIncomingEvent(e))
   }
 
-  public async processEvent(event: NDKEvent, iframe?: boolean) {
+  public async processEvent(event: NDKEvent) {
     // default nip46 mode
-    if (!iframe) return this.handleIncomingEvent(event)
+    return this.handleIncomingEvent(event)
+  }
 
+  public async processEventIframe(event: NDKEvent) {
     // iframe mode
     const req = await this.parseRequest(event)
 
