@@ -625,6 +625,7 @@ export class NoauthBackend extends EventEmitter {
 
   private exportNsecToIframe(npub: string, appNpub: string, port: MessagePort) {
     const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Key not found')
     console.log('exporting to iframe', npub, appNpub)
     port.postMessage({
       method: 'importNsec',
@@ -1360,11 +1361,17 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) return ERROR_NO_KEY;
+      if (!key) return ERROR_NO_KEY
     }
 
     const be = key.backend as Nip46Backend
     return be.processEventIframe(new NDKEvent(key.ndk, req))
+  }
+
+  private async rebind(npub: string, appNpub: string, port: MessagePort) {
+    const app = this.getApp(npub, appNpub)
+    if (!app) throw new Error('App not found')
+    return this.exportNsecToIframe(npub, appNpub, port)
   }
 
   private async nostrConnect(npub: string, nostrconnect: string, options: any) {
@@ -1462,6 +1469,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.getConnectToken(args[0], args[1])
     } else if (method === 'processRequest') {
       result = await this.processRequest(args[0])
+    } else if (method === 'rebind') {
+      result = await this.rebind(args[0], args[1], args[2])
     } else {
       console.log('unknown method from UI ', method)
     }
