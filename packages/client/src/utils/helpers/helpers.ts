@@ -314,7 +314,7 @@ export function isDomainOrSubdomain(domain: string, sub: string) {
 export function parseRebindToken(token: string) {
   if (!token) return {}
   try {
-    const event = JSON.parse(token);
+    const event = JSON.parse(atob(token));
     if (!validateEvent(event)) throw new Error('Invalid token');
     if (!verifySignature(event)) throw new Error('Invalid token signature');
     if (event.created_at > Date.now() / 1000 + 3) throw new Error("Token time in the future");

@@ -227,7 +227,7 @@ const IframePage = () => {
   } else if (token) {
     const { npub } = parseRebindToken(token)
     if (!npub) return <Typography color={'red'}>Bad token</Typography>
-    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${encodeURIComponent(token)}&popup=true`
+    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${btoa(token)}&popup=true`
     console.log("rebind url", url);
     return <IframeStarter authUrl={url} />
   } else {
