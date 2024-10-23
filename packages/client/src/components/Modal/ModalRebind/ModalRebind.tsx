@@ -44,7 +44,7 @@ export const ModalRebind = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  console.log('tokenNpub', tokenNpub, 'npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp)
+  console.log('tokenNpub', tokenNpub, 'npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
@@ -84,6 +84,8 @@ export const ModalRebind = () => {
   )
 
   const confirm = useCallback(async () => {
+    console.log("maybe confirm");
+    if (!npub || !appNpub || !port || npub !== tokenNpub || !triggerApp) return
     if (state) return
     try {
       setState('confirming')
@@ -97,12 +99,11 @@ export const ModalRebind = () => {
       setState('error')
       notify('Error: ' + e, 'error')
     }
-  }, [npub, appNpub, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
+  }, [npub, appNpub, tokenNpub, triggerApp, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
 
   useEffect(() => {
-    if (!npub || !appNpub || !port || npub !== tokenNpub) return
     confirm()
-  }, [npub, appNpub, port, confirm, tokenNpub])
+  }, [confirm])
 
   if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
     // app not found, FIXME should we create a fake 'connect' request?
