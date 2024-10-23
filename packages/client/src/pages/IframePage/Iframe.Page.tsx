@@ -10,6 +10,7 @@ import { StyledButton } from './styled'
 import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
+import { ADMIN_DOMAIN } from '@/utils/consts'
 
 let popup: WindowProxy | null = null
 
@@ -42,7 +43,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
     // it seems like Safari will pause the execution of it
     // when user clicks 'Continue' and another tab opens,
     // and then when user is done and 'importNsec arrives
-    // the SW never proceeds. 
+    // the SW never proceeds.
     navigator.serviceWorker.ready.then(() => setReady(true))
   }, [])
 
@@ -124,9 +125,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
           {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
         </Stack>
       )}
-      {!ready && (
-        <Typography>Launching...</Typography>
-      )}
+      {!ready && <Typography>Launching...</Typography>}
       {logs.map((l) => (
         <Typography>{l}</Typography>
       ))}
@@ -217,8 +216,15 @@ const IframeWorker = () => {
 const IframePage = () => {
   const [searchParams] = useSearchParams()
   const authUrl = searchParams.get('auth_url') || ''
-  if (authUrl) return <IframeStarter authUrl={authUrl} />
-  else return <IframeWorker />
+  const token = searchParams.get('token') || ''
+  if (authUrl) {
+    return <IframeStarter authUrl={authUrl} />
+  } else if (token) {
+    const url = `https://${ADMIN_DOMAIN}/rebind?token=${token}`
+    return <IframeStarter authUrl={url} />
+  } else {
+    return <IframeWorker />
+  }
 }
 
 export default IframePage
