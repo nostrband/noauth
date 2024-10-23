@@ -52,6 +52,11 @@ export const ModalRebind = () => {
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
   const appIcon = icon
 
+  useEffect(() => {
+    if (!npub || !appNpub || !port) return
+    confirm()
+  }, [npub, appNpub, port])
+
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
       sp.delete('token')
@@ -98,11 +103,6 @@ export const ModalRebind = () => {
       notify('Error: ' + e, 'error')
     }
   }
-
-  useEffect(() => {
-    if (!npub || !appNpub || !port) return
-    confirm()
-  }, [npub, appNpub, port])
 
   return (
     <Modal title="Re-connecting" open={isModalOpened} withCloseButton={false}>
