@@ -26,7 +26,7 @@ export const ModalRebind = () => {
   const done = state === 'done' || searchParams.get('done') === 'true'
 
   // popup mode always
-  const isPopup = false // FIXME DEBUG searchParams.get('popup') === 'true'
+  const isPopup = searchParams.get('popup') === 'true'
 
   // add later
   const redirectUri = ''
@@ -93,7 +93,8 @@ export const ModalRebind = () => {
       setState('done')
       console.log('rebound', { npub, appNpub, port, isPopup })
       closeModalAfterRequest()
-      if (isPopup) closePopup()
+      // FIXME debug
+      // if (isPopup) closePopup()
     } catch (e) {
       console.log(`Error: ${e}`)
       setState('error')
