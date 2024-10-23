@@ -6,7 +6,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub } from '@/store'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -22,8 +22,8 @@ export const ModalRebind = () => {
 
   const token = searchParams.get('token') || ''
   const { npub: tokenNpub, appNpub } = useMemo(() => parseRebindToken(token), [token])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const done = !isProcessing || searchParams.get('done') === 'true'
+  const [state, setState] = useState<'' | 'confirming' | 'done' | 'error'>('')
+  const done = state === 'done' || searchParams.get('done') === 'true'
 
   // popup mode always
   const isPopup = true
@@ -48,14 +48,9 @@ export const ModalRebind = () => {
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
   const appDomain = getDomainPort(appUrl)
-  const appName = name || appDomain || getShortenNpub(appNpub)
-  const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)
+  const appName = name || appDomain || getShortenNpub(appNpub) || ''
+  const appAvatarTitle = appNpub ? getAppIconTitle(name || appDomain, appNpub) : ''
   const appIcon = icon
-
-  useEffect(() => {
-    if (!npub || !appNpub || !port) return
-    confirm()
-  }, [npub, appNpub, port])
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
@@ -64,13 +59,7 @@ export const ModalRebind = () => {
     },
   })
 
-  if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
-    // app not found, FIXME should we create a fake 'connect' request?
-    if (!isPopup) closeModalAfterRequest()
-    return null
-  }
-
-  const closePopup = (result?: string) => {
+  const closePopup = useCallback((result?: string) => {
     if (!isPopup) return
 
     notify('App connected! Closing...', 'success')
@@ -88,20 +77,33 @@ export const ModalRebind = () => {
       const url = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}result=${encodeURIComponent(result || '')}`
       window.location.href = url
     }, 2000)
-  }
+  }, [setSearchParams, notify, redirectUri, isPopup, searchParams]);
 
-  async function confirm() {
+  const confirm = useCallback(async () => {
+    if (state) return
     try {
-      setIsProcessing(true)
-      await client.rebind(npub, appNpub, port!)
-      setIsProcessing(false)
+      setState('confirming')
+      await client.rebind(npub, appNpub!, port!)
+      setState('done')
       console.log('rebound', { npub, appNpub, port, isPopup })
       closeModalAfterRequest()
       if (isPopup) closePopup()
     } catch (e) {
       console.log(`Error: ${e}`)
+      setState('error');
       notify('Error: ' + e, 'error')
     }
+  }, [npub, appNpub, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
+
+  useEffect(() => {
+    if (!npub || !appNpub || !port || npub !== tokenNpub) return
+    confirm()
+  }, [npub, appNpub, port, confirm, tokenNpub])
+
+  if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
+    // app not found, FIXME should we create a fake 'connect' request?
+    if (!isPopup) closeModalAfterRequest()
+    return null
   }
 
   return (
@@ -185,6 +187,11 @@ export const ModalRebind = () => {
           </StyledButton>
         </Stack> */}
         {!done && <LoadingSpinner mode="secondary" size={'2rem'} />}
+        {state === 'error' && (
+          <Typography variant="body1" color={'red'}>
+            Failed to rebind, please try again
+          </Typography>
+        )}
       </Stack>
     </Modal>
   )

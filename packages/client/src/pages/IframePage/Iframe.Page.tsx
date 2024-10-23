@@ -3,7 +3,7 @@ import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
 import { Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, nip19, validateEvent, verifySignature } from 'nostr-tools'
+import { Event, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
@@ -222,14 +222,10 @@ const IframePage = () => {
   if (authUrl) {
     return <IframeStarter authUrl={authUrl} />
   } else if (token) {
-    try {
-      const { npub } = parseRebindToken(token)
-      const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${token}`
-      return <IframeStarter authUrl={url} />
-    } catch (e) {
-      console.log("Bad rebind token", token, e);
-      return <Typography color={"red"}>Bad token</Typography>
-    }
+    const { npub } = parseRebindToken(token)
+    if (!npub) return <Typography color={"red"}>Bad token</Typography>
+    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${token}`
+    return <IframeStarter authUrl={url} />
   } else {
     return <IframeWorker keys={keys} />
   }
