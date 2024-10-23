@@ -121,7 +121,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
     <Stack direction={'column'} gap={'0rem'}>
       {ready && (
         <Stack direction={'column'} gap={'0.2rem'}>
-          <Stack direction={'row'} gap={'1rem'} justifyContent={'center'}>
+          <Stack direction={'row'} gap={'1rem'} alignItems={'center'} justifyContent={'center'}>
             <StyledAppLogo />
             <Typography>Nsec.app</Typography>
           </Stack>

@@ -190,7 +190,11 @@ export const ModalRebind = () => {
             Connect {isPending && <LoadingSpinner />}
           </StyledButton>
         </Stack> */}
-        {!done && <LoadingSpinner mode="secondary" size={'2rem'} />}
+        {!done && (
+          <Stack direction={'row'} justifyContent={'center'}>
+            <LoadingSpinner mode="secondary" size={'2rem'} />
+          </Stack>
+        )}
         {state === 'error' && (
           <Typography variant="body1" color={'red'}>
             Failed to rebind, please try again
