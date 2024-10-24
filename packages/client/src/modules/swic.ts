@@ -216,6 +216,10 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('rebind', transfer, npub, appNpub, port)
   }
 
+  public async waitKey(npub: string) {
+    return this.call<void>('waitKey', [], npub)
+  }
+
   public getListKeys() {
     return dbi.listKeys()
   }

@@ -295,7 +295,11 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public async rebind(npub: string, appNpub: string, port: MessagePort) {
-    throw new Error('Rebind not implemented')
+    throw new Error('rebind not implemented')
+  }
+
+  public async waitKey(npub: string) {
+    throw new Error('waitKey not implemented')
   }
 }
 

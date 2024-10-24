@@ -3,7 +3,7 @@ import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
 import { Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, validateEvent, verifySignature } from 'nostr-tools'
+import { Event, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
@@ -12,6 +12,7 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { ADMIN_DOMAIN } from '@/utils/consts'
 import { DbKey } from '@noauth/common'
+import { ERROR_NO_KEY } from '@noauth/backend/src/const'
 
 let popup: WindowProxy | null = null
 
@@ -176,6 +177,26 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
       ev.source!.postMessage(reply, {
         targetOrigin: ev.origin,
       })
+
+      // are we expecting the call to be restarted?
+      if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) {
+
+        // let's wait until user rebinds the iframe
+        // and imports nsec into it
+        const pubkey = reply.split(':')[1];
+        const npub = nip19.npubEncode(pubkey);
+        console.log("iframe waiting for key", npub);
+        await client.waitKey(npub);
+
+        // retry now
+        console.log("iframe retry request", event);
+        const newReply = await client.processRequest(event as NostrEvent)
+        append('newReply: ' + JSON.stringify(newReply))
+        console.log('iframe new reply event', newReply)
+        ev.source!.postMessage(newReply, {
+          targetOrigin: ev.origin,
+        })
+      }
     }
     window.addEventListener('message', onMessage)
 

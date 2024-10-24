@@ -98,6 +98,8 @@ export interface BackendClient {
   processRequest: (request: NostrEvent) => Promise<NostrEvent | string>
 
   rebind: (npub: string, appNpub: string, port: MessagePort) => Promise<void>
+
+  waitKey: (npub: string) => Promise<void>
 }
 
 const defineClient = (): BackendClient => {

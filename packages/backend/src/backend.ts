@@ -992,14 +992,19 @@ export class NoauthBackend extends EventEmitter {
     this.pendingNpubEvents.set(npub, [...events.values()])
   }
 
-  private async waitKey(npub: string): Promise<Key | undefined> {
+  private async waitKeyExt(npub: string, failOnStart: boolean): Promise<Key | undefined> {
     const key = this.keys.find((k) => k.npub === npub)
     if (key) return key
     return new Promise((ok) => {
       // start-key will be called before start if key exists
       this.once(`start-key-${npub}`, () => ok(this.keys.find((k) => k.npub === npub)))
-      this.once(`start`, () => ok(undefined))
+      if (failOnStart) this.once(`start`, () => ok(undefined))
     })
+  }
+
+  private async waitKey(npub: string): Promise<void> {
+    await this.waitKeyExt(npub, false)
+    return; // void
   }
 
   private async checkPendingRequest(npub: string, reqId: string) {
@@ -1014,7 +1019,7 @@ export class NoauthBackend extends EventEmitter {
 
     return new Promise(async (ok, rej) => {
       // FIXME what if key wasn't loaded yet?
-      const key = await this.waitKey(npub)
+      const key = await this.waitKeyExt(npub, true)
       if (!key) return rej(new Error('Key not found'))
 
       // to avoid races, add onEvent handlers before checking relays
@@ -1361,7 +1366,7 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) return ERROR_NO_KEY
+      if (!key) return ERROR_NO_KEY + ':' + pubkey
     }
 
     const be = key.backend as Nip46Backend
@@ -1471,6 +1476,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.processRequest(args[0])
     } else if (method === 'rebind') {
       result = await this.rebind(args[0], args[1], args[2])
+    } else if (method === 'waitKey') {
+      result = await this.waitKey(args[0])
     } else {
       console.log('unknown method from UI ', method)
     }
