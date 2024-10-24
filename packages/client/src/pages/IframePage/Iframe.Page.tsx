@@ -1,9 +1,9 @@
 import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
-import { Button, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
 import { Event, validateEvent, verifySignature } from 'nostr-tools'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
 
@@ -72,7 +72,7 @@ const IframePage = () => {
         return
       }
 
-      console.log("iframe request event", event);
+      console.log('iframe request event', event)
       const reply = await client.processRequest(event as NostrEvent)
       console.log('iframe reply event', reply)
       ev.source!.postMessage(reply, {
