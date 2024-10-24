@@ -183,8 +183,7 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 
         // let's wait until user rebinds the iframe
         // and imports nsec into it
-        const pubkey = reply.split(':')[1];
-        const npub = nip19.npubEncode(pubkey);
+        const npub = nip19.npubEncode(event.pubkey);
         console.log("iframe waiting for key", npub);
         await client.waitKey(npub);
 
