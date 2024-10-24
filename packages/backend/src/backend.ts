@@ -411,6 +411,7 @@ export class NoauthBackend extends EventEmitter {
       console.log('published profile', npub)
     }
 
+    console.log("emit add key done event", npub);
     this.emit(`add-key-${npub}`)
 
     return this.keyInfo(dbKey)
@@ -1008,7 +1009,10 @@ export class NoauthBackend extends EventEmitter {
     const key = this.keys.find((k) => k.npub === npub)
     if (key) return
     return new Promise((ok) => {
-      this.once(`add-key-${npub}`, () => ok())
+      this.once(`add-key-${npub}`, () => {
+        console.log("add key done event", npub);
+        ok()
+      })
     })
   }
 
