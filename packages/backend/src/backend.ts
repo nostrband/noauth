@@ -411,6 +411,8 @@ export class NoauthBackend extends EventEmitter {
       console.log('published profile', npub)
     }
 
+    this.emit(`add-key-${npub}`)
+
     return this.keyInfo(dbKey)
   }
 
@@ -992,19 +994,22 @@ export class NoauthBackend extends EventEmitter {
     this.pendingNpubEvents.set(npub, [...events.values()])
   }
 
-  private async waitKeyExt(npub: string, failOnStart: boolean): Promise<Key | undefined> {
+  private async waitStartKey(npub: string): Promise<Key | undefined> {
     const key = this.keys.find((k) => k.npub === npub)
     if (key) return key
     return new Promise((ok) => {
       // start-key will be called before start if key exists
       this.once(`start-key-${npub}`, () => ok(this.keys.find((k) => k.npub === npub)))
-      if (failOnStart) this.once(`start`, () => ok(undefined))
+      this.once(`start`, () => ok(undefined))
     })
   }
 
   private async waitKey(npub: string): Promise<void> {
-    await this.waitKeyExt(npub, false)
-    return; // void
+    const key = this.keys.find((k) => k.npub === npub)
+    if (key) return
+    return new Promise((ok) => {
+      this.once(`add-key-${npub}`, () => ok())
+    })
   }
 
   private async checkPendingRequest(npub: string, reqId: string) {
@@ -1019,7 +1024,7 @@ export class NoauthBackend extends EventEmitter {
 
     return new Promise(async (ok, rej) => {
       // FIXME what if key wasn't loaded yet?
-      const key = await this.waitKeyExt(npub, true)
+      const key = await this.waitStartKey(npub, true)
       if (!key) return rej(new Error('Key not found'))
 
       // to avoid races, add onEvent handlers before checking relays
