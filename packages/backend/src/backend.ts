@@ -1024,7 +1024,7 @@ export class NoauthBackend extends EventEmitter {
 
     return new Promise(async (ok, rej) => {
       // FIXME what if key wasn't loaded yet?
-      const key = await this.waitStartKey(npub, true)
+      const key = await this.waitStartKey(npub)
       if (!key) return rej(new Error('Key not found'))
 
       // to avoid races, add onEvent handlers before checking relays
