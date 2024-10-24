@@ -1,7 +1,7 @@
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { getAppIconTitle, getDomainPort, parseRebindToken } from '@/utils/helpers/helpers'
+import { getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
 import { Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -20,8 +20,9 @@ export const ModalRebind = () => {
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.REBIND)
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const token = searchParams.get('token') || ''
-  const { npub: tokenNpub, appNpub } = useMemo(() => parseRebindToken(token), [token])
+  // const token = searchParams.get('token') || ''
+  // const { npub: tokenNpub, appNpub } = useMemo(() => parseRebindToken(token), [token])
+  const appNpub = searchParams.get('appNpub') || ''
   const [state, setState] = useState<'' | 'confirming' | 'done' | 'error'>('')
   const done = state === 'done' || searchParams.get('done') === 'true'
 
@@ -44,7 +45,7 @@ export const ModalRebind = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  console.log('tokenNpub', tokenNpub, 'npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
+  console.log('npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
@@ -55,7 +56,7 @@ export const ModalRebind = () => {
 
   const closeModalAfterRequest = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_CONNECT, {
     onClose: (sp) => {
-      sp.delete('token')
+      sp.delete('appNpub')
       sp.delete('redirect_uri')
     },
   })
@@ -85,7 +86,7 @@ export const ModalRebind = () => {
 
   const confirm = useCallback(async () => {
     console.log("maybe confirm");
-    if (!npub || !appNpub || !port || npub !== tokenNpub || !triggerApp) return
+    if (!npub || !appNpub || !port || !triggerApp) return
     if (state) return
     try {
       setState('confirming')
@@ -99,13 +100,13 @@ export const ModalRebind = () => {
       setState('error')
       notify('Error: ' + e, 'error')
     }
-  }, [npub, appNpub, tokenNpub, triggerApp, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
+  }, [npub, appNpub, triggerApp, port, state, setState, closeModalAfterRequest, closePopup, isPopup, notify])
 
   useEffect(() => {
     confirm()
   }, [confirm])
 
-  if (isModalOpened && (npub !== tokenNpub || !triggerApp)) {
+  if (isModalOpened && !triggerApp) {
     // app not found, FIXME should we create a fake 'connect' request?
     // if (!isPopup) closeModalAfterRequest()
     return null

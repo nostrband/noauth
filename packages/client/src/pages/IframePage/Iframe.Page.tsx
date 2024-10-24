@@ -7,7 +7,7 @@ import { Event, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
-import { isDomainOrSubdomain, parseRebindToken } from '@/utils/helpers/helpers'
+import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { ADMIN_DOMAIN } from '@/utils/consts'
@@ -239,15 +239,19 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 const IframePage = () => {
   const [searchParams] = useSearchParams()
   const authUrl = searchParams.get('auth_url') || ''
-  const token = searchParams.get('token') || ''
+  const rebindPubkey = searchParams.get('rebind') || ''
   const keys = useAppSelector(selectKeys)
 
   if (authUrl) {
     return <IframeStarter authUrl={authUrl} />
-  } else if (token) {
-    const { npub } = parseRebindToken(token)
-    if (!npub) return <Typography color={'red'}>Bad token</Typography>
-    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${encodeURIComponent(token)}&popup=true`
+  } else if (rebindPubkey) {
+    const pubkey = searchParams.get('pubkey') || ''
+    const npub = nip19.npubEncode(pubkey)
+    const appNpub = nip19.npubEncode(rebindPubkey)
+    // const { npub } = parseRebindToken(token)
+    // if (!npub) return <Typography color={'red'}>Bad token</Typography>
+    // const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${encodeURIComponent(token)}&popup=true`
+    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&appNpub=${appNpub}&popup=true`
     console.log("rebind url", url);
     return <IframeStarter authUrl={url} />
   } else {

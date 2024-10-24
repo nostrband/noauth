@@ -307,28 +307,28 @@ export const generateNip05 = async () => {
 }
 
 export function isDomainOrSubdomain(domain: string, sub: string) {
-  console.log("isDomainOrSubdomain", domain, sub);
+  console.log('isDomainOrSubdomain', domain, sub)
   return domain === sub || sub.endsWith('.' + domain)
 }
 
-export function parseRebindToken(token: string) {
-  if (!token) return {}
-  console.log("parsing token", token);
-  try {
-    const event = JSON.parse(atob(token));
-    if (!validateEvent(event)) throw new Error('Invalid token');
-    if (!verifySignature(event)) throw new Error('Invalid token signature');
-    if (event.created_at > Date.now() / 1000 + 3) throw new Error("Token time in the future");
-    if (event.created_at < Date.now() / 1000 - 300) throw new Error("Token too old, retry");
-    const pubkey = event.tags.find(t => t.length >= 2 && t[0] === 'p')?.[1];
-    if (!pubkey) throw new Error("Bad token pubkey tag");
-    const npub = nip19.npubEncode(pubkey);
-    const appNpub = nip19.npubEncode(event.pubkey);
-    return {
-      npub, appNpub
-    }  
-  } catch (e) {
-    console.log("Bad rebind token", token, e);
-    return {}
-  }
-}
+// export function parseRebindToken(token: string) {
+//   if (!token) return {}
+//   console.log("parsing token", token);
+//   try {
+//     const event = JSON.parse(atob(token));
+//     if (!validateEvent(event)) throw new Error('Invalid token');
+//     if (!verifySignature(event)) throw new Error('Invalid token signature');
+//     if (event.created_at > Date.now() / 1000 + 3) throw new Error("Token time in the future");
+//     if (event.created_at < Date.now() / 1000 - 300) throw new Error("Token too old, retry");
+//     const pubkey = event.tags.find(t => t.length >= 2 && t[0] === 'p')?.[1];
+//     if (!pubkey) throw new Error("Bad token pubkey tag");
+//     const npub = nip19.npubEncode(pubkey);
+//     const appNpub = nip19.npubEncode(event.pubkey);
+//     return {
+//       npub, appNpub
+//     }
+//   } catch (e) {
+//     console.log("Bad rebind token", token, e);
+//     return {}
+//   }
+// }
