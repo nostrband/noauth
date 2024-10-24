@@ -1371,7 +1371,7 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) return ERROR_NO_KEY + ':' + pubkey
+      if (!key) return ERROR_NO_KEY + ':' + req.id
     }
 
     const be = key.backend as Nip46Backend
