@@ -131,7 +131,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
         </Stack>
       )}
       {!ready && <Typography>Launching...</Typography>}
-      {logs.map((l) => (
+      {false && logs.map((l) => (
         <Typography>{l}</Typography>
       ))}
     </Stack>

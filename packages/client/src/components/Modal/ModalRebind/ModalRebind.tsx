@@ -196,6 +196,11 @@ export const ModalRebind = () => {
             <LoadingSpinner mode="secondary" size={'2rem'} />
           </Stack>
         )}
+        {state === 'done' && (
+          <Typography variant="body1" color={'greed'}>
+            Reconnected! Closing...
+          </Typography>
+        )}
         {state === 'error' && (
           <Typography variant="body1" color={'red'}>
             Failed to rebind, please try again
