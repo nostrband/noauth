@@ -32,7 +32,7 @@ function parseAuthUrl(url: string) {
   }
 }
 
-const IframeStarter: FC<{ authUrl: string }> = (props) => {
+const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
   const [ready, setReady] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
 
@@ -103,7 +103,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
             await importNsec(ev.data)
 
             console.log('starter sending ready to parent')
-            window.parent.postMessage('starterDone', '*')
+            window.parent.postMessage(props.rebind ? 'rebinderDone' : 'starterDone', '*')
           }
         }
 
@@ -131,9 +131,7 @@ const IframeStarter: FC<{ authUrl: string }> = (props) => {
         </Stack>
       )}
       {!ready && <Typography>Launching...</Typography>}
-      {false && logs.map((l) => (
-        <Typography>{l}</Typography>
-      ))}
+      {false && logs.map((l) => <Typography>{l}</Typography>)}
     </Stack>
   )
 }
@@ -180,15 +178,14 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 
       // are we expecting the call to be restarted?
       if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) {
-
         // let's wait until user rebinds the iframe
         // and imports nsec into it
-        const npub = nip19.npubEncode(event.pubkey);
-        console.log("iframe waiting for key", npub);
-        await client.waitKey(npub);
+        const npub = nip19.npubEncode(event.pubkey)
+        console.log('iframe waiting for key', npub)
+        await client.waitKey(npub)
 
         // retry now
-        console.log("iframe retry request", event);
+        console.log('iframe retry request', event)
         const newReply = await client.processRequest(event as NostrEvent)
         append('newReply: ' + JSON.stringify(newReply))
         console.log('iframe new reply event', newReply)
@@ -243,17 +240,14 @@ const IframePage = () => {
   const keys = useAppSelector(selectKeys)
 
   if (authUrl) {
-    return <IframeStarter authUrl={authUrl} />
+    return <IframeStarter authUrl={authUrl} rebind={false} />
   } else if (rebindPubkey) {
     const pubkey = searchParams.get('pubkey') || ''
     const npub = nip19.npubEncode(pubkey)
     const appNpub = nip19.npubEncode(rebindPubkey)
-    // const { npub } = parseRebindToken(token)
-    // if (!npub) return <Typography color={'red'}>Bad token</Typography>
-    // const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&token=${encodeURIComponent(token)}&popup=true`
     const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&appNpub=${appNpub}&popup=true`
-    console.log("rebind url", url);
-    return <IframeStarter authUrl={url} />
+    console.log('rebind url', url)
+    return <IframeStarter authUrl={url} rebind={true} />
   } else {
     return <IframeWorker keys={keys} />
   }
