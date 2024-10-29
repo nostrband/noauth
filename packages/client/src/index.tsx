@@ -10,30 +10,6 @@ import { Provider } from 'react-redux'
 import { persistor, store } from './store'
 import { PersistGate } from 'redux-persist/integration/react'
 import { SnackbarProvider } from 'notistack'
-import r2wc from '@r2wc/react-to-web-component'
-
-const Init = () => {
-  return (
-    <React.StrictMode>
-      <BrowserRouter>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <ThemeProvider>
-              <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-                <App />
-              </SnackbarProvider>
-            </ThemeProvider>
-          </PersistGate>
-        </Provider>
-      </BrowserRouter>
-    </React.StrictMode>
-  )
-}
-
-const WebGreeting = r2wc(Init)
-console.log(WebGreeting)
-
-customElements.define('web-greeting', WebGreeting)
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
@@ -43,9 +19,7 @@ root.render(
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider>
             <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-              {/* <App /> */}
-
-              {/* <web-greeting></web-greeting> */}
+              <App />
             </SnackbarProvider>
           </ThemeProvider>
         </PersistGate>

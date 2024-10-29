@@ -8,7 +8,6 @@
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.20",
     "@noauth/backend": "^1.0.0",
-    "@noauth/client-ui": "^0.0.1",
     "@r2wc/react-to-web-component": "^2.0.3",
     "@reduxjs/toolkit": "^2.0.1",
     "@testing-library/jest-dom": "^5.17.0",
@@ -64,7 +63,7 @@
     "start:hosted": "env-cmd -f .env.hosted npx react-app-rewired start",
     "build": "env-cmd -f .env npx react-app-rewired build",
     "build:hosted": "env-cmd -f .env.hosted npx react-app-rewired build",
-    "build:ext": "BUILD_TARGET=ext-chrome INLINE_RUNTIME_CHUNK=false react-app-rewired build",
+    "build:ext": "BUILD_PATH='./ext-build' BUILD_TARGET=ext-chrome INLINE_RUNTIME_CHUNK=false react-app-rewired build",
     "serve": "npm run build && serve -s build",
     "serve:hosted": "npm run build:hosted && serve -s build",
     "format": "npx prettier --write src"
