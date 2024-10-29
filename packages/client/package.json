@@ -8,6 +8,7 @@
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.20",
     "@noauth/backend": "^1.0.0",
+    "@r2wc/react-to-web-component": "^2.0.3",
     "@reduxjs/toolkit": "^2.0.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -37,6 +38,7 @@
     "use-debounce": "^10.0.0",
     "usehooks-ts": "^2.14.0",
     "web-vitals": "^2.1.4",
+    "webextension-polyfill": "^0.12.0",
     "workbox-background-sync": "^6.6.0",
     "workbox-broadcast-update": "^6.6.0",
     "workbox-cacheable-response": "^6.5.4",
@@ -61,6 +63,7 @@
     "start:hosted": "env-cmd -f .env.hosted npx react-app-rewired start",
     "build": "env-cmd -f .env npx react-app-rewired build",
     "build:hosted": "env-cmd -f .env.hosted npx react-app-rewired build",
+    "build:ext": "BUILD_PATH='./ext-build' BUILD_TARGET=ext-chrome INLINE_RUNTIME_CHUNK=false react-app-rewired build",
     "serve": "npm run build && serve -s build",
     "serve:hosted": "npm run build:hosted && serve -s build",
     "format": "npx prettier --write src"
@@ -85,6 +88,8 @@
   },
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.8",
+    "@types/webextension-polyfill": "^0.12.1",
+    "copy-webpack-plugin": "^12.0.2",
     "customize-cra": "^1.0.0",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "path-browserify": "^1.0.1",
