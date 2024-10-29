@@ -35,31 +35,4 @@ export default [
     },
     plugins: [typescript({ sourceMap: true }), , resolve(), commonjs(), terser()],
   },
-  // {
-  //   input: '../client/src/index.tsx',
-  //   output: {
-  //     file: 'dist/popup.js',
-  //     format: 'es',
-  //     inlineDynamicImports: true,
-  //   },
-  //   plugins: [
-  //     resolve({
-  //       extensions: ['.js', '.jsx', '.ts', '.tsx'],
-  //     }),
-  //     commonjs(),
-  //     typescript({
-  //       tsconfig: '../client/tsconfig.json',
-  //     }),
-  //     babel({
-  //       extensions: ['.js', '.jsx', '.ts', '.tsx'],
-  //       babelHelpers: 'bundled',
-  //       presets: ['@babel/preset-react', '@babel/preset-typescript'],
-  //     }),
-  //     postcss({
-  //       extensions: ['.css'],
-  //       minimize: true, // Минификация CSS
-  //       inject: true, // Внедрение стилей в JS
-  //     }),
-  //   ],
-  // },
 ]
