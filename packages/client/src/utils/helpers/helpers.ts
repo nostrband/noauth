@@ -1,4 +1,4 @@
-import { nip19, validateEvent, verifySignature } from 'nostr-tools'
+import { nip19 } from 'nostr-tools'
 import { ACTIONS, DOMAIN, NOAUTHD_URL } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@noauth/common'
 import { fetchNip05, getSignReqKind } from '@noauth/common'

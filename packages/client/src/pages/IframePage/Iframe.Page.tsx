@@ -13,6 +13,7 @@ import { selectKeys } from '@/store'
 import { ADMIN_DOMAIN } from '@/utils/consts'
 import { DbKey } from '@noauth/common'
 import { ERROR_NO_KEY } from '@noauth/backend/src/const'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 let popup: WindowProxy | null = null
 
@@ -34,6 +35,7 @@ function parseAuthUrl(url: string) {
 
 const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
   const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
 
   const append = (s: string) => {
@@ -59,6 +61,8 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
 
     // auth url must be on the same domain or on subdomain
     if (!isValidAuthUrl) throw new Error('Bad auth url origin')
+
+    setLoading(true)
 
     try {
       const popupOrigin = url.origin
@@ -104,6 +108,8 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
 
             console.log('starter sending ready to parent')
             window.parent.postMessage(props.rebind ? 'rebinderDone' : 'starterDone', '*')
+
+            setLoading(false)
           }
         }
 
@@ -120,7 +126,7 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
 
   return (
     <Stack direction={'column'} gap={'0rem'}>
-      {ready && (
+      {ready && !loading && (
         <Stack direction={'column'} gap={'0.2rem'}>
           <Stack direction={'row'} gap={'1rem'} alignItems={'center'} justifyContent={'center'}>
             <StyledAppLogo />
@@ -130,7 +136,11 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
           {!isValidAuthUrl && <Typography color={'red'}>Bad auth url</Typography>}
         </Stack>
       )}
-      {!ready && <Typography>Launching...</Typography>}
+      {(!ready || loading) && (
+        <Stack direction={'row'} gap={'1rem'} alignItems={'center'} justifyContent={'center'}>
+          <LoadingSpinner mode="secondary" size={'2rem'} />
+        </Stack>
+      )}
       {false && logs.map((l) => <Typography>{l}</Typography>)}
     </Stack>
   )
