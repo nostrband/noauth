@@ -41,6 +41,7 @@ import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { Submitted } from './utils'
 
 interface Pending {
   req: DbPending
@@ -65,6 +66,7 @@ export class NoauthBackend extends EventEmitter {
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
   private permSub?: NDKSubscription
   private pushNpubs: string[] = []
+  private submitted: Map<string, Submitted<NostrEvent | string | Error>> = new Map()
 
   private dbi: DbInterface
 
@@ -411,7 +413,7 @@ export class NoauthBackend extends EventEmitter {
       console.log('published profile', npub)
     }
 
-    console.log("emit add key done event", npub);
+    console.log('emit add key done event', npub)
     this.emit(`add-key-${npub}`)
 
     return this.keyInfo(dbKey)
@@ -888,7 +890,12 @@ export class NoauthBackend extends EventEmitter {
             // which will cause SW (this code) to reload, to fetch
             // the pending requests and to re-send this event,
             // looping for 10 seconds (our request age threshold)
-            backend.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+            const be = backend as Nip46Backend
+            if (reqOptions.onAuthUrl) {
+              reqOptions.onAuthUrl(be.prepareAuthUrlResponse(id, remotePubkey, authUrl))
+            } else {
+              be.sendAuthUrlResponse(id, remotePubkey, authUrl)
+            }
           } else {
             console.log('skip sending auth_url')
           }
@@ -1010,7 +1017,7 @@ export class NoauthBackend extends EventEmitter {
     if (key) return
     return new Promise((ok) => {
       this.once(`add-key-${npub}`, () => {
-        console.log("add key done event", npub);
+        console.log('add key done event', npub)
         ok()
       })
     })
@@ -1364,7 +1371,7 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
-  private async processRequest(req: NostrEvent) {
+  private async submitRequest(req: NostrEvent) {
     const pubkey = req.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
     if (!pubkey) throw new Error('Bad request')
     const npub = nip19.npubEncode(pubkey)
@@ -1375,11 +1382,41 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) return ERROR_NO_KEY + ':' + req.id
+    }
+
+    if (this.submitted.get(req.id!)) throw new Error('Duplicate request')
+
+    const queue = new Submitted<NostrEvent | string | Error>()
+    this.submitted.set(req.id!, queue)
+
+    // no-key marker
+    if (!key) {
+      queue.push(ERROR_NO_KEY + ':' + req.id, true)
+      return
     }
 
     const be = key.backend as Nip46Backend
-    return be.processEventIframe(new NDKEvent(key.ndk, req))
+    be.processEventIframe(new NDKEvent(key.ndk, req), (auth_url: NostrEvent) => {
+      queue.push(auth_url)
+    })
+      .then((r) => {
+        queue.push(r, true)
+      })
+      .catch((e) => {
+        queue.push(new Error(e), true)
+      })
+  }
+
+  private async fetchReply(id: string) {
+    const queue = this.submitted.get(id)
+    if (!queue) throw new Error('Unknown request ' + id)
+
+    const r = await queue.get()
+    // end of replies
+    if (r === undefined) this.submitted.delete(id)
+    // error
+    if (r && typeof r !== 'string' && 'message' in r) throw r
+    return r
   }
 
   private async rebind(npub: string, appNpub: string, port: MessagePort) {
@@ -1481,8 +1518,10 @@ export class NoauthBackend extends EventEmitter {
       result = await this.nip44Decrypt(args[0], args[1], args[2])
     } else if (method === 'getConnectToken') {
       result = await this.getConnectToken(args[0], args[1])
-    } else if (method === 'processRequest') {
-      result = await this.processRequest(args[0])
+    } else if (method === 'submitRequest') {
+      result = await this.submitRequest(args[0])
+    } else if (method === 'fetchReply') {
+      result = await this.fetchReply(args[0])
     } else if (method === 'rebind') {
       result = await this.rebind(args[0], args[1], args[2])
     } else if (method === 'waitKey') {

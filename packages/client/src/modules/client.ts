@@ -95,7 +95,9 @@ export interface BackendClient {
 
   getSynced: (npub: string) => Promise<boolean>
 
-  processRequest: (request: NostrEvent) => Promise<NostrEvent | string>
+  submitRequest: (request: NostrEvent) => Promise<void>
+
+  fetchReply: (id: string) => Promise<NostrEvent | string | undefined>
 
   rebind: (npub: string, appNpub: string, port: MessagePort) => Promise<void>
 
