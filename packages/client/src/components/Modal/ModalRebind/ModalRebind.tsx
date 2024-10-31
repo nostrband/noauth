@@ -34,7 +34,7 @@ export const ModalRebind = () => {
   // so that we could pass this connection (nsec+appNpub) to
   // the iframe so it would save it to it's partitioned storage
   const { port } = useIframePort(isPopup)
-  console.log('iframe port', port)
+  // console.log('iframe port', port)
 
   // npub might be passed by the /create page
   const { npub = '' } = useParams<{ npub: string }>()
@@ -43,7 +43,7 @@ export const ModalRebind = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  console.log('npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
+  // console.log('npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
@@ -83,7 +83,6 @@ export const ModalRebind = () => {
   )
 
   const confirm = useCallback(async () => {
-    console.log("maybe confirm");
     if (!npub || !appNpub || !port || !triggerApp) return
     if (state) return
     try {

@@ -3,6 +3,7 @@ import { Event, getEventHash, nip19, validateEvent, verifySignature } from 'nost
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
+import { KIND_RPC } from '@noauth/common'
 
 export interface IEventHandlingStrategyOptioned {
   handle(
@@ -97,7 +98,7 @@ export class Nip46Backend extends NDKNip46Backend {
     return this.handleIncomingEvent(event)
   }
 
-  public async processEventIframe(event: NDKEvent) {
+  public async processEventIframe(event: NDKEvent, onAuthUrl: (auth_url: NostrEvent) => void) {
     // iframe mode
     const req = await this.parseRequest(event)
 
@@ -105,6 +106,7 @@ export class Nip46Backend extends NDKNip46Backend {
       ...req,
       options: {
         iframe: true,
+        onAuthUrl,
       },
     })
 
@@ -239,7 +241,7 @@ export class Nip46Backend extends NDKNip46Backend {
     const remoteUser = this.ndk.getUser({ pubkey: event.pubkey })
     remoteUser.ndk = this.ndk
     const decrypt = this.isNip04(event.content) ? this.signer.decrypt : this.signer.decryptNip44
-    console.log("event nip04", this.isNip04(event.content));
+    console.log('event nip04', this.isNip04(event.content))
     const decryptedContent = await decrypt.call(this.signer, remoteUser, event.content)
     const parsedContent = JSON.parse(decryptedContent)
     const { id, method, params, result, error } = parsedContent
@@ -278,5 +280,40 @@ export class Nip46Backend extends NDKNip46Backend {
     } catch (e) {
       console.log('error processing incoming event', e, event)
     }
+  }
+
+  private async prepareResponse(
+    id: string,
+    remotePubkey: string,
+    result: string,
+    kind = NDKKind.NostrConnect,
+    error?: string
+  ): Promise<NDKEvent> {
+    // FIXME reimplemented from rpc.sendResponse
+    const res = { id, result } as NDKRpcResponse
+    if (error) {
+      res.error = error
+    }
+
+    const localUser = await this.signer.user()
+    const remoteUser = this.ndk.getUser({ pubkey: remotePubkey })
+    const event = new NDKEvent(this.ndk, {
+      kind,
+      content: JSON.stringify(res),
+      tags: [['p', remotePubkey]],
+      pubkey: localUser.pubkey,
+    } as NostrEvent)
+
+    event.content = await this.signer.encrypt(remoteUser, event.content)
+    await event.sign(this.signer)
+    return event
+  }
+
+  public async prepareAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
+    return this.prepareResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+  }
+
+  public async sendAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
+    return this.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
   }
 }

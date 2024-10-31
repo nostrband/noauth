@@ -179,29 +179,37 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 
       append('valid event')
       console.log('iframe request event', event)
-      const reply = await client.processRequest(event as NostrEvent)
-      append('reply: ' + JSON.stringify(reply))
-      console.log('iframe reply event', reply)
-      ev.source!.postMessage(reply, {
-        targetOrigin: ev.origin,
-      })
+
+      // helper
+      const fetchReplies = async () => {
+        let reply: NostrEvent | string | undefined
+        while ((reply = await client.fetchReply(event!.id!))) {
+          append('reply: ' + JSON.stringify(reply))
+          console.log('iframe reply event', reply)
+          ev.source!.postMessage(reply, {
+            targetOrigin: ev.origin,
+          })
+          if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) return true
+        }
+        return false
+      }
+
+      // first attempt
+      await client.submitRequest(event as NostrEvent)
+      const restart = await fetchReplies()
 
       // are we expecting the call to be restarted?
-      if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) {
+      if (restart) {
         // let's wait until user rebinds the iframe
         // and imports nsec into it
         const npub = nip19.npubEncode(event.pubkey)
         console.log('iframe waiting for key', npub)
         await client.waitKey(npub)
 
-        // retry now
+        // retry
         console.log('iframe retry request', event)
-        const newReply = await client.processRequest(event as NostrEvent)
-        append('newReply: ' + JSON.stringify(newReply))
-        console.log('iframe new reply event', newReply)
-        ev.source!.postMessage(newReply, {
-          targetOrigin: ev.origin,
-        })
+        await client.submitRequest(event as NostrEvent)
+        await fetchReplies()
       }
     }
     window.addEventListener('message', onMessage)

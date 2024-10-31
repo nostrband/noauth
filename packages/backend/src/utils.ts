@@ -1,4 +1,4 @@
-import { NDKEvent } from '@nostr-dev-kit/ndk'
+import { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
 import { nip19 } from 'nostr-tools'
 import { Key } from './types'
 import { NostrPowEvent, minePow } from './pow'
@@ -84,4 +84,40 @@ export async function sendPostAuthd({
     },
     body,
   })
+}
+
+export class Submitted<T> {
+  private queue: T[] = []
+  private promises: Promise<void>[] = []
+  private cb?: () => void
+
+  constructor() {
+    // one promise is always there unless we're done
+    this.promises.push(new Promise((ok) => (this.cb = ok)))
+  }
+
+  public async get(): Promise<T | undefined> {
+    // done
+    if (!this.promises.length) return undefined
+
+    // wait for the next value to arrive
+    await this.promises.shift()
+
+    // wtf?
+    if (!this.queue.length) throw new Error('Empty reply queue')
+
+    // return
+    return this.queue.shift()
+  }
+
+  public push(reply: T, done: boolean = false) {
+    // add to queue
+    this.queue.push(reply)
+
+    // resolve current promise
+    this.cb!()
+
+    // schedule next promise if we're not done yet
+    if (!done) this.promises.push(new Promise<void>((ok) => (this.cb = ok)))
+  }
 }
