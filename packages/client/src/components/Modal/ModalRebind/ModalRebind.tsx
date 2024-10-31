@@ -6,7 +6,7 @@ import { Box, Stack, Typography } from '@mui/material'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectAppsByNpub } from '@/store'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -20,8 +20,6 @@ export const ModalRebind = () => {
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.REBIND)
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // const token = searchParams.get('token') || ''
-  // const { npub: tokenNpub, appNpub } = useMemo(() => parseRebindToken(token), [token])
   const appNpub = searchParams.get('appNpub') || ''
   const [state, setState] = useState<'' | 'confirming' | 'done' | 'error'>('')
   const done = state === 'done' || searchParams.get('done') === 'true'
