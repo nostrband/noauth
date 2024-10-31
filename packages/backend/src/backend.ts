@@ -892,7 +892,7 @@ export class NoauthBackend extends EventEmitter {
             // looping for 10 seconds (our request age threshold)
             const be = backend as Nip46Backend
             if (reqOptions?.onAuthUrl) {
-              be.prepareAuthUrlResponse(id, remotePubkey, authUrl).then(reqOptions.onAuthUrl)
+              be.prepareAuthUrlResponse(id, remotePubkey, authUrl).then((e) => reqOptions.onAuthUrl(e.rawEvent()))
             } else {
               be.sendAuthUrlResponse(id, remotePubkey, authUrl)
             }

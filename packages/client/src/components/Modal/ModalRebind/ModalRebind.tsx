@@ -43,7 +43,7 @@ export const ModalRebind = () => {
   const apps = useAppSelector((state) => selectAppsByNpub(state, npub))
 
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
-  console.log('npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
+  // console.log('npub', npub, 'appNpub', appNpub, 'triggerApp', triggerApp, "port", port)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
   const appUrl = url
