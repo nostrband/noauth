@@ -57,7 +57,8 @@ class ClientServiceWorker implements BackendClient {
           method,
           args: [...args],
         }
-        console.log('sending to SW', msg)
+        // don't print this one
+        if (method !== 'importKeyIframe') console.log('sending to SW', msg)
         swr.active.postMessage(msg, transfer)
       }
 
@@ -137,7 +138,7 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async confirmPendingRequest(id: string, allow: boolean, remember: boolean, options?: any) {
-    const transfer = options && options.port ? [options.port] : [];
+    const transfer = options && options.port ? [options.port] : []
     return this.call<string | undefined>('confirm', transfer, id, allow, remember, options)
   }
 
@@ -194,7 +195,8 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async generateKeyConnect(params: CreateConnectParams) {
-    return this.call<string>('generateKeyConnect', [], params)
+    const transfer = params.port ? [params.port] : []
+    return this.call<string>('generateKeyConnect', transfer, params)
   }
 
   public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
@@ -207,6 +209,15 @@ class ClientServiceWorker implements BackendClient {
 
   public async processRequest(request: NostrEvent) {
     return this.call<NostrEvent>('processRequest', [], request)
+  }
+
+  public async rebind(npub: string, appNpub: string, port: MessagePort) {
+    const transfer = [port]
+    return this.call<void>('rebind', transfer, npub, appNpub, port)
+  }
+
+  public async waitKey(npub: string) {
+    return this.call<void>('waitKey', [], npub)
   }
 
   public getListKeys() {

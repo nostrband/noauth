@@ -48,8 +48,8 @@ export const ModalConfirmConnect = () => {
   // a port to talk to our iframe embedded by the app
   // so that we could pass this connection (nsec+appNpub) to
   // the iframe so it would save it to it's partitioned storage
-  const port = useIframePort(isPopup);
-  console.log("iframe port", port);
+  const { port, referrer } = useIframePort(isPopup);
+  console.log("iframe port", port, referrer);
 
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
@@ -80,7 +80,7 @@ export const ModalConfirmConnect = () => {
   const triggerApp = apps.find((app) => app.appNpub === appNpub)
 
   const { name = '', url = '', icon = '' } = triggerApp || {}
-  const appUrl = url || req?.appUrl || getReferrerAppUrl()
+  const appUrl = url || req?.appUrl || referrer || getReferrerAppUrl()
   const appDomain = getDomainPort(appUrl)
   const appName = name || appDomain || req?.appName || getShortenNpub(appNpub)
   const appAvatarTitle = getAppIconTitle(name || appDomain, appNpub)

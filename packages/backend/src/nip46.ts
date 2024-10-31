@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKKind, NDKNip46Backend, NDKRpcResponse, NostrEvent } from '@nostr-dev-kit/ndk'
+import NDK, { NDKEvent, NDKKind, NDKNip46Backend, NDKRpcRequest, NDKRpcResponse, NostrEvent } from '@nostr-dev-kit/ndk'
 import { Event, getEventHash, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
@@ -92,10 +92,12 @@ export class Nip46Backend extends NDKNip46Backend {
     sub.on('event', (e) => this.handleIncomingEvent(e))
   }
 
-  public async processEvent(event: NDKEvent, iframe?: boolean) {
+  public async processEvent(event: NDKEvent) {
     // default nip46 mode
-    if (!iframe) return this.handleIncomingEvent(event)
+    return this.handleIncomingEvent(event)
+  }
 
+  public async processEventIframe(event: NDKEvent) {
     // iframe mode
     const req = await this.parseRequest(event)
 
@@ -216,14 +218,41 @@ export class Nip46Backend extends NDKNip46Backend {
 
     // send over nip46
     if (response) {
-      this.rpc.sendResponse(id, remotePubkey, response)
+      await this.rpc.sendResponse(id, remotePubkey, response)
     } else {
-      this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
+      await this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
+    }
+  }
+
+  private isNip04(ciphertext: string) {
+    const l = ciphertext.length
+    if (l < 28) return false
+    return (
+      ciphertext[l - 28] === '?' &&
+      ciphertext[l - 27] === 'i' &&
+      ciphertext[l - 26] === 'v' &&
+      ciphertext[l - 25] === '='
+    )
+  }
+
+  private async parseEvent(event: NDKEvent): Promise<NDKRpcRequest | NDKRpcResponse> {
+    const remoteUser = this.ndk.getUser({ pubkey: event.pubkey })
+    remoteUser.ndk = this.ndk
+    const decrypt = this.isNip04(event.content) ? this.signer.decrypt : this.signer.decryptNip44
+    console.log("event nip04", this.isNip04(event.content));
+    const decryptedContent = await decrypt.call(this.signer, remoteUser, event.content)
+    const parsedContent = JSON.parse(decryptedContent)
+    const { id, method, params, result, error } = parsedContent
+
+    if (method) {
+      return { id, pubkey: event.pubkey, method, params, event }
+    } else {
+      return { id, result, error, event }
     }
   }
 
   private async parseRequest(event: NDKEvent) {
-    const { id, method, params } = (await this.rpc.parseEvent(event)) as any
+    const { id, method, params } = (await this.parseEvent(event)) as any
     const remotePubkey = event.pubkey
 
     this.debug('incoming event', { id, method, params })

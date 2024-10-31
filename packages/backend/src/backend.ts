@@ -11,7 +11,7 @@ import {
   isPackagePerm,
   packageToPerms,
   ACTION_TYPE,
-  BROADCAST_RELAY,
+  BROADCAST_RELAYS,
   KIND_DATA,
   KIND_RPC,
   OUTBOX_RELAYS,
@@ -40,7 +40,7 @@ import { Api } from './api'
 import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
-import { APP_TAG, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
 
 interface Pending {
   req: DbPending
@@ -78,7 +78,7 @@ export class NoauthBackend extends EventEmitter {
     // yet unlocked a key and created a separate ndk for it
 
     this.ndk = new NDK({
-      explicitRelayUrls: [...global.getNip46Relays(), ...OUTBOX_RELAYS, BROADCAST_RELAY],
+      explicitRelayUrls: [...global.getNip46Relays(), ...BROADCAST_RELAYS],
       enableOutboxModel: false,
     })
 
@@ -113,7 +113,7 @@ export class NoauthBackend extends EventEmitter {
     for (const k of this.enckeys) {
       if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
         await this.unlock(k.npub)
-        this.notifyNpub(k.npub)
+        await this.notifyNpub(k.npub)
       }
     }
 
@@ -161,33 +161,45 @@ export class NoauthBackend extends EventEmitter {
       NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
       true // auto-start
     )
-    let count = 0
-    this.permSub.on('event', async (e) => {
-      count++
-      const npub = nip19.npubEncode(e.pubkey)
-      const key = this.keys.find((k) => k.npub === npub)
-      if (!key) return
 
-      // parse
-      try {
-        const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
-        const data = JSON.parse(payload)
-        console.log('Got app perm event', { e, data })
-        // validate first
-        if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
-        else console.log('Skip invalid app perms', data)
-      } catch (err) {
-        console.log('Bad app perm event', e, err)
-      }
+    // NOTE: we want to process existing events
+    // but also want to receive and process all future events,
+    // so we launch the async handler on all events, but
+    // the first run waits until eose and blocks until queued
+    // handlers are finished
+    const queue: Promise<void>[] = []
+    this.permSub.on('event', (e) => {
+      queue.push(
+        (async (e) => {
+          const npub = nip19.npubEncode(e.pubkey)
+          const key = this.keys.find((k) => k.npub === npub)
+          if (!key) return
 
-      // notify UI
-      this.updateUI()
+          // parse
+          try {
+            const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
+            const data = JSON.parse(payload)
+            console.log('Got app perm event', { e, data })
+            // validate first
+            if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
+            else console.log('Skip invalid app perms', data)
+          } catch (err) {
+            console.log('Bad app perm event', e, err)
+          }
+
+          // notify UI
+          this.updateUI()
+        })(e)
+      )
     })
 
     // wait for eose before proceeding
     await new Promise((ok) => this.permSub!.on('eose', ok))
 
-    console.log('processed app perm events', count)
+    // wait until all existing perms are processed
+    await Promise.allSettled(queue)
+
+    console.log('processed app perm events', queue.length)
   }
 
   private isValidAppPerms(d: any) {
@@ -389,8 +401,8 @@ export class NoauthBackend extends EventEmitter {
 
     if (!iframe) await this.subscribeNpub(npub)
 
-    // async fetching of perms from relays
-    this.subscribeToAppPerms()
+    // fetch perms from relays
+    await this.subscribeToAppPerms()
     console.log('synched apps', npub)
 
     // seed new key with profile, relays etc
@@ -398,6 +410,9 @@ export class NoauthBackend extends EventEmitter {
       this.publishNewKeyInfo(npub)
       console.log('published profile', npub)
     }
+
+    console.log("emit add key done event", npub);
+    this.emit(`add-key-${npub}`)
 
     return this.keyInfo(dbKey)
   }
@@ -460,7 +475,7 @@ export class NoauthBackend extends EventEmitter {
     console.log('seed key events', { profile, contacts, nip65 })
 
     // publish in background
-    const relayset = NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk)
+    const relayset = NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk)
     try {
       await profile.publish(relayset)
     } catch (e) {
@@ -553,7 +568,7 @@ export class NoauthBackend extends EventEmitter {
     })
     event.sig = await event.sign(key.signer)
     console.log('app perms event', event.rawEvent(), 'payload', data)
-    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...OUTBOX_RELAYS, BROADCAST_RELAY], this.ndk))
+    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk))
     console.log('app perm event published', event.id, 'to', relays)
   }
 
@@ -609,6 +624,20 @@ export class NoauthBackend extends EventEmitter {
 
     // async
     this.publishAppPerms({ npub, appNpub })
+  }
+
+  private exportNsecToIframe(npub: string, appNpub: string, port: MessagePort) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Key not found')
+    console.log('exporting to iframe', npub, appNpub)
+    port.postMessage({
+      method: 'importNsec',
+      nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
+      appNpub: appNpub,
+    })
+
+    // we no longer need it
+    port.close()
   }
 
   private async allowPermitCallback({
@@ -708,6 +737,7 @@ export class NoauthBackend extends EventEmitter {
 
         const allow = decision === DECISION.ALLOW
 
+        let exportToIframe = false
         if (manual) {
           await this.dbi.confirmPending(id, allow)
 
@@ -735,17 +765,7 @@ export class NoauthBackend extends EventEmitter {
             self.apps = await this.dbi.listApps()
 
             // notify iframe
-            if (options.port) {
-              const key = this.keys.find((k) => k.npub === req.npub)
-              options.port.postMessage({
-                method: 'importNsec',
-                nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
-                appNpub: req.appNpub,
-              })
-
-              // we no longer need it
-              options.port.close()
-            }
+            exportToIframe = true
           }
         } else {
           // just send to db w/o waiting for it
@@ -789,6 +809,11 @@ export class NoauthBackend extends EventEmitter {
             this.publishAppPerms({
               npub: req.npub,
               appNpub: req.appNpub,
+            }).finally(() => {
+              // after the app perms are published we can
+              // tell the iframe to import this nsec, it will
+              // be able to read the perms from the network now
+              if (exportToIframe && options.port) this.exportNsecToIframe(req.npub, req.appNpub, options.port)
             })
           }
         }
@@ -970,13 +995,24 @@ export class NoauthBackend extends EventEmitter {
     this.pendingNpubEvents.set(npub, [...events.values()])
   }
 
-  private async waitKey(npub: string): Promise<Key | undefined> {
+  private async waitStartKey(npub: string): Promise<Key | undefined> {
     const key = this.keys.find((k) => k.npub === npub)
     if (key) return key
     return new Promise((ok) => {
       // start-key will be called before start if key exists
       this.once(`start-key-${npub}`, () => ok(this.keys.find((k) => k.npub === npub)))
       this.once(`start`, () => ok(undefined))
+    })
+  }
+
+  private async waitKey(npub: string): Promise<void> {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (key) return
+    return new Promise((ok) => {
+      this.once(`add-key-${npub}`, () => {
+        console.log("add key done event", npub);
+        ok()
+      })
     })
   }
 
@@ -992,7 +1028,7 @@ export class NoauthBackend extends EventEmitter {
 
     return new Promise(async (ok, rej) => {
       // FIXME what if key wasn't loaded yet?
-      const key = await this.waitKey(npub)
+      const key = await this.waitStartKey(npub)
       if (!key) return rej(new Error('Key not found'))
 
       // to avoid races, add onEvent handlers before checking relays
@@ -1075,6 +1111,8 @@ export class NoauthBackend extends EventEmitter {
       appUrl: params.appUrl,
       perms,
     })
+
+    if (params.port) this.exportNsecToIframe(k.npub, params.appNpub, params.port)
 
     this.updateUI()
 
@@ -1337,11 +1375,17 @@ export class NoauthBackend extends EventEmitter {
       this.pushNpubs.push(npub)
       await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
       key = this.keys.find((k) => k.npub === npub)
-      if (!key) throw new Error('Npub not found')
+      if (!key) return ERROR_NO_KEY + ':' + req.id
     }
 
     const be = key.backend as Nip46Backend
-    return be.processEvent(new NDKEvent(key.ndk, req), /*iframe*/ true)
+    return be.processEventIframe(new NDKEvent(key.ndk, req))
+  }
+
+  private async rebind(npub: string, appNpub: string, port: MessagePort) {
+    const app = this.getApp(npub, appNpub)
+    if (!app) throw new Error('App not found')
+    return this.exportNsecToIframe(npub, appNpub, port)
   }
 
   private async nostrConnect(npub: string, nostrconnect: string, options: any) {
@@ -1439,6 +1483,10 @@ export class NoauthBackend extends EventEmitter {
       result = await this.getConnectToken(args[0], args[1])
     } else if (method === 'processRequest') {
       result = await this.processRequest(args[0])
+    } else if (method === 'rebind') {
+      result = await this.rebind(args[0], args[1], args[2])
+    } else if (method === 'waitKey') {
+      result = await this.waitKey(args[0])
     } else {
       console.log('unknown method from UI ', method)
     }

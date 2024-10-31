@@ -22,6 +22,7 @@ import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
 import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPassword'
 import { client } from '@/modules/client'
+import { ModalRebind } from '@/components/Modal/ModalRebind/ModalRebind'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -125,6 +126,7 @@ const KeyPage = () => {
       <ModalConfirmEvent />
       <ModalEditName />
       <ModalSetPassword isPasswordSet={isPasswordSet} />
+      <ModalRebind />
     </>
   )
 }

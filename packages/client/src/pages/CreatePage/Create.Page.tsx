@@ -23,6 +23,7 @@ import { CreateConnectParams } from '@noauth/backend/src/types'
 import { nip19 } from 'nostr-tools'
 import { Button } from '@/shared/Button/Button'
 import { client } from '@/modules/client'
+import useIframePort from '@/hooks/useIframePort'
 
 const FORM_DEFAULT_VALUES: FormInputType = {
   password: '',
@@ -64,7 +65,8 @@ const CreatePage = () => {
 
   const nip05 = `${name}@${DOMAIN}`
 
-  const isGranted = getNotificationPermission()
+  const { port, referrer } = useIframePort(true)
+  const isGranted = !!port || getNotificationPermission()
 
   // const handleLearnMore = () => {
   //   // @ts-ignore
@@ -101,19 +103,24 @@ const CreatePage = () => {
       const { password } = values
       setIsLoading(true)
 
-      // first thing on user action is to ask for notifs
-      await askNotificationPermission()
-      const ok = await client.enablePush()
-      if (!ok) throw new Error('Failed to activate the push subscription')
-      console.log('enablePush done')
+      // first thing on user action is to ask for notifs,
+      // but only if we're not talking to our own iframe
+      if (!port) {
+        await askNotificationPermission()
 
-      const appUrl = getReferrerAppUrl()
+        const ok = await client.enablePush()
+        if (!ok) throw new Error('Failed to activate the push subscription')
+        console.log('enablePush done')
+      }
+
+      const appUrl = referrer || getReferrerAppUrl()
       const params: CreateConnectParams = {
         name,
         password,
         appNpub,
         perms,
         appUrl,
+        port,
       }
       const npub = await client.generateKeyConnect(params)
       console.log('Created', npub, 'app', appUrl)

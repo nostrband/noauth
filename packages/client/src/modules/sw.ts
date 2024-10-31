@@ -1,4 +1,4 @@
-import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
+import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
 import { dbi } from '@noauth/common/dist/dbi-client'
@@ -39,7 +39,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
         return Promise.resolve(swg.btoa(data))
       },
       getOrigin() {
-        return swg.location.origin
+        return ADMIN_DOMAIN ? `https://${ADMIN_DOMAIN}` : swg.location.origin
       },
       getCryptoSubtle() {
         return swg.crypto.subtle
@@ -332,21 +332,26 @@ export class ServiceWorkerBackend extends NoauthBackend {
       applicationServerKey: WEB_PUSH_PUBKEY,
     }
 
-    const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
-    console.log('push endpoint', JSON.stringify(pushSubscription))
+    try {
+      const pushSubscription = await this.swg.registration.pushManager?.subscribe(options)
+      console.log('push endpoint', JSON.stringify(pushSubscription))
 
-    if (!pushSubscription) {
-      console.log('failed to enable push subscription')
+      if (!pushSubscription) {
+        console.log('failed to enable push subscription')
+        return false
+      }
+
+      // subscribe to all pubkeys
+      for (const npub of this.getUnlockedNpubs()) {
+        await this.browserApi.sendSubscriptionToServer(npub, pushSubscription)
+      }
+      console.log('push enabled')
+
+      return true
+    } catch (e) {
+      console.log('Failed to enable push notifications', e)
       return false
     }
-
-    // subscribe to all pubkeys
-    for (const npub of this.getUnlockedNpubs()) {
-      await this.browserApi.sendSubscriptionToServer(npub, pushSubscription)
-    }
-    console.log('push enabled')
-
-    return true
   }
 
   protected async subscribeAllKeys(): Promise<void> {
