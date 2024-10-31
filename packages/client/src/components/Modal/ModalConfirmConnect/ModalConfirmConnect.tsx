@@ -49,7 +49,7 @@ export const ModalConfirmConnect = () => {
   // so that we could pass this connection (nsec+appNpub) to
   // the iframe so it would save it to it's partitioned storage
   const { port, referrer } = useIframePort(isPopup);
-  console.log("iframe port", port, referrer);
+  // console.log("iframe port", port, referrer);
 
   // npub might be passed by the /create page
   const { npub = searchParams.get('npub') || '' } = useParams<{ npub: string }>()
