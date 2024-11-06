@@ -14,11 +14,12 @@ module.exports = function override(config) {
     '@': path.resolve(__dirname, 'src'),
   }
 
-  if (process.env.BUILD_TARGET === 'ext-chrome') {
+  if (process.env.REACT_APP_BUILD_TARGET === 'EXTENSION') {
     config.entry = {
       main: './src/ext/popup.ts',
       background: './src/ext/background.ts',
       content: './src/ext/content.ts',
+      'worker-wrapper': './src/ext/worker-wrapper.ts',
     }
     config.output = {
       ...config.output,
@@ -28,9 +29,17 @@ module.exports = function override(config) {
     }
     config.plugins.push(
       new CopyPlugin({
-        patterns: [{ from: 'src/ext/manifest.json', to: 'manifest.json' }],
+        patterns: [
+          { from: 'src/ext/manifest.json', to: 'manifest.json' },
+          {
+            from: '../../node_modules/webextension-polyfill/dist/browser-polyfill.js',
+            to: 'static/js',
+          },
+        ],
       })
     )
+    config.devtool = 'inline-source-map'
+    console.log(config)
   } else {
     config.output.path = path.resolve(__dirname, 'build')
   }

@@ -32,7 +32,8 @@ import NDK, {
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { sha256 } from '@noble/hashes/sha256'
-import { EventEmitter } from 'tseep'
+// ee is ee-safe?
+import { EventEmitter } from 'tseep/lib/ee'
 import { Watcher } from './watcher'
 import { BackendRequest, CreateConnectParams, DECISION, IAllowCallbackParams, Key, KeyInfo } from './types'
 import { Nip46Backend } from './nip46'
@@ -1190,7 +1191,7 @@ export class NoauthBackend extends EventEmitter {
       }
     }
 
-    console.log('fetch', { name, existingName })
+    console.log('fetch', { name, existingName }, this.global.getCryptoSubtle())
 
     // add new key
     const nsec = await this.keysModule.decryptKeyPass({
@@ -1198,8 +1199,11 @@ export class NoauthBackend extends EventEmitter {
       enckey,
       passphrase,
     })
+    console.log('HISH-1-works')
     const k = await this.addKey({ name, nsec, existingName, passphrase })
+    console.log('HISH-2-works')
     this.updateUI()
+    console.log('HISH-3-works')
     return k
   }
 

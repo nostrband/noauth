@@ -1,1 +1,1 @@
-console.log('[content]: testing')
+console.log('[content]: loaded')

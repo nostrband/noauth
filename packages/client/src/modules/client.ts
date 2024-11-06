@@ -3,6 +3,7 @@ import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noa
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
 import { NostrEvent } from '@nostr-dev-kit/ndk'
+import { clientExtension } from './ext-client'
 
 export interface BackendReply {
   id: number
@@ -99,7 +100,8 @@ export interface BackendClient {
 }
 
 const defineClient = (): BackendClient => {
-  if (process.env.REACT_APP_HOSTED === 'true') return startClientWebSocket()
+  if (process.env.REACT_APP_BUILD_TARGET === 'HOST') return startClientWebSocket()
+  if (process.env.REACT_APP_BUILD_TARGET === 'EXTENSION') return clientExtension
   return clientServiceWorker
 }
 

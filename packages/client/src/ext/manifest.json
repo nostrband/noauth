@@ -5,17 +5,20 @@
   "description": "A Chrome extension for Nsec.app",
   "icons": {},
   "background": {
-    "service_worker": "./static/js/background.js"
+    "service_worker": "./static/js/worker-wrapper.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["./static/js/content.js"]
+      "js": ["./static/js/content.js", "./static/js/browser-polyfill.js"]
     }
   ],
   "action": {
     "default_popup": "index.html"
   },
   "permissions": ["tabs", "storage", "notifications", "storage", "clipboardRead", "clipboardWrite", "background"],
-  "host_permissions": ["http://*/*", "https://*/*"]
+  "host_permissions": ["<all_urls>"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }

@@ -25,6 +25,7 @@
     "format": "lerna run format",
     "clean": "rm -rf node_modules && lerna clean",
     "build": "lerna run build --scope '{@noauth/client,@noauth/common,@noauth/backend}'",
+    "build:ext": "lerna run build --scope '{@noauth/common,@noauth/backend}' && npm run build:ext -w @noauth/client",
     "build:hosted": "npm run build -w @noauth/common && npm run build:hosted -w @noauth/common && lerna run build --scope '{@noauth/backend,@noauth/server}' && npm run build:hosted -w @noauth/client",
     "start": "npm run start -w @noauth/client",
     "start:hosted": "npm run start:hosted -w @noauth/client",
