@@ -72,7 +72,6 @@ function App() {
 
     // all updates from backend reloaded,
     // backend replies can be delivered now
-    console.log('[HISH]: client', { client })
     await client.checkpoint()
     setIsLoading(false)
 

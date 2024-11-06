@@ -32,8 +32,7 @@ import NDK, {
 import { encrypt as encryptNip49, decrypt as decryptNip49 } from './nip49'
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { sha256 } from '@noble/hashes/sha256'
-// ee is ee-safe?
-import { EventEmitter } from 'tseep/lib/ee'
+import { EventEmitter } from 'tseep/lib/ee-safe'
 import { Watcher } from './watcher'
 import { BackendRequest, CreateConnectParams, DECISION, IAllowCallbackParams, Key, KeyInfo } from './types'
 import { Nip46Backend } from './nip46'
@@ -1199,11 +1198,8 @@ export class NoauthBackend extends EventEmitter {
       enckey,
       passphrase,
     })
-    console.log('HISH-1-works')
     const k = await this.addKey({ name, nsec, existingName, passphrase })
-    console.log('HISH-2-works')
     this.updateUI()
-    console.log('HISH-3-works')
     return k
   }
 
@@ -1322,6 +1318,7 @@ export class NoauthBackend extends EventEmitter {
       subNpub,
       timestamp: Date.now(),
       expiry: Date.now() + TOKEN_TTL,
+      // @ts-ignore
       token: bytesToHex(randomBytes(TOKEN_SIZE)),
     }
     await this.dbi.addConnectToken(t)

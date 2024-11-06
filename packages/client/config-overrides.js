@@ -39,7 +39,6 @@ module.exports = function override(config) {
       })
     )
     config.devtool = 'inline-source-map'
-    console.log(config)
   } else {
     config.output.path = path.resolve(__dirname, 'build')
   }

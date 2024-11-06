@@ -14,6 +14,7 @@ const getOrigin = async () => {
 }
 
 async function start() {
+  console.log('start executed!')
   const origin = await getOrigin()
   const backend = new ExtensionBackend(origin)
   await backend.start()
@@ -23,5 +24,7 @@ browser.runtime.onInstalled.addListener(() => {
   console.log('[background] loaded')
   start()
 })
+
+console.log('BACKGROUND WORKING!!!')
 
 export {}

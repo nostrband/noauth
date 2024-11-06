@@ -36,28 +36,36 @@ export class ExtensionBackend extends NoauthBackend {
     const api = new Api(global)
     super(global, api, dbi)
     self = this
+    // @ts-ignore
+    browser.runtime.onMessage.addListener(async (message: any) => {
+      try {
+        const result = await this.onMessageEvent(message)
 
-    browser.runtime.onMessage.addListener((message: any) => {
-      return this.onMessageEvent(message)
+        await browser.runtime.sendMessage(result).catch((error) => {
+          console.log({ error }, 'HISH-send')
+        })
+        this.updateUI()
+      } catch (error: any) {
+        await browser.runtime.sendMessage({ error: error.toString(), id: message.id }).catch((error) => {
+          console.log({ error }, 'HISH-send')
+        })
+        this.updateUI()
+      }
     })
   }
 
   private async onMessageEvent(message: BackendRequest) {
     try {
       const { id, method } = message
-      console.log('[ExtensionBackend]:message', { message })
       const result = await this.onMessage(message)
-      this.updateUI()
+
       return { id, result, method }
     } catch (e: any) {
-      console.error('[ExtensionBackend]:error', e)
-      this.updateUI()
-      return { error: e.toString() }
+      throw new Error(e.toString())
     }
   }
 
   protected async updateUI() {
-    console.log('[HISH]: update UI', {})
     browser.runtime.sendMessage({ result: 're-render' })
   }
 }

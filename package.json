@@ -19,6 +19,9 @@
   "overrides": {
     "@noauth/client": {
       "typescript": "^5.3.2"
+    },
+    "@nostr-dev-kit/ndk": {
+      "tseep": "npm:eventemitter3@5.0.1"
     }
   },
   "scripts": {

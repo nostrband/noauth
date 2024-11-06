@@ -13,32 +13,35 @@ export class ClientExtension implements BackendClient {
   private onClose: (() => void) | null = null
   private queue: (() => Promise<void> | void)[] = []
   private checkpointQueue: (() => Promise<void> | void)[] = []
-  private isConnected: boolean = true
+  private isConnected: boolean = false
 
   public async connect(): Promise<boolean> {
     return true
   }
 
+  constructor() {
+    this.onStarted()
+  }
+
   private async onStarted() {
-    console.log('[onStarted]:works')
+    // @TODO add a state indicating if the background script is active
+    const result = await browser.runtime.sendMessage('ping')
     this.isConnected = true
     while (this.queue.length) await this.queue.shift()!()
   }
 
   private callWhenStarted(cb: () => void) {
-    console.log('[callWhenStarted]:works', cb, { connected: this.isConnected })
     if (this.isConnected) cb()
     else this.queue.push(cb)
   }
 
   private async waitStarted() {
-    console.log('[waitStarted]:works')
     return new Promise<void>((ok) => this.callWhenStarted(ok))
   }
 
   public async onMessage(data: BackendReply) {
     const { id, result, error, method = '' } = data
-    console.log('receive from Background => ', { id, result, error, method })
+    console.log('MESSI[front]', { id, result, error, method })
     if (!id) {
       if (result === 'reload') {
         if (this.onReload) this.onReload()
@@ -49,7 +52,6 @@ export class ClientExtension implements BackendClient {
     }
     const req = this.reqs.get(id)
     if (!req) {
-      console.log('Unexpected message', data)
       return
     }
     this.reqs.delete(id)
@@ -64,7 +66,6 @@ export class ClientExtension implements BackendClient {
 
   private async call<T = void>(method: string, ...args: any[]): Promise<T> {
     await this.waitStarted()
-    console.log('[waitStarted]:worked')
 
     const id = this.messageId
     this.messageId++
@@ -81,8 +82,10 @@ export class ClientExtension implements BackendClient {
           method,
           args: [...args],
         }
-        console.log('sending to background', msg)
-        browser.runtime.sendMessage(msg)
+        console.log('sending to background script', msg)
+        browser.runtime.sendMessage(msg).catch((error) => {
+          console.log({ error }, 'HISH')
+        })
       }
       this.callWhenStarted(call)
     })
@@ -234,6 +237,5 @@ export class ClientExtension implements BackendClient {
 export const clientExtension = new ClientExtension()
 
 browser.runtime.onMessage.addListener((message: any) => {
-  console.log('[HISH]: Receive message on client')
   return clientExtension.onMessage(message)
 })

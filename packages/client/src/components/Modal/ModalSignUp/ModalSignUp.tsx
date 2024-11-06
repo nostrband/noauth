@@ -88,7 +88,6 @@ export const ModalSignUp = () => {
   }, [checkIsUsernameAvailable])
 
   const submitHandler = async (values: FormInputType) => {
-    console.log('[HISH: client =>]', { client })
     hidePassword()
     hideConfirmPassword()
     if (isLoading || !isAvailable || isPasswordInvalid) return undefined
