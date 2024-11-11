@@ -106,8 +106,11 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
             channel.port1.close()
             await importNsec(ev.data)
 
-            console.log('starter sending ready to parent')
-            window.parent.postMessage(props.rebind ? 'rebinderDone' : 'starterDone', '*')
+            const reply = props.rebind ? ['rebinderDone'] : ['starterDone']
+            if (!props.rebind && ev.data.connectReply) reply.push(ev.data.connectReply)
+
+            console.log('starter sending ready to parent', reply)
+            window.parent.postMessage(reply, '*')
 
             setLoading(false)
           }
@@ -223,7 +226,7 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
           .then(() => {
             console.log('worker sending ready to parent')
             append('sw ready')
-            window.parent.postMessage('workerReady', '*')
+            window.parent.postMessage(['workerReady'], '*')
           })
           .catch((e) => append('async error ' + e))
       } catch (e) {
