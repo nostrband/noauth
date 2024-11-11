@@ -24,6 +24,7 @@ import NDK, {
   NDKEvent,
   NDKNip46Backend,
   NDKRelaySet,
+  NDKRpcResponse,
   NDKSubscription,
   NDKSubscriptionCacheUsage,
   NDKUser,
@@ -628,14 +629,23 @@ export class NoauthBackend extends EventEmitter {
     this.publishAppPerms({ npub, appNpub })
   }
 
-  private exportNsecToIframe(npub: string, appNpub: string, port: MessagePort) {
+  private async exportNsecToIframe(npub: string, appNpub: string, port: MessagePort, reqId?: string, secret?: string) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
-    console.log('exporting to iframe', npub, appNpub)
+
+    let connectReply: any
+    if (reqId && secret) {
+      const { data: remotePubkey } = nip19.decode(appNpub)
+      const reply = await (key.backend as Nip46Backend).prepareResponse(reqId, remotePubkey as string, secret)
+      connectReply = reply.rawEvent()
+    }
+
+    console.log('exporting to iframe', npub, appNpub, reqId, secret)
     port.postMessage({
       method: 'importNsec',
       nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
       appNpub: appNpub,
+      connectReply,
     })
 
     // we no longer need it
@@ -702,11 +712,14 @@ export class NoauthBackend extends EventEmitter {
         manual: boolean,
         decision: DECISION,
         remember: boolean,
-        options?: any,
+        confirmOptions?: any,
         resultCb?: (result: string | undefined) => void
       ) => {
+        // NOTE: `reqOptions` is passed to request,
+        // but here `options` is passed to `confirm` call by UI.
+
         // confirm
-        console.log(Date.now(), decision, npub, method, options, params)
+        console.log(Date.now(), decision, npub, method, confirmOptions, params)
 
         // consume the token
         if (method === 'connect') {
@@ -755,7 +768,7 @@ export class NoauthBackend extends EventEmitter {
               timestamp: Date.now(),
               name: '',
               icon: '',
-              url: options.appUrl || '',
+              url: confirmOptions.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
               userAgent: globalThis?.navigator?.userAgent || '',
@@ -786,7 +799,7 @@ export class NoauthBackend extends EventEmitter {
 
         if (remember) {
           let newPerms = [getReqPerm(req)]
-          if (allow && options && options.perms) newPerms = options.perms
+          if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
 
           // write new perms confirmed by user
           for (const p of newPerms) {
@@ -815,7 +828,8 @@ export class NoauthBackend extends EventEmitter {
               // after the app perms are published we can
               // tell the iframe to import this nsec, it will
               // be able to read the perms from the network now
-              if (exportToIframe && options.port) this.exportNsecToIframe(req.npub, req.appNpub, options.port)
+              if (exportToIframe && confirmOptions.port)
+                this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
             })
           }
         }
@@ -860,7 +874,7 @@ export class NoauthBackend extends EventEmitter {
         await this.dbi.addPending(req)
 
         // need manual confirmation
-        console.log('need confirm', req)
+        console.log('need confirm', req, reqOptions)
 
         // put to a list of pending requests
         this.confirmBuffer.push({
@@ -1119,7 +1133,7 @@ export class NoauthBackend extends EventEmitter {
       perms,
     })
 
-    if (params.port) this.exportNsecToIframe(k.npub, params.appNpub, params.port)
+    if (params.port) await this.exportNsecToIframe(k.npub, params.appNpub, params.port)
 
     this.updateUI()
 
