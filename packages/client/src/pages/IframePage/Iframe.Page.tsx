@@ -278,19 +278,21 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 
 const IframePage = () => {
   const [searchParams] = useSearchParams()
-  const authUrl = searchParams.get('auth_url') || ''
+  const connect = searchParams.get('connect') || ''
   const rebindPubkey = searchParams.get('rebind') || ''
   const keys = useAppSelector(selectKeys)
 
-  if (authUrl) {
+  if (connect) {
+    if (!connect.startsWith("nostrconnect://")) throw new Error("Bad nostrconnect url");
+    const authUrl = `https://${ADMIN_DOMAIN}/${encodeURIComponent(connect)}`;
     return <IframeStarter authUrl={authUrl} rebind={false} />
   } else if (rebindPubkey) {
     const pubkey = searchParams.get('pubkey') || ''
     const npub = nip19.npubEncode(pubkey)
     const appNpub = nip19.npubEncode(rebindPubkey)
-    const url = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&appNpub=${appNpub}&popup=true`
-    console.log('rebind url', url)
-    return <IframeStarter authUrl={url} rebind={true} />
+    const authUrl = `https://${ADMIN_DOMAIN}/key/${npub}?rebind=true&appNpub=${appNpub}&popup=true`
+    console.log('rebind url', authUrl)
+    return <IframeStarter authUrl={authUrl} rebind={true} />
   } else {
     return <IframeWorker keys={keys} />
   }
