@@ -71,6 +71,23 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
       popup = window.open(url.href, 'nsec_app_auth_url' + Math.random(), 'width=400,height=700')
       if (!popup) throw new Error('Failed to open popup!')
 
+      // we'll send channel port to the popup
+      const channel = new MessageChannel()
+
+      // if popup is closed and we haven't received 'importNsec'
+      // then user probably rejected and we return proper error code
+      const timeout = setInterval(() => {
+        if (popup!.closed) {
+          window.removeEventListener('message', onReady)
+          const reply = props.rebind ? ['rebinderError'] : ['starterError']
+          reply.push('Popup did not reply')
+          channel.port1.close()
+          setLoading(false)
+        }
+      }, 100)
+
+      // when popup is ready we register ourselves
+      // and wait for importNsec command
       const onReady = async (e: MessageEvent) => {
         console.log(new Date(), 'starter received message from popup', e)
         append('popup ready ' + e.data)
@@ -85,7 +102,6 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
         }
 
         console.log(new Date(), 'popup ready, registering starter')
-        const channel = new MessageChannel()
         e.source.postMessage(
           {
             method: 'registerIframeStarter',
@@ -103,12 +119,18 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
           if (!ev.data || !ev.data.method) return
           // console.log('message from popup', ev)
           if (ev.data.method === 'importNsec') {
+            // stop timeout
+            clearInterval(timeout)
+
+            // close channel
             channel.port1.close()
+
+            // import
             await importNsec(ev.data)
 
+            // send reply
             const reply = props.rebind ? ['rebinderDone'] : ['starterDone']
             if (!props.rebind && ev.data.connectReply) reply.push(ev.data.connectReply)
-
             console.log('starter sending ready to parent', reply)
             window.parent.postMessage(reply, '*')
 
