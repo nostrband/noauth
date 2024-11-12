@@ -78,7 +78,7 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
       // then user probably rejected and we return proper error code
       const timeout = setInterval(() => {
         if (popup!.closed) {
-          console.log("Popup closed without reply!");
+          console.log('Popup closed without reply!')
           window.removeEventListener('message', onReady)
           const reply = props.rebind ? ['rebinderError'] : ['starterError']
           reply.push('Popup did not reply')
@@ -180,86 +180,94 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
   }
 
+  const start = async () => {
+    console.log('worker sending ready to parent')
+    append('sw ready')
+
+    // create channel btw sw and client
+    const channel = new MessageChannel()
+
+    // send port1 to sw
+    await client.registerIframeWorker(channel.port1)
+
+    // send port2 to client
+    window.parent.postMessage(['workerReady', channel.port2], '*', [channel.port2])
+  }
+
   useEffect(() => {
     append('start ' + started)
     setStarted(true)
 
-    // nip46 over postMessage
-    const onMessage = async (ev: MessageEvent) => {
-      // NOTE: we don't do origin/source checks bcs
-      // we don't care who's sending it - the comms are
-      // e2e encrypted, we could be talking through
-      // any number of middlemen and it wouldn't matter
-      append(`got event source ${!!ev.source} origin ${ev.origin} data ${JSON.stringify(ev.data)}`)
-      if (!ev.source) return
+    // // nip46 over postMessage
+    // const onMessage = async (ev: MessageEvent) => {
+    //   // NOTE: we don't do origin/source checks bcs
+    //   // we don't care who's sending it - the comms are
+    //   // e2e encrypted, we could be talking through
+    //   // any number of middlemen and it wouldn't matter
+    //   append(`got event source ${!!ev.source} origin ${ev.origin} data ${JSON.stringify(ev.data)}`)
+    //   if (!ev.source) return
 
-      let event: NostrEvent | undefined
-      try {
-        event = ev.data
-        if (!validateEvent(event)) return
-        if (!verifySignature(event as Event)) return
-      } catch (e) {
-        console.log('invalid frame event', e, ev)
-        return
-      }
+    //   let event: NostrEvent | undefined
+    //   try {
+    //     event = ev.data
+    //     if (!validateEvent(event)) return
+    //     if (!verifySignature(event as Event)) return
+    //   } catch (e) {
+    //     console.log('invalid frame event', e, ev)
+    //     return
+    //   }
 
-      append('valid event')
-      console.log('iframe request event', event)
+    //   append('valid event')
+    //   console.log('iframe request event', event)
 
-      // helper
-      const fetchReplies = async () => {
-        let reply: NostrEvent | string | undefined
-        while ((reply = await client.fetchReply(event!.id!))) {
-          append('reply: ' + JSON.stringify(reply))
-          console.log('iframe reply event', reply)
-          ev.source!.postMessage(reply, {
-            targetOrigin: ev.origin,
-          })
-          if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) return true
-        }
-        return false
-      }
+    //   // helper
+    //   const fetchReplies = async () => {
+    //     let reply: NostrEvent | string | undefined
+    //     while ((reply = await client.fetchReply(event!.id!))) {
+    //       append('reply: ' + JSON.stringify(reply))
+    //       console.log('iframe reply event', reply)
+    //       ev.source!.postMessage(reply, {
+    //         targetOrigin: ev.origin,
+    //       })
+    //       if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) return true
+    //     }
+    //     return false
+    //   }
 
-      // first attempt
-      await client.submitRequest(event as NostrEvent)
-      const restart = await fetchReplies()
+    //   // first attempt
+    //   await client.submitRequest(event as NostrEvent)
+    //   const restart = await fetchReplies()
 
-      // are we expecting the call to be restarted?
-      if (restart) {
-        // let's wait until user rebinds the iframe
-        // and imports nsec into it
-        const npub = nip19.npubEncode(event.pubkey)
-        console.log('iframe waiting for key', npub)
-        await client.waitKey(npub)
+    //   // are we expecting the call to be restarted?
+    //   if (restart) {
+    //     // let's wait until user rebinds the iframe
+    //     // and imports nsec into it
+    //     const npub = nip19.npubEncode(event.pubkey)
+    //     console.log('iframe waiting for key', npub)
+    //     await client.waitKey(npub)
 
-        // retry
-        console.log('iframe retry request', event)
-        await client.submitRequest(event as NostrEvent)
-        await fetchReplies()
-      }
-    }
-    window.addEventListener('message', onMessage)
+    //     // retry
+    //     console.log('iframe retry request', event)
+    //     await client.submitRequest(event as NostrEvent)
+    //     await fetchReplies()
+    //   }
+    // }
+    // window.addEventListener('message', onMessage)
 
     // now after all set wait until service worker starts
     // and notify the parent that we're ready to work
     if (!started) {
       append('waiting for sw')
       try {
-        navigator.serviceWorker.ready
-          .then(() => {
-            console.log('worker sending ready to parent')
-            append('sw ready')
-            window.parent.postMessage(['workerReady'], '*')
-          })
-          .catch((e) => append('async error ' + e))
+        navigator.serviceWorker.ready.then(start).catch((e) => append('async error ' + e))
       } catch (e) {
         append('error ' + e)
       }
     }
 
-    return () => {
-      window.removeEventListener('message', onMessage)
-    }
+    // return () => {
+    //   window.removeEventListener('message', onMessage)
+    // }
   }, [started])
 
   return (
@@ -284,8 +292,8 @@ const IframePage = () => {
   const keys = useAppSelector(selectKeys)
 
   if (connect) {
-    if (!connect.startsWith("nostrconnect://")) throw new Error("Bad nostrconnect url");
-    const authUrl = `https://${ADMIN_DOMAIN}/${connect}`;
+    if (!connect.startsWith('nostrconnect://')) throw new Error('Bad nostrconnect url')
+    const authUrl = `https://${ADMIN_DOMAIN}/${connect}`
     return <IframeStarter authUrl={authUrl} rebind={false} />
   } else if (rebindPubkey) {
     const pubkey = searchParams.get('pubkey') || ''
