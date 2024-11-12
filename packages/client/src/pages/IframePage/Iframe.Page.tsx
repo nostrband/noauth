@@ -78,6 +78,7 @@ const IframeStarter: FC<{ authUrl: string; rebind: boolean }> = (props) => {
       // then user probably rejected and we return proper error code
       const timeout = setInterval(() => {
         if (popup!.closed) {
+          console.log("Popup closed without reply!");
           window.removeEventListener('message', onReady)
           const reply = props.rebind ? ['rebinderError'] : ['starterError']
           reply.push('Popup did not reply')
@@ -284,7 +285,7 @@ const IframePage = () => {
 
   if (connect) {
     if (!connect.startsWith("nostrconnect://")) throw new Error("Bad nostrconnect url");
-    const authUrl = `https://${ADMIN_DOMAIN}/${encodeURIComponent(connect)}`;
+    const authUrl = `https://${ADMIN_DOMAIN}/${connect}`;
     return <IframeStarter authUrl={authUrl} rebind={false} />
   } else if (rebindPubkey) {
     const pubkey = searchParams.get('pubkey') || ''
