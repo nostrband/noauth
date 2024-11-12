@@ -302,6 +302,10 @@ export class ClientWebSocket implements BackendClient {
     throw new Error('rebind not implemented')
   }
 
+  public async registerIframeWorker(port: MessagePort) {
+    throw new Error('registerIframeWorker not implemented')
+  }
+
   public async waitKey(npub: string) {
     throw new Error('waitKey not implemented')
   }

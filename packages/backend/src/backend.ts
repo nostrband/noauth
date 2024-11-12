@@ -1,4 +1,4 @@
-import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
+import { Event, generatePrivateKey, getPublicKey, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import {
   DbApp,
   DbConnectToken,
@@ -1385,6 +1385,67 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
+  private async registerIframeWorker(port: MessagePort) {
+    port.onmessage = async (ev: MessageEvent) => {
+      console.log("got iframe request", ev.data);
+
+      const sendReply = (reply: any) => {
+        port.postMessage(reply);
+      }
+
+      // parse, verify
+      let event: NostrEvent | undefined
+      try {
+        event = ev.data
+        if (!validateEvent(event)) return
+        if (!verifySignature(event as Event)) return
+      } catch (e) {
+        console.log('invalid iframe worker event', e, ev)
+        return sendReply("Invalid request event")
+      }
+
+      console.log('iframe request event', event)
+
+      // check if target pubkey is there
+      const pubkey = event.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
+      if (!pubkey) throw new Error('Bad request')
+      const npub = nip19.npubEncode(pubkey)
+      console.log('pubkey', pubkey, 'npub', npub)
+      let key = this.keys.find((k) => k.npub === npub)
+      if (!key) {
+        console.log('waiting for worker to start', npub)
+        this.pushNpubs.push(npub)
+        await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
+        key = this.keys.find((k) => k.npub === npub)
+      }
+
+      if (!key) {
+        // no target key? notify client so that it could rebind
+        sendReply(ERROR_NO_KEY + ':' + event.id)
+
+        // now wait for the rebound key
+        await this.waitKey(npub);
+
+        // try again
+        key = this.keys.find((k) => k.npub === npub)
+        if (!key) return sendReply("Key not found")
+      }
+
+      // process the request
+      try {
+        const be = key.backend as Nip46Backend
+        const reply = await be.processEventIframe(new NDKEvent(key.ndk, event), (auth_url: NostrEvent) => {
+          sendReply(auth_url);
+        });
+
+        sendReply(reply);
+      } catch (e: any) {
+        console.log("Failed to process iframe request", event);
+        sendReply("Failed to process request");
+      }
+    }
+  }
+
   private async submitRequest(req: NostrEvent) {
     const pubkey = req.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
     if (!pubkey) throw new Error('Bad request')
@@ -1538,6 +1599,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.fetchReply(args[0])
     } else if (method === 'rebind') {
       result = await this.rebind(args[0], args[1], args[2])
+    } else if (method === 'registerIframeWorker') {
+      result = await this.registerIframeWorker(args[0])
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
     } else {

@@ -99,6 +99,8 @@ export interface BackendClient {
 
   fetchReply: (id: string) => Promise<NostrEvent | string | undefined>
 
+  registerIframeWorker: (port: MessagePort) => Promise<void>
+
   rebind: (npub: string, appNpub: string, port: MessagePort) => Promise<void>
 
   waitKey: (npub: string) => Promise<void>

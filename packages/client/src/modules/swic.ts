@@ -220,6 +220,11 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('rebind', transfer, npub, appNpub, port)
   }
 
+  public async registerIframeWorker(port: MessagePort) {
+    const transfer = [port]
+    return this.call<void>('registerIframeWorker', transfer, port)
+  }
+
   public async waitKey(npub: string) {
     return this.call<void>('waitKey', [], npub)
   }
