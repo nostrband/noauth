@@ -86,7 +86,7 @@ export async function sendPostAuthd({
   })
 }
 
-export class Submitted<T> {
+export class WaitableQueue<T> {
   private queue: T[] = []
   private promises: Promise<void>[] = []
   private cb?: () => void
@@ -104,7 +104,7 @@ export class Submitted<T> {
     await this.promises.shift()
 
     // wtf?
-    if (!this.queue.length) throw new Error('Empty reply queue')
+    if (!this.queue.length) throw new Error('Empty queue')
 
     // return
     return this.queue.shift()

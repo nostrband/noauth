@@ -196,67 +196,8 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
 
   useEffect(() => {
     append('start ' + started)
-    setStarted(true)
-
-    // // nip46 over postMessage
-    // const onMessage = async (ev: MessageEvent) => {
-    //   // NOTE: we don't do origin/source checks bcs
-    //   // we don't care who's sending it - the comms are
-    //   // e2e encrypted, we could be talking through
-    //   // any number of middlemen and it wouldn't matter
-    //   append(`got event source ${!!ev.source} origin ${ev.origin} data ${JSON.stringify(ev.data)}`)
-    //   if (!ev.source) return
-
-    //   let event: NostrEvent | undefined
-    //   try {
-    //     event = ev.data
-    //     if (!validateEvent(event)) return
-    //     if (!verifySignature(event as Event)) return
-    //   } catch (e) {
-    //     console.log('invalid frame event', e, ev)
-    //     return
-    //   }
-
-    //   append('valid event')
-    //   console.log('iframe request event', event)
-
-    //   // helper
-    //   const fetchReplies = async () => {
-    //     let reply: NostrEvent | string | undefined
-    //     while ((reply = await client.fetchReply(event!.id!))) {
-    //       append('reply: ' + JSON.stringify(reply))
-    //       console.log('iframe reply event', reply)
-    //       ev.source!.postMessage(reply, {
-    //         targetOrigin: ev.origin,
-    //       })
-    //       if (typeof reply === 'string' && reply.startsWith(ERROR_NO_KEY)) return true
-    //     }
-    //     return false
-    //   }
-
-    //   // first attempt
-    //   await client.submitRequest(event as NostrEvent)
-    //   const restart = await fetchReplies()
-
-    //   // are we expecting the call to be restarted?
-    //   if (restart) {
-    //     // let's wait until user rebinds the iframe
-    //     // and imports nsec into it
-    //     const npub = nip19.npubEncode(event.pubkey)
-    //     console.log('iframe waiting for key', npub)
-    //     await client.waitKey(npub)
-
-    //     // retry
-    //     console.log('iframe retry request', event)
-    //     await client.submitRequest(event as NostrEvent)
-    //     await fetchReplies()
-    //   }
-    // }
-    // window.addEventListener('message', onMessage)
-
-    // now after all set wait until service worker starts
-    // and notify the parent that we're ready to work
     if (!started) {
+      setStarted(true)
       append('waiting for sw')
       try {
         navigator.serviceWorker.ready.then(start).catch((e) => append('async error ' + e))
@@ -264,10 +205,6 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
         append('error ' + e)
       }
     }
-
-    // return () => {
-    //   window.removeEventListener('message', onMessage)
-    // }
   }, [started])
 
   return (

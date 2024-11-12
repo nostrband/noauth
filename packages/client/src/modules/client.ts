@@ -95,10 +95,6 @@ export interface BackendClient {
 
   getSynced: (npub: string) => Promise<boolean>
 
-  submitRequest: (request: NostrEvent) => Promise<void>
-
-  fetchReply: (id: string) => Promise<NostrEvent | string | undefined>
-
   registerIframeWorker: (port: MessagePort) => Promise<void>
 
   rebind: (npub: string, appNpub: string, port: MessagePort) => Promise<void>
