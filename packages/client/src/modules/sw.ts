@@ -1,4 +1,4 @@
-import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
+import { DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
 import { dbi } from '@noauth/common/dist/dbi-client'
@@ -39,7 +39,8 @@ export class ServiceWorkerBackend extends NoauthBackend {
         return Promise.resolve(swg.btoa(data))
       },
       getOrigin() {
-        return ADMIN_DOMAIN ? `https://${ADMIN_DOMAIN}` : swg.location.origin
+        // ADMIN_DOMAIN ? `https://${ADMIN_DOMAIN}` :
+        return swg.location.origin
       },
       getCryptoSubtle() {
         return swg.crypto.subtle
