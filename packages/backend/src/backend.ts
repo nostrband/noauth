@@ -1,4 +1,4 @@
-import { generatePrivateKey, getPublicKey, nip19 } from 'nostr-tools'
+import { Event, generatePrivateKey, getPublicKey, nip19, validateEvent, verifySignature } from 'nostr-tools'
 import {
   DbApp,
   DbConnectToken,
@@ -41,7 +41,6 @@ import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
-import { Submitted } from './utils'
 
 interface Pending {
   req: DbPending
@@ -66,7 +65,6 @@ export class NoauthBackend extends EventEmitter {
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
   private permSub?: NDKSubscription
   private pushNpubs: string[] = []
-  private submitted: Map<string, Submitted<NostrEvent | string | Error>> = new Map()
 
   private dbi: DbInterface
 
@@ -628,14 +626,23 @@ export class NoauthBackend extends EventEmitter {
     this.publishAppPerms({ npub, appNpub })
   }
 
-  private exportNsecToIframe(npub: string, appNpub: string, port: MessagePort) {
+  private async exportNsecToIframe(npub: string, appNpub: string, port: MessagePort, reqId?: string, secret?: string) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
-    console.log('exporting to iframe', npub, appNpub)
+
+    let connectReply: any
+    if (reqId && secret) {
+      const { data: remotePubkey } = nip19.decode(appNpub)
+      const reply = await (key.backend as Nip46Backend).prepareResponse(reqId, remotePubkey as string, secret)
+      connectReply = reply.rawEvent()
+    }
+
+    console.log('exporting to iframe', npub, appNpub, reqId, secret)
     port.postMessage({
       method: 'importNsec',
       nsec: (key!.signer as PrivateKeySigner).unsafeGetNsec(),
       appNpub: appNpub,
+      connectReply,
     })
 
     // we no longer need it
@@ -702,11 +709,14 @@ export class NoauthBackend extends EventEmitter {
         manual: boolean,
         decision: DECISION,
         remember: boolean,
-        options?: any,
+        confirmOptions?: any,
         resultCb?: (result: string | undefined) => void
       ) => {
+        // NOTE: `reqOptions` is passed to request,
+        // but here `options` is passed to `confirm` call by UI.
+
         // confirm
-        console.log(Date.now(), decision, npub, method, options, params)
+        console.log(Date.now(), decision, npub, method, confirmOptions, params)
 
         // consume the token
         if (method === 'connect') {
@@ -755,7 +765,7 @@ export class NoauthBackend extends EventEmitter {
               timestamp: Date.now(),
               name: '',
               icon: '',
-              url: options.appUrl || '',
+              url: confirmOptions.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
               userAgent: globalThis?.navigator?.userAgent || '',
@@ -786,7 +796,7 @@ export class NoauthBackend extends EventEmitter {
 
         if (remember) {
           let newPerms = [getReqPerm(req)]
-          if (allow && options && options.perms) newPerms = options.perms
+          if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
 
           // write new perms confirmed by user
           for (const p of newPerms) {
@@ -815,7 +825,8 @@ export class NoauthBackend extends EventEmitter {
               // after the app perms are published we can
               // tell the iframe to import this nsec, it will
               // be able to read the perms from the network now
-              if (exportToIframe && options.port) this.exportNsecToIframe(req.npub, req.appNpub, options.port)
+              if (exportToIframe && confirmOptions.port)
+                this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
             })
           }
         }
@@ -860,7 +871,7 @@ export class NoauthBackend extends EventEmitter {
         await this.dbi.addPending(req)
 
         // need manual confirmation
-        console.log('need confirm', req)
+        console.log('need confirm', req, reqOptions)
 
         // put to a list of pending requests
         this.confirmBuffer.push({
@@ -1119,7 +1130,7 @@ export class NoauthBackend extends EventEmitter {
       perms,
     })
 
-    if (params.port) this.exportNsecToIframe(k.npub, params.appNpub, params.port)
+    if (params.port) await this.exportNsecToIframe(k.npub, params.appNpub, params.port)
 
     this.updateUI()
 
@@ -1371,52 +1382,65 @@ export class NoauthBackend extends EventEmitter {
     return t
   }
 
-  private async submitRequest(req: NostrEvent) {
-    const pubkey = req.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
-    if (!pubkey) throw new Error('Bad request')
-    const npub = nip19.npubEncode(pubkey)
-    console.log('pubkey', pubkey, 'npub', npub)
-    let key = this.keys.find((k) => k.npub === npub)
-    if (!key) {
-      console.log('waiting for worker to start', npub)
-      this.pushNpubs.push(npub)
-      await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
-      key = this.keys.find((k) => k.npub === npub)
+  private async registerIframeWorker(port: MessagePort) {
+    port.onmessage = async (ev: MessageEvent) => {
+      console.log("got iframe request", ev.data);
+
+      const sendReply = (reply: any) => {
+        port.postMessage(reply);
+      }
+
+      // parse, verify
+      let event: NostrEvent | undefined
+      try {
+        event = ev.data
+        if (!validateEvent(event)) return
+        if (!verifySignature(event as Event)) return
+      } catch (e) {
+        console.log('invalid iframe worker event', e, ev)
+        return sendReply("Invalid request event")
+      }
+
+      console.log('iframe request event', event)
+
+      // check if target pubkey is there
+      const pubkey = event.tags.find((t) => t.length >= 2 && t[0] === 'p')?.[1]
+      if (!pubkey) throw new Error('Bad request')
+      const npub = nip19.npubEncode(pubkey)
+      console.log('pubkey', pubkey, 'npub', npub)
+      let key = this.keys.find((k) => k.npub === npub)
+      if (!key) {
+        console.log('waiting for worker to start', npub)
+        this.pushNpubs.push(npub)
+        await Promise.race([new Promise((ok) => this.once('start', ok)), new Promise((ok) => setTimeout(ok, 3000))])
+        key = this.keys.find((k) => k.npub === npub)
+      }
+
+      if (!key) {
+        // no target key? notify client so that it could rebind
+        sendReply(ERROR_NO_KEY + ':' + event.id)
+
+        // now wait for the rebound key
+        await this.waitKey(npub);
+
+        // try again
+        key = this.keys.find((k) => k.npub === npub)
+        if (!key) return sendReply("Key not found")
+      }
+
+      // process the request
+      try {
+        const be = key.backend as Nip46Backend
+        const reply = await be.processEventIframe(new NDKEvent(key.ndk, event), (auth_url: NostrEvent) => {
+          sendReply(auth_url);
+        });
+
+        sendReply(reply);
+      } catch (e: any) {
+        console.log("Failed to process iframe request", event);
+        sendReply("Failed to process request");
+      }
     }
-
-    if (this.submitted.get(req.id!)) throw new Error('Duplicate request')
-
-    const queue = new Submitted<NostrEvent | string | Error>()
-    this.submitted.set(req.id!, queue)
-
-    // no-key marker
-    if (!key) {
-      queue.push(ERROR_NO_KEY + ':' + req.id, true)
-      return
-    }
-
-    const be = key.backend as Nip46Backend
-    be.processEventIframe(new NDKEvent(key.ndk, req), (auth_url: NostrEvent) => {
-      queue.push(auth_url)
-    })
-      .then((r) => {
-        queue.push(r, true)
-      })
-      .catch((e) => {
-        queue.push(new Error(e), true)
-      })
-  }
-
-  private async fetchReply(id: string) {
-    const queue = this.submitted.get(id)
-    if (!queue) throw new Error('Unknown request ' + id)
-
-    const r = await queue.get()
-    // end of replies
-    if (r === undefined) this.submitted.delete(id)
-    // error
-    if (r && typeof r !== 'string' && 'message' in r) throw r
-    return r
   }
 
   private async rebind(npub: string, appNpub: string, port: MessagePort) {
@@ -1518,12 +1542,10 @@ export class NoauthBackend extends EventEmitter {
       result = await this.nip44Decrypt(args[0], args[1], args[2])
     } else if (method === 'getConnectToken') {
       result = await this.getConnectToken(args[0], args[1])
-    } else if (method === 'submitRequest') {
-      result = await this.submitRequest(args[0])
-    } else if (method === 'fetchReply') {
-      result = await this.fetchReply(args[0])
     } else if (method === 'rebind') {
       result = await this.rebind(args[0], args[1], args[2])
+    } else if (method === 'registerIframeWorker') {
+      result = await this.registerIframeWorker(args[0])
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
     } else {

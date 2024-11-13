@@ -207,17 +207,14 @@ class ClientServiceWorker implements BackendClient {
     return this.call<string>('nip44Decrypt', [], npub, peerPubkey, ciphertext)
   }
 
-  public async submitRequest(request: NostrEvent) {
-    return this.call<void>('submitRequest', [], request)
-  }
-
-  public async fetchReply(id: string) {
-    return this.call<NostrEvent | string | undefined>('fetchReply', [], id)
-  }
-
   public async rebind(npub: string, appNpub: string, port: MessagePort) {
     const transfer = [port]
     return this.call<void>('rebind', transfer, npub, appNpub, port)
+  }
+
+  public async registerIframeWorker(port: MessagePort) {
+    const transfer = [port]
+    return this.call<void>('registerIframeWorker', transfer, port)
   }
 
   public async waitKey(npub: string) {

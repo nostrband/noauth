@@ -262,14 +262,6 @@ export class ClientWebSocket implements BackendClient {
     return this.call<string>('nip44Decrypt', npub, peerPubkey, ciphertext)
   }
 
-  public async submitRequest(event: NostrEvent) {
-    return this.call<void>('submitRequest', event)
-  }
-
-  public async fetchReply(id: string) {
-    return this.call<NostrEvent | string | undefined>('fetchReply', id)
-  }
-
   public async getListKeys() {
     return this.call<DbKey[]>('listKeys')
   }
@@ -300,6 +292,10 @@ export class ClientWebSocket implements BackendClient {
 
   public async rebind(npub: string, appNpub: string, port: MessagePort) {
     throw new Error('rebind not implemented')
+  }
+
+  public async registerIframeWorker(port: MessagePort) {
+    throw new Error('registerIframeWorker not implemented')
   }
 
   public async waitKey(npub: string) {

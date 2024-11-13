@@ -282,7 +282,7 @@ export class Nip46Backend extends NDKNip46Backend {
     }
   }
 
-  private async prepareResponse(
+  public async prepareResponse(
     id: string,
     remotePubkey: string,
     result: string,
