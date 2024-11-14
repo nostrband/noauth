@@ -1548,6 +1548,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.registerIframeWorker(args[0])
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
+    } else if (method === 'ping') {
+      result = null;
     } else {
       console.log('unknown method from UI ', method)
     }

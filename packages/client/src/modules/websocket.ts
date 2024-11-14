@@ -301,6 +301,10 @@ export class ClientWebSocket implements BackendClient {
   public async waitKey(npub: string) {
     throw new Error('waitKey not implemented')
   }
+
+  public async ping() {
+    // noop
+  }
 }
 
 export const startClientWebSocket = () => new ClientWebSocket(`ws://${document.location.hostname}:8080`)
