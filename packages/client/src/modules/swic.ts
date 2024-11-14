@@ -221,6 +221,10 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('waitKey', [], npub)
   }
 
+  public async ping() {
+    return this.call<void>('ping', [])
+  }
+
   public getListKeys() {
     return dbi.listKeys()
   }

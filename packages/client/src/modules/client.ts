@@ -97,6 +97,8 @@ export interface BackendClient {
 
   registerIframeWorker: (port: MessagePort) => Promise<void>
 
+  ping: () => Promise<void>
+
   rebind: (npub: string, appNpub: string, port: MessagePort) => Promise<void>
 
   waitKey: (npub: string) => Promise<void>
