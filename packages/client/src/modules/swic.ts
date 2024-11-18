@@ -5,7 +5,6 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken } from '@noauth/common'
 import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
-import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 export let swr: ServiceWorkerRegistration | null = null
 

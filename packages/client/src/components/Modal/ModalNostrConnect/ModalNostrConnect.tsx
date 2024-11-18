@@ -4,9 +4,8 @@ import { Box, Stack, Typography } from '@mui/material'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { parseMetadata } from './utils/helpers'
+import { parseNostrConnectMeta } from './utils/helpers'
 import { Keys } from './components/Keys'
-import { getDomainPort } from '@/utils/helpers/helpers'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { client } from '@/modules/client'
 import { useState } from 'react'
@@ -23,29 +22,16 @@ export const ModalNostrConnect = () => {
 
   const keys = useAppSelector(selectKeys)
 
-  const metadataJson = searchParams.get('metadata') || ''
-  const metadata = parseMetadata(metadataJson) || {
-    url: searchParams.get('url'),
-    name: searchParams.get('name'),
-    icon: searchParams.get('image'),
-    perms: searchParams.get('perms'),
-  }
-
-  const { icon, name, url } = metadata || {}
-  const appName = name || ''
-  const appUrl = url || ''
-  const appDomain = getDomainPort(appUrl)
-  const appIcon = icon || ''
+  const meta = parseNostrConnectMeta('?' + searchParams.toString());
 
   // default
-  // FIXME make some way to declare a nostr-connect url template?
-  const isPopup = true // searchParams.get('popup') === 'true'
+  const isPopup = true
 
   // let this modal accept the iframe port to pass it
   // down to ConfirmConnect modal later on
   useIframePort(isPopup);
 
-  if (!pubkey || !metadata || !keys.length) {
+  if (!pubkey || !meta || !keys.length) {
     return <Navigate to={'/'} />
   }
 
@@ -59,10 +45,10 @@ export const ModalNostrConnect = () => {
       const nostrconnect = `nostrconnect://${pubkey}?${searchParams.toString()}`
       console.log('nostrconnect', nostrconnect)
       const requestId = await client.nostrConnect(npub, nostrconnect, {
-        appName,
-        appUrl,
-        appIcon,
-        perms: metadata.perms || '',
+        appName: meta.appName,
+        appUrl: meta.appUrl,
+        appIcon: meta.appIcon,
+        perms: meta.perms,
       })
       setIsLoading(false)
 
@@ -87,10 +73,10 @@ export const ModalNostrConnect = () => {
   return (
     <Modal title="Choose account" open onClose={handleClose}>
       <Stack direction={'row'} gap={'1rem'} alignItems={'center'} marginBottom={'1.5rem'}>
-        <IconApp picture={appIcon} alt={appName} size="large" domain={appUrl} />
+        <IconApp picture={meta.appIcon} alt={meta.appName} size="large" domain={meta.appUrl} />
         <Box overflow={'auto'}>
           <Typography variant="h5" fontWeight={600} noWrap>
-            {appDomain || appName}
+            {meta.appDomain || meta.appName}
           </Typography>
           <Typography variant="body2" color={'GrayText'} noWrap>
             New app would like to connect
