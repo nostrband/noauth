@@ -39,7 +39,8 @@ export class ServiceWorkerBackend extends NoauthBackend {
         return Promise.resolve(swg.btoa(data))
       },
       getOrigin(iframe?: boolean) {
-        return iframe && ADMIN_DOMAIN ? `https://${ADMIN_DOMAIN}` : swg.location.origin
+        // iframe must use the same origin, otherwise - main domain
+        return iframe || !ADMIN_DOMAIN ? swg.location.origin : `https://${ADMIN_DOMAIN}`
       },
       getCryptoSubtle() {
         return swg.crypto.subtle
