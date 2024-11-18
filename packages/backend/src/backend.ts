@@ -888,7 +888,7 @@ export class NoauthBackend extends EventEmitter {
         // OAuth flow
         const isConnect = method === 'connect'
         const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.global.getOrigin()}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
+        const authUrl = `${self.global.getOrigin(reqOptions.iframe)}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
         console.log('sending authUrl', authUrl, 'for', req)
 
         // NOTE: don't send auth_url immediately, wait some time
