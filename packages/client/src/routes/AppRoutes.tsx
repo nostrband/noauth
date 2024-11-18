@@ -40,9 +40,11 @@ const AppRoutes = () => {
         hash: hash,
       })
     } else if (isImport) {
+      // cut / from pathname
+      const nc = pathname.slice(1) + search;
       return navigate({
         pathname: `/home`,
-        search: `?import-keys=true&connect=${encodeURIComponent(pathname + search)}`,
+        search: `?import-keys=true&connect=${encodeURIComponent(nc)}`,
       })
     } else {
       navigate({ pathname: `/nostrconnect/${pubkey}`, search })
