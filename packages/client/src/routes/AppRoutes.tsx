@@ -21,6 +21,7 @@ const LoadingSpinner = () => (
 
 const NOSTR_CONNECT_PROTOCOL = 'nostrconnect://'
 const IMPORT_HASH_KEY = 'import'
+const IMPORT_QUERY_KEY = 'import'
 
 const AppRoutes = () => {
   const navigate = useNavigate()
@@ -29,8 +30,8 @@ const AppRoutes = () => {
   useEffect(() => {
     if (!pathname.includes(NOSTR_CONNECT_PROTOCOL)) return
     const pubkey = pathname.split(NOSTR_CONNECT_PROTOCOL)[1]
-    const parsedHash = new URLSearchParams(hash.substring(1))
-    const nsec = parsedHash.get(IMPORT_HASH_KEY)
+    const nsec = new URLSearchParams(hash.substring(1)).get(IMPORT_HASH_KEY)
+    const isImport = new URLSearchParams(search).get(IMPORT_QUERY_KEY) === 'true'
 
     if (nsec) {
       return navigate({
@@ -38,8 +39,14 @@ const AppRoutes = () => {
         search: search,
         hash: hash,
       })
+    } else if (isImport) {
+      return navigate({
+        pathname: `/home`,
+        search: `?import-keys=true&connect=${encodeURIComponent(pathname + search)}`,
+      })
+    } else {
+      navigate({ pathname: `/nostrconnect/${pubkey}`, search })
     }
-    navigate({ pathname: `/nostrconnect/${pubkey}`, search })
     // eslint-disable-next-line
   }, [])
 
