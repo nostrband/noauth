@@ -132,7 +132,12 @@ export const ModalImportKeys = () => {
   const navigate = useNavigate()
 
   const nostrconnect = searchParams.get('connect')
-  console.log('nostrconnect', nostrconnect)
+
+  const isPopup = !!nostrconnect
+
+  const closePopup = () => {
+    if (isPopup) return window.close()
+  }
 
   const submitHandler = async (values: any) => {
     hideNsec()
@@ -160,7 +165,8 @@ export const ModalImportKeys = () => {
 
           if (!requestId) {
             notify('App connected! Closing...', 'success')
-            navigate(`/key/${k.npub}`, { replace: true })
+            if (isPopup) setTimeout(() => closePopup(), 3000)
+            else navigate(`/key/${k.npub}`, { replace: true })
           } else {
             navigate(`/key/${k.npub}?confirm-connect=true&reqId=${requestId}&popup=true`, { replace: true })
           }
