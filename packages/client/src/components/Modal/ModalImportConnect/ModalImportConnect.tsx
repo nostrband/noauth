@@ -3,7 +3,6 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { Modal } from '@/shared/Modal/Modal'
 import { Avatar, Stack, Typography } from '@mui/material'
 import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { parseMetadata } from './utils/helpers'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useProfile } from '@/hooks/useProfile'
@@ -18,6 +17,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { Button } from '@/shared/Button/Button'
 import { client } from '@/modules/client'
 import useIframePort from '@/hooks/useIframePort'
+import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
 
 const FORM_DEFAULT_VALUES = {
   password: '',
@@ -64,18 +64,7 @@ export const ModalImportConnect: FC = () => {
   const { hidePassword: hideRePassword, inputProps: rePasswordInputProps } = usePassword()
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
-  const metadataJson = searchParams.get('metadata') || ''
-  const metadata = parseMetadata(metadataJson) || {
-    url: searchParams.get('url'),
-    name: searchParams.get('name'),
-    icon: searchParams.get('image'),
-    perms: searchParams.get('perms'),
-  }
-
-  const { icon, name, url } = metadata || {}
-  const appName = name || ''
-  const appUrl = url || ''
-  const appIcon = icon || ''
+  const meta = parseNostrConnectMeta('?' + searchParams.toString());
 
   // default
   const isPopup = true // searchParams.get('popup') === 'true'
@@ -125,7 +114,7 @@ export const ModalImportConnect: FC = () => {
   }
 
   const submitHandler = async (values: FormInputType) => {
-    if (!nsec) return
+    if (!nsec || !meta) return
     hidePassword()
     hideRePassword()
     // console.log({ values, userNip05, nsec }, 'HISH')
@@ -140,10 +129,10 @@ export const ModalImportConnect: FC = () => {
 
       const nostrconnect = `nostrconnect://${appPubkey}?${searchParams.toString()}`
       const requestId = await client.nostrConnect(npub, nostrconnect, {
-        appName,
-        appUrl,
-        appIcon,
-        perms: metadata.perms || '',
+        appName: meta.appName,
+        appUrl: meta.appUrl,
+        appIcon: meta.appIcon,
+        perms: meta.perms,
       })
 
       if (!requestId) {
@@ -160,7 +149,7 @@ export const ModalImportConnect: FC = () => {
     }
   }
 
-  if (!appPubkey || !metadata || !nsec) {
+  if (!appPubkey || !meta || !nsec) {
     return <Navigate to={'/'} />
   }
 

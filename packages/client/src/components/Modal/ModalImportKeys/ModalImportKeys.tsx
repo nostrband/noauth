@@ -5,7 +5,7 @@ import { Input } from '@/shared/Input/Input'
 import { Modal } from '@/shared/Modal/Modal'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { Box, Slide, Typography, useTheme } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { get, useForm } from 'react-hook-form'
 import { schema } from './const'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -23,6 +23,7 @@ import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 import { fetchNip05 } from '@noauth/common'
 import { client } from '@/modules/client'
+import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
 
 const FORM_DEFAULT_VALUES = {
   username: '',
@@ -66,6 +67,8 @@ export const ModalImportKeys = () => {
   const enteredPassword = watch('password') || ''
   const [debouncedUsername] = useDebounce(enteredUsername, 100)
   const [debouncedNsec] = useDebounce(enteredNsec, 100)
+
+  const [searchParams] = useSearchParams()
 
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
@@ -140,7 +143,31 @@ export const ModalImportKeys = () => {
       setIsLoading(true)
       const k = await client.importKey(username.trim(), nsec.trim(), password.trim())
       notify('Key imported!', 'success')
-      navigate(`/key/${k.npub}`)
+
+      const nostrconnect = searchParams.get('connect')
+      if (nostrconnect && nostrconnect.startsWith('nostrconnect://')) {
+        const meta = parseNostrConnectMeta(new URL(nostrconnect).search)
+        if (meta) {
+          const requestId = await client.nostrConnect(k.npub, nostrconnect, {
+            appName: meta?.appName,
+            appUrl: meta?.appUrl,
+            appIcon: meta?.appIcon,
+            perms: meta?.perms,
+          })
+  
+          if (!requestId) {
+            notify('App connected! Closing...', 'success')
+            navigate(`/key/${k.npub}`, { replace: true })
+          } else {
+            navigate(`/key/${k.npub}?confirm-connect=true&reqId=${requestId}&popup=true`, { replace: true })
+          }  
+        } else {
+          notify('Wrong connection string', 'error')
+          navigate(`/key/${k.npub}`)
+        }
+      } else {
+        navigate(`/key/${k.npub}`)
+      }
       cleanUpStates()
     } catch (error: any) {
       notify(error?.message || 'Something went wrong!', 'error')

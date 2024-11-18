@@ -2,9 +2,8 @@ import { FC } from 'react'
 import { StyledAppLogo } from '@/layout/Header/styled'
 import { client } from '@/modules/client'
 import { Stack, Typography } from '@mui/material'
-import { NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, nip19, validateEvent, verifySignature } from 'nostr-tools'
-import { useEffect, useState } from 'react'
+import { nip19 } from 'nostr-tools'
+import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { StyledButton } from './styled'
 import { isDomainOrSubdomain } from '@/utils/helpers/helpers'
@@ -12,7 +11,6 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { ADMIN_DOMAIN } from '@/utils/consts'
 import { DbKey } from '@noauth/common'
-import { ERROR_NO_KEY } from '@noauth/backend/src/const'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 let popup: WindowProxy | null = null
@@ -180,9 +178,9 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
     setLogs((logs) => [...logs, new Date() + ': ' + s])
   }
 
-  const start = async () => {
+  const start = useCallback(async () => {
     console.log('worker sending ready to parent')
-    append('sw ready')
+    // append('sw ready')
 
     // create channel btw sw and client
     const channel = new MessageChannel()
@@ -198,7 +196,7 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
       console.log("ping worker");
       client.ping().then(() => console.log("pong worker"))
     }, 10000)
-  }
+  }, []);
 
   useEffect(() => {
     append('start ' + started)
@@ -211,7 +209,7 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
         append('error ' + e)
       }
     }
-  }, [started])
+  }, [started, start])
 
   return (
     <Stack direction={'column'} gap={'1rem'}>

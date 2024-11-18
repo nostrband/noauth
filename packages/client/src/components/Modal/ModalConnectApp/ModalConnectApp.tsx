@@ -30,7 +30,7 @@ import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGoRounded'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScannerRounded'
 import { ModalQrScanner } from '../ModalQrScanner/ModalQrScanner'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { parseMetadata } from '../ModalNostrConnect/utils/helpers'
+import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
 import { Input } from '@/shared/Input/Input'
 import ShareIcon from '@mui/icons-material/Share'
 
@@ -240,25 +240,14 @@ export const ModalConnectApp = () => {
     }
     setIsLoading(true)
     try {
-      const searchParams = new URL(nostrconnect).searchParams
-      const metadataJson = searchParams.get('metadata') || ''
-      const metadata = parseMetadata(metadataJson) || {
-        url: searchParams.get('url'),
-        name: searchParams.get('name'),
-        icon: searchParams.get('image'),
-        perms: searchParams.get('perms'),
-      }
-
-      const { icon, name, url } = metadata || {}
-      const appName = name || ''
-      const appUrl = url || ''
-      const appIcon = icon || ''
+      const meta = parseNostrConnectMeta(new URL(nostrconnect).search)
+      if (!meta) throw new Error('Bad connection string')
 
       const requestId = await client.nostrConnect(npub, nostrconnect, {
-        appName,
-        appUrl,
-        appIcon,
-        perms: metadata.perms || '',
+        appName: meta.appName,
+        appUrl: meta.appUrl,
+        appIcon: meta.appIcon,
+        perms: meta.perms,
       })
       setIsLoading(false)
 

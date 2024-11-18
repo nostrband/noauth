@@ -1,7 +1,6 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
-import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 const DB_METHODS = [
   'listKeys',

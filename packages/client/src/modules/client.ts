@@ -2,7 +2,6 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
-import { NostrEvent } from '@nostr-dev-kit/ndk'
 
 export interface BackendReply {
   id: number
