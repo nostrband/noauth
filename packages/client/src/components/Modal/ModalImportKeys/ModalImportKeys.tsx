@@ -131,6 +131,9 @@ export const ModalImportKeys = () => {
   const notify = useEnqueueSnackbar()
   const navigate = useNavigate()
 
+  const nostrconnect = searchParams.get('connect')
+  console.log('nostrconnect', nostrconnect)
+
   const submitHandler = async (values: any) => {
     hideNsec()
     hidePassword()
@@ -154,13 +157,13 @@ export const ModalImportKeys = () => {
             appIcon: meta?.appIcon,
             perms: meta?.perms,
           })
-  
+
           if (!requestId) {
             notify('App connected! Closing...', 'success')
             navigate(`/key/${k.npub}`, { replace: true })
           } else {
             navigate(`/key/${k.npub}?confirm-connect=true&reqId=${requestId}&popup=true`, { replace: true })
-          }  
+          }
         } else {
           notify('Wrong connection string', 'error')
           navigate(`/key/${k.npub}`)
