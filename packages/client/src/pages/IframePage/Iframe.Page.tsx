@@ -237,6 +237,7 @@ const IframePage = () => {
   if (connect) {
     if (!connect.startsWith('nostrconnect://')) throw new Error('Bad nostrconnect url')
     const authUrl = `https://${ADMIN_DOMAIN}/${connect}`
+    console.log("connect url", authUrl);
     return <IframeStarter authUrl={authUrl} rebind={false} />
   } else if (rebindPubkey) {
     const pubkey = searchParams.get('pubkey') || ''

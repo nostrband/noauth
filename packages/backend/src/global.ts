@@ -2,7 +2,7 @@ import { Key } from './types'
 
 export interface GlobalContext {
   btoa: (data: string) => Promise<string>
-  getOrigin: () => string
+  getOrigin: (iframe?: boolean) => string
   getCryptoSubtle: () => any
   getKey(npub: string): Key
 
