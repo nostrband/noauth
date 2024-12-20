@@ -1,67 +1,48 @@
-// service-worker client interface,
-// works on the frontend, not sw
-import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
-import { KeyInfo, CreateConnectParams } from '@noauth/backend'
-import { DbApp, DbConnectToken } from '@noauth/common'
 import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
+import { NativeBackend } from './native-backend'
+import { DbApp, DbConnectToken } from '@noauth/common'
+import { CreateConnectParams, KeyInfo } from '@noauth/backend'
 
-export let swr: ServiceWorkerRegistration | null = null
-
-// eslint-disable-next-line
-class ClientServiceWorker implements BackendClient {
+class NativeClient implements BackendClient {
+  private backend: NativeBackend
   private reqs = new Map<number, { ok: (r: any) => void; rej: (r: any) => void }>()
   private nextReqId = 1
   private onRender: (() => void) | null = null
   private onReload: (() => void) | null = null
   private onClose: (() => void) | null = null
-  private queue: (() => Promise<void> | void)[] = []
+  // private queue: (() => Promise<void> | void)[] = []
   private checkpointQueue: (() => Promise<void> | void)[] = []
+
+  constructor() {
+    this.backend = new NativeBackend()
+    this.backend.start()
+  }
 
   public async connect(): Promise<boolean> {
     return true
   }
 
-  public async onStarted() {
-    console.log('sw ready, queue', this.queue.length)
-    while (this.queue.length) await this.queue.shift()!()
-  }
-
-  private callWhenStarted(cb: () => void) {
-    if (swr && swr.active) cb()
-    else this.queue.push(cb)
-  }
-
-  private async waitStarted() {
-    return new Promise<void>((ok) => this.callWhenStarted(ok))
-  }
-
   // send an RPC to the backend
   private async call<T = void>(method: string, transfer: any[], ...args: any[]): Promise<T> {
-    await this.waitStarted()
-
     const id = this.nextReqId
     this.nextReqId++
 
     return new Promise((ok, rej) => {
       const call = async () => {
-        if (!swr || !swr.active) {
-          rej(new Error('No active service worker'))
-          return
-        }
-
-        this.reqs.set(id, { ok, rej })
         const msg = {
           id,
           method,
           args: [...args],
         }
+
+        this.reqs.set(id, { ok, rej })
+
         // don't print this one
         if (method !== 'importKeyIframe') console.log('sending to SW', msg)
-        swr.active.postMessage(msg, transfer)
+        await this.backend.onMessageEvent(msg, this.onMessage.bind(this))
       }
-
-      this.callWhenStarted(call)
+      call()
     })
   }
 
@@ -85,7 +66,7 @@ class ClientServiceWorker implements BackendClient {
 
   public onMessage(data: BackendReply) {
     const { id, result, error } = data
-    console.log('SW message', id, result, error)
+    console.log('BACKEND message', id, result, error)
 
     if (!id) {
       if (result === 'reload') {
@@ -252,20 +233,4 @@ class ClientServiceWorker implements BackendClient {
   }
 }
 
-export const clientServiceWorker = new ClientServiceWorker()
-
-export async function swicRegister() {
-  serviceWorkerRegistration.register({
-    onSuccess(registration) {
-      console.log('sw registered')
-      swr = registration
-    },
-    onError(e) {
-      console.log('sw error', e)
-    },
-    onUpdate() {
-      // tell new SW that it should activate immediately
-      swr?.waiting?.postMessage({ type: 'SKIP_WAITING' })
-    },
-  })
-}
+export const nativeClient = new NativeClient()

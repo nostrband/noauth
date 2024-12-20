@@ -90,4 +90,4 @@ async function start() {
   await backend.start()
 }
 
-process.env.REACT_APP_HOSTED === 'false' && start()
+process.env.REACT_APP_BUILD_TARGET === 'WEB' && start()

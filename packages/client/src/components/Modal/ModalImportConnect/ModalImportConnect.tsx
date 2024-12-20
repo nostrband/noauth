@@ -117,7 +117,6 @@ export const ModalImportConnect: FC = () => {
     if (!nsec || !meta) return
     hidePassword()
     hideRePassword()
-    // console.log({ values, userNip05, nsec }, 'HISH')
     if (isLoading || isPasswordInvalid) return undefined
     try {
       setIsLoading(true)

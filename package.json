@@ -5,10 +5,13 @@
     "packages/*"
   ],
   "dependencies": {
+    "@capacitor/browser": "^6.0.4",
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
+    "@capacitor/push-notifications": "^6.0.3",
     "@nostr-dev-kit/ndk": "^2.8.1",
+    "capacitor-native-settings": "^6.0.1",
     "dexie": "^4.0.4",
     "dotenv": "^16.4.5",
     "nostr-tools": "^1.17.0",
@@ -28,6 +31,7 @@
     "format": "lerna run format",
     "clean": "rm -rf node_modules && lerna clean",
     "build": "lerna run build --scope '{@noauth/client,@noauth/common,@noauth/backend}'",
+    "build:native": "npm run build:native -w @noauth/client && lerna run build --scope '{@noauth/common,@noauth/backend}'",
     "build:hosted": "npm run build -w @noauth/common && npm run build:hosted -w @noauth/common && lerna run build --scope '{@noauth/backend,@noauth/server}' && npm run build:hosted -w @noauth/client",
     "start": "npm run start -w @noauth/client",
     "start:hosted": "npm run start:hosted -w @noauth/client",

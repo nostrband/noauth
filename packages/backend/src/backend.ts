@@ -1374,6 +1374,7 @@ export class NoauthBackend extends EventEmitter {
       subNpub,
       timestamp: Date.now(),
       expiry: Date.now() + TOKEN_TTL,
+      // @ts-ignore
       token: bytesToHex(randomBytes(TOKEN_SIZE)),
     }
     await this.dbi.addConnectToken(t)
@@ -1384,10 +1385,10 @@ export class NoauthBackend extends EventEmitter {
 
   private async registerIframeWorker(port: MessagePort) {
     port.onmessage = async (ev: MessageEvent) => {
-      console.log("got iframe request", ev.data);
+      console.log('got iframe request', ev.data)
 
       const sendReply = (reply: any) => {
-        port.postMessage(reply);
+        port.postMessage(reply)
       }
 
       // parse, verify
@@ -1398,7 +1399,7 @@ export class NoauthBackend extends EventEmitter {
         if (!verifySignature(event as Event)) return
       } catch (e) {
         console.log('invalid iframe worker event', e, ev)
-        return sendReply("Invalid request event")
+        return sendReply('Invalid request event')
       }
 
       console.log('iframe request event', event)
@@ -1421,24 +1422,24 @@ export class NoauthBackend extends EventEmitter {
         sendReply(ERROR_NO_KEY + ':' + event.id)
 
         // now wait for the rebound key
-        await this.waitKey(npub);
+        await this.waitKey(npub)
 
         // try again
         key = this.keys.find((k) => k.npub === npub)
-        if (!key) return sendReply("Key not found")
+        if (!key) return sendReply('Key not found')
       }
 
       // process the request
       try {
         const be = key.backend as Nip46Backend
         const reply = await be.processEventIframe(new NDKEvent(key.ndk, event), (auth_url: NostrEvent) => {
-          sendReply(auth_url);
-        });
+          sendReply(auth_url)
+        })
 
-        sendReply(reply);
+        sendReply(reply)
       } catch (e: any) {
-        console.log("Failed to process iframe request", event);
-        sendReply("Failed to process request");
+        console.log('Failed to process iframe request', event)
+        sendReply('Failed to process request')
       }
     }
   }
@@ -1549,7 +1550,7 @@ export class NoauthBackend extends EventEmitter {
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
     } else if (method === 'ping') {
-      result = null;
+      result = null
     } else {
       console.log('unknown method from UI ', method)
     }
