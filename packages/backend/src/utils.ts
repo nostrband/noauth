@@ -121,3 +121,11 @@ export class WaitableQueue<T> {
     if (!done) this.promises.push(new Promise<void>((ok) => (this.cb = ok)))
   }
 }
+
+export function isNip04(ciphertext: string) {
+  const l = ciphertext.length
+  if (l < 28) return false
+  return (
+    ciphertext[l - 28] === '?' && ciphertext[l - 27] === 'i' && ciphertext[l - 26] === 'v' && ciphertext[l - 25] === '='
+  )
+}
