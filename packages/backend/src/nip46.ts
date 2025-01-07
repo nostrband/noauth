@@ -220,9 +220,9 @@ export class Nip46Backend extends NDKNip46Backend {
 
     // send over nip46
     if (response) {
-      await this.rpc.sendResponse(id, remotePubkey, response)
+      await this.sendResponse(id, remotePubkey, response)
     } else {
-      await this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
+      await this.sendResponse(id, remotePubkey, 'error', undefined, error)
     }
   }
 
@@ -282,6 +282,17 @@ export class Nip46Backend extends NDKNip46Backend {
     }
   }
 
+  private async sendResponse(
+    id: string,
+    remotePubkey: string,
+    result: string,
+    kind = NDKKind.NostrConnect,
+    error?: string
+  ): Promise<void> {
+    const event = await this.prepareResponse(id, remotePubkey, result, kind, error)
+    await event.publish()
+  }
+
   public async prepareResponse(
     id: string,
     remotePubkey: string,
@@ -304,7 +315,7 @@ export class Nip46Backend extends NDKNip46Backend {
       pubkey: localUser.pubkey,
     } as NostrEvent)
 
-    event.content = await this.signer.encrypt(remoteUser, event.content)
+    event.content = await this.signer.encryptNip44(remoteUser, event.content)
     await event.sign(this.signer)
     return event
   }
@@ -314,6 +325,7 @@ export class Nip46Backend extends NDKNip46Backend {
   }
 
   public async sendAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
-    return this.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl);
+    await event.publish();
   }
 }
