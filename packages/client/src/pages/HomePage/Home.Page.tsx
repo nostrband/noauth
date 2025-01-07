@@ -21,12 +21,12 @@ const HomePage = () => {
   const handleClickAddAccount = () => handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 
   const handleLearnMore = async () => {
-    console.log({ DOMAIN }, 'HISH')
     if (isIOSPlatform()) {
       await Browser.open({ url: `https://${DOMAIN}` })
       return
     }
-    window.open(`https://${DOMAIN}`, '_blank')?.focus()
+    const newWindow = window.open(`https://${DOMAIN}`, '_blank')
+    if (newWindow) newWindow.focus()
   }
 
   return (
