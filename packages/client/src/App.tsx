@@ -13,6 +13,7 @@ import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExpla
 import { client } from './modules/client'
 import { LoadingSpinner } from './shared/LoadingSpinner/LoadingSpinner'
 import { Stack } from '@mui/material'
+import { SafeArea } from 'capacitor-plugin-safe-area'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -96,6 +97,32 @@ function App() {
       setIsClientConnected(true)
       console.log('Client connected')
     })
+  }, [])
+
+  useEffect(() => {
+    const exec = async () => {
+      try {
+        SafeArea.getSafeAreaInsets().then(({ insets }) => {
+          console.log(insets, 'statusbarHeight')
+        })
+        SafeArea.getStatusBarHeight().then(({ statusBarHeight }) => {
+          console.log(statusBarHeight, 'statusbarHeight')
+        })
+        await SafeArea.addListener('safeAreaChanged', (data) => {
+          const { insets } = data
+          for (const [key, value] of Object.entries(insets)) {
+            document.documentElement.style.setProperty(`--safe-area-inset-${key}`, `${value}px`)
+          }
+        })
+      } catch (error) {
+        console.log(error, 'SafeArea error')
+      }
+    }
+    exec()
+
+    return () => {
+      SafeArea.removeAllListeners()
+    }
   }, [])
 
   // subscribe to updates from the service worker

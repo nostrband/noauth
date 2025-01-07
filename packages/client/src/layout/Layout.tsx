@@ -10,7 +10,7 @@ export const Layout: FC = () => {
   const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
   const [searchParams] = useSearchParams()
   const isPopupMode = searchParams.get('popup') === 'true'
-  const isIframe = window.location.pathname === "/iframe";
+  const isIframe = window.location.pathname === '/iframe'
   const showReloadBadge = !isIframe && !isPopupMode && needReload
   const containerClassName = showReloadBadge ? 'reload' : ''
 
@@ -18,11 +18,11 @@ export const Layout: FC = () => {
     <StyledContainer maxWidth="md" className={containerClassName}>
       {isIframe && (
         <style>{`
-          body {
-            background-color: #ffffff00;
-            overflow: hidden;
-          }
-      `}</style>
+        body {
+          background-color: #ffffff00;
+          overflow: hidden;
+        }
+    `}</style>
       )}
       {!isIframe && (
         <>
@@ -43,6 +43,7 @@ const StyledContainer = styled((props: ContainerProps) => <Container maxWidth="s
   flexDirection: 'column',
   paddingBottom: '1rem',
   position: 'relative',
+  overflow: 'auto',
   '& > main': {
     flex: 1,
     maxHeight: '100%',
