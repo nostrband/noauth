@@ -14,7 +14,7 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+    if (isIOSPlatform()) {
       const permissionsStatus = await PushNotifications.checkPermissions()
       if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
       PushNotifications.addListener('registration', (token) => {

@@ -12,6 +12,7 @@
     "@capacitor/push-notifications": "^6.0.3",
     "@nostr-dev-kit/ndk": "^2.8.1",
     "capacitor-native-settings": "^6.0.1",
+    "capacitor-plugin-safe-area": "^3.0.4",
     "dexie": "^4.0.4",
     "dotenv": "^16.4.5",
     "nostr-tools": "^1.17.0",

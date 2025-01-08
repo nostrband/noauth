@@ -65,3 +65,7 @@ body,
 #root {
   height: 100%;
 }
+
+body {
+  padding-top: env(safe-area-inset-top);
+}
