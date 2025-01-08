@@ -37,6 +37,6 @@
     "start": "npm run start -w @noauth/client",
     "start:hosted": "npm run start:hosted -w @noauth/client",
     "start:server": "npm run start -w @noauth/server",
-    "ionic:build": "npm run build:native"
+    "appflow:build": "npm run build:native"
   }
 }
