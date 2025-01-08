@@ -82,7 +82,7 @@ export class PrivateKeySigner extends NDKPrivateKeySigner implements Signer {
     }
 
     const recipientHexPubKey = recipient.pubkey
-    return await this.nip44.encrypt(this._pk, recipientHexPubKey, value)
+    return this.nip44.encrypt(this._pk, recipientHexPubKey, value)
   }
 
   public async decryptNip44(sender: NDKUser, value: string): Promise<string> {
@@ -91,6 +91,6 @@ export class PrivateKeySigner extends NDKPrivateKeySigner implements Signer {
     }
 
     const senderHexPubKey = sender.pubkey
-    return await this.nip44.decrypt(this._pk, senderHexPubKey, value)
+    return this.nip44.decrypt(this._pk, senderHexPubKey, value)
   }
 }

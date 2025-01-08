@@ -191,11 +191,13 @@ const IframeWorker: FC<{ keys: DbKey[] }> = (props) => {
     // send port2 to client
     window.parent.postMessage(['workerReady', channel.port2], '*', [channel.port2])
 
+    // NOTE: looks like we need client to do the pinging to make
+    // sure the channel stays open, so this becomes unnecessary
     // SW might be stopped if inactive, this way we try to keep it alive
-    setInterval(() => {
-      console.log("ping worker");
-      client.ping().then(() => console.log("pong worker"))
-    }, 10000)
+    // setInterval(() => {
+    //   console.log("ping worker");
+    //   client.ping().then(() => console.log("pong worker"))
+    // }, 10000)
   }, []);
 
   useEffect(() => {
