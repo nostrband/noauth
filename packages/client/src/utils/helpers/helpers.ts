@@ -3,7 +3,6 @@ import { ACTIONS, DOMAIN, NOAUTHD_URL } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@noauth/common'
 import { fetchNip05, getSignReqKind } from '@noauth/common'
 import { PushNotifications } from '@capacitor/push-notifications'
-// import { NativeSettings, IOSSettings } from 'capacitor-native-settings'
 
 export function getNotificationPermission() {
   if (!('Notification' in window)) {
