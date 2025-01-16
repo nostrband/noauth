@@ -5,12 +5,10 @@
     "packages/*"
   ],
   "dependencies": {
-    "@capacitor/browser": "^6.0.4",
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
     "@nostr-dev-kit/ndk": "^2.8.1",
-    "capacitor-plugin-safe-area": "^3.0.4",
     "dexie": "^4.0.4",
     "dotenv": "^16.4.5",
     "nostr-tools": "^1.17.0",

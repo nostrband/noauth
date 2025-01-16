@@ -9,7 +9,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
 import { Capacitor } from '@capacitor/core'
-import { Browser } from '@capacitor/browser'
+// import { Browser } from '@capacitor/browser'
 
 const isIOSPlatform = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
 
@@ -21,10 +21,10 @@ const HomePage = () => {
   const handleClickAddAccount = () => handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 
   const handleLearnMore = async () => {
-    if (isIOSPlatform()) {
-      await Browser.open({ url: `https://${DOMAIN}` })
-      return
-    }
+    // if (isIOSPlatform()) {
+    //   await Browser.open({ url: `https://${DOMAIN}` })
+    //   return
+    // }
     const newWindow = window.open(`https://${DOMAIN}`, '_blank')
     if (newWindow) newWindow.focus()
   }
