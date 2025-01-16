@@ -4,7 +4,7 @@ import { client } from '@/modules/client'
 import { askNativeNotificationPermission, askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
-import { PushNotifications } from '@capacitor/push-notifications'
+// import { PushNotifications } from '@capacitor/push-notifications'
 
 const isIOSPlatform = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
 
@@ -14,16 +14,16 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (isIOSPlatform()) {
-      const permissionsStatus = await PushNotifications.checkPermissions()
-      if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
-      PushNotifications.addListener('registration', (token) => {
-        setShowWarning(!token)
-      })
-      await PushNotifications.register()
+    // if (isIOSPlatform()) {
+    //   const permissionsStatus = await PushNotifications.checkPermissions()
+    //   if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
+    //   PushNotifications.addListener('registration', (token) => {
+    //     setShowWarning(!token)
+    //   })
+    //   await PushNotifications.register()
 
-      return
-    }
+    //   return
+    // }
 
     if (!swr) return
     const isBackgroundEnable = await swr.pushManager?.getSubscription()

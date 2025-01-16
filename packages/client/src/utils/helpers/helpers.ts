@@ -2,7 +2,7 @@ import { nip19 } from 'nostr-tools'
 import { ACTIONS, DOMAIN, NOAUTHD_URL } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@noauth/common'
 import { fetchNip05, getSignReqKind } from '@noauth/common'
-import { PushNotifications } from '@capacitor/push-notifications'
+// import { PushNotifications } from '@capacitor/push-notifications'
 
 export function getNotificationPermission() {
   if (!('Notification' in window)) {
@@ -32,24 +32,25 @@ export async function askNotificationPermission() {
 }
 
 export async function askNativeNotificationPermission() {
-  try {
-    const permStatus = await PushNotifications.requestPermissions()
-    if (permStatus.receive === 'granted') {
-      return true
-    }
-    return false
-    // if (permStatus.receive === 'denied') {
-    //   NativeSettings.openIOS({
-    //     option: IOSSettings.App,
-    //   })
-    //   return false
-    // } else {
-    //   return false
-    // }
-  } catch (error) {
-    console.log('failed to request permission', error)
-    return false
-  }
+  return false
+  // try {
+  //   const permStatus = await PushNotifications.requestPermissions()
+  //   if (permStatus.receive === 'granted') {
+  //     return true
+  //   }
+  //   return false
+  //   // if (permStatus.receive === 'denied') {
+  //   //   NativeSettings.openIOS({
+  //   //     option: IOSSettings.App,
+  //   //   })
+  //   //   return false
+  //   // } else {
+  //   //   return false
+  //   // }
+  // } catch (error) {
+  //   console.log('failed to request permission', error)
+  //   return false
+  // }
 }
 
 export function permListToPerms(perms: string): string[] {
