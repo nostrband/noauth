@@ -1,7 +1,7 @@
 import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB } from '@/utils/consts'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
 import { dbi } from '@noauth/common/dist/dbi-client'
-// import { PushNotifications, Token } from '@capacitor/push-notifications'
+import { PushNotifications, Token } from '@capacitor/push-notifications'
 import { BackendReply } from './client'
 
 class BrowserApi extends Api {
@@ -302,36 +302,35 @@ export class NativeBackend extends NoauthBackend {
   }
 
   protected async enablePush(): Promise<boolean> {
-    return false
-    // return new Promise<boolean>(async (resolve) => {
-    //   const onRegistration = async (token: Token) => {
-    //     console.log('Push registration success, token:', token.value)
-    //     try {
-    //       for (const npub of this.getUnlockedNpubs()) {
-    //         await this.browserApi.sendSubscriptionToServer(npub, token.value)
-    //       }
-    //       console.log('push enabled')
-    //       resolve(true)
-    //     } catch (e) {
-    //       console.log('Failed to send token to server', e)
-    //       resolve(false)
-    //     }
-    //     // finally {
-    //     //   PushNotifications.removeAllListeners()
-    //     // }
-    //   }
+    return new Promise<boolean>(async (resolve) => {
+      const onRegistration = async (token: Token) => {
+        console.log('Push registration success, token:', token.value)
+        try {
+          for (const npub of this.getUnlockedNpubs()) {
+            await this.browserApi.sendSubscriptionToServer(npub, token.value)
+          }
+          console.log('push enabled')
+          resolve(true)
+        } catch (e) {
+          console.log('Failed to send token to server', e)
+          resolve(false)
+        }
+        // finally {
+        //   PushNotifications.removeAllListeners()
+        // }
+      }
 
-    //   const onRegistrationError = (error: any) => {
-    //     console.log('Failed to enable push notifications', error)
-    //     resolve(false)
-    //     PushNotifications.removeAllListeners()
-    //   }
+      const onRegistrationError = (error: any) => {
+        console.log('Failed to enable push notifications', error)
+        resolve(false)
+        PushNotifications.removeAllListeners()
+      }
 
-    //   PushNotifications.addListener('registration', onRegistration)
-    //   PushNotifications.addListener('registrationError', onRegistrationError)
+      PushNotifications.addListener('registration', onRegistration)
+      PushNotifications.addListener('registrationError', onRegistrationError)
 
-    //   await PushNotifications.register()
-    // })
+      await PushNotifications.register()
+    })
   }
 
   //   protected async subscribeAllKeys(): Promise<void> {
