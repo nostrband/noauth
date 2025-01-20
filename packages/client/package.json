@@ -61,6 +61,7 @@
     "start:hosted": "env-cmd -f .env.hosted npx react-app-rewired start",
     "build": "env-cmd -f .env npx react-app-rewired build",
     "build:hosted": "env-cmd -f .env.hosted npx react-app-rewired build",
+    "build:native": "env-cmd -f .env.native npx react-app-rewired build",
     "serve": "npm run build && serve -s build",
     "serve:hosted": "npm run build:hosted && serve -s build",
     "format": "npx prettier --write src"
