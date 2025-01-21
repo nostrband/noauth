@@ -32,6 +32,7 @@
     "build:hosted": "npm run build -w @noauth/common && npm run build:hosted -w @noauth/common && lerna run build --scope '{@noauth/backend,@noauth/server}' && npm run build:hosted -w @noauth/client",
     "start": "npm run start -w @noauth/client",
     "start:hosted": "npm run start:hosted -w @noauth/client",
-    "start:server": "npm run start -w @noauth/server"
+    "start:server": "npm run start -w @noauth/server",
+    "capacitor:sync:after": "node fix-ios-frameworks.js"
   }
 }
