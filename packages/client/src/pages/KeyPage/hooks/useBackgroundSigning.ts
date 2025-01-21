@@ -14,46 +14,31 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (isIOSPlatform()) {
-      const permissionsStatus = await PushNotifications.checkPermissions()
-      if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
-      PushNotifications.addListener('registration', (token) => {
-        setShowWarning(!token)
-      })
-      await PushNotifications.register()
-
-      return
+    if (!isIOSPlatform()) {
+      if (!swr) return
+      const isBackgroundEnable = await swr.pushManager?.getSubscription()
+      setShowWarning(!isBackgroundEnable)
     }
-
-    if (!swr) return
-    const isBackgroundEnable = await swr.pushManager?.getSubscription()
-
-    setShowWarning(!isBackgroundEnable)
+    const permissionsStatus = await PushNotifications.checkPermissions()
+    if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
+    PushNotifications.addListener('registration', (token) => setShowWarning(!token))
+    await PushNotifications.register()
   }, [])
 
   const handleEnableBackground = useCallback(async () => {
     setIsLoading(true)
+
     try {
-      if (isIOSPlatform()) {
-        console.log('asking...')
-        await askNativeNotificationPermission()
-        console.log('asked')
+      const askPermission = isIOSPlatform() ? askNativeNotificationPermission : askNotificationPermission
+      console.log('asking...')
+      await askPermission()
+      console.log('asked')
 
-        const result = await client.enablePush()
-        if (!result) throw new Error('Failed to activate the push subscription')
-        notify('Background service enabled!', 'success')
-        setShowWarning(false)
+      const result = await client.enablePush()
 
-        // END
-      } else {
-        console.log('asking...')
-        await askNotificationPermission()
-        console.log('asked')
-        const result = await client.enablePush()
-        if (!result) throw new Error('Failed to activate the push subscription')
-        notify('Background service enabled!', 'success')
-        setShowWarning(false)
-      }
+      if (!result) throw new Error('Failed to activate the push subscription')
+      notify('Background service enabled!', 'success')
+      setShowWarning(false)
     } catch (error: any) {
       notify(`Failed to enable push subscription: ${error}`, 'error')
     }
