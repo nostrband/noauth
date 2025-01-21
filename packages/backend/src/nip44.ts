@@ -7,7 +7,7 @@ import { sha256 } from '@noble/hashes/sha256'
 import { hmac } from '@noble/hashes/hmac'
 import { base64 } from '@scure/base'
 
-import { IEventHandlingStrategy, NDKUser } from '@nostr-dev-kit/ndk'
+import { NDKUser } from '@nostr-dev-kit/ndk'
 import { getPublicKey } from 'nostr-tools'
 import { IEventHandlingStrategyOptioned, Nip46Backend } from './nip46'
 
