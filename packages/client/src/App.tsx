@@ -84,7 +84,7 @@ function App() {
   }, [isNdkConnected, isClientConnected, load, render])
 
   useEffect(() => {
-    ndk.connect().then(() => {
+    Promise.race([ndk.connect(), new Promise((ok) => setTimeout(ok, 1000))]).then(() => {
       console.log('NDK connected')
       setIsNdkConnected(true)
     })

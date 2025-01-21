@@ -4,6 +4,7 @@ import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
 import { KIND_RPC } from '@noauth/common'
+import { isNip04 } from './utils'
 
 export interface IEventHandlingStrategyOptioned {
   handle(
@@ -220,28 +221,17 @@ export class Nip46Backend extends NDKNip46Backend {
 
     // send over nip46
     if (response) {
-      await this.rpc.sendResponse(id, remotePubkey, response)
+      await this.sendResponse(id, remotePubkey, response)
     } else {
-      await this.rpc.sendResponse(id, remotePubkey, 'error', undefined, error)
+      await this.sendResponse(id, remotePubkey, 'error', undefined, error)
     }
-  }
-
-  private isNip04(ciphertext: string) {
-    const l = ciphertext.length
-    if (l < 28) return false
-    return (
-      ciphertext[l - 28] === '?' &&
-      ciphertext[l - 27] === 'i' &&
-      ciphertext[l - 26] === 'v' &&
-      ciphertext[l - 25] === '='
-    )
   }
 
   private async parseEvent(event: NDKEvent): Promise<NDKRpcRequest | NDKRpcResponse> {
     const remoteUser = this.ndk.getUser({ pubkey: event.pubkey })
     remoteUser.ndk = this.ndk
-    const decrypt = this.isNip04(event.content) ? this.signer.decrypt : this.signer.decryptNip44
-    console.log('event nip04', this.isNip04(event.content))
+    const decrypt = isNip04(event.content) ? this.signer.decrypt : this.signer.decryptNip44
+    console.log('event nip04', isNip04(event.content))
     const decryptedContent = await decrypt.call(this.signer, remoteUser, event.content)
     const parsedContent = JSON.parse(decryptedContent)
     const { id, method, params, result, error } = parsedContent
@@ -282,6 +272,17 @@ export class Nip46Backend extends NDKNip46Backend {
     }
   }
 
+  private async sendResponse(
+    id: string,
+    remotePubkey: string,
+    result: string,
+    kind = NDKKind.NostrConnect,
+    error?: string
+  ): Promise<void> {
+    const event = await this.prepareResponse(id, remotePubkey, result, kind, error)
+    await event.publish()
+  }
+
   public async prepareResponse(
     id: string,
     remotePubkey: string,
@@ -304,7 +305,7 @@ export class Nip46Backend extends NDKNip46Backend {
       pubkey: localUser.pubkey,
     } as NostrEvent)
 
-    event.content = await this.signer.encrypt(remoteUser, event.content)
+    event.content = await this.signer.encryptNip44(remoteUser, event.content)
     await event.sign(this.signer)
     return event
   }
@@ -314,6 +315,7 @@ export class Nip46Backend extends NDKNip46Backend {
   }
 
   public async sendAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
-    return this.rpc.sendResponse(id, remotePubkey, 'auth_url', KIND_RPC, authUrl)
+    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl);
+    await event.publish();
   }
 }

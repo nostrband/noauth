@@ -1,13 +1,15 @@
-import NDK, { NDKEvent, NDKSigner, NDKSubscription, NDKSubscriptionCacheUsage, NDKUser } from '@nostr-dev-kit/ndk'
+import NDK, { NDKEvent, NDKSubscription, NDKSubscriptionCacheUsage, NDKUser } from '@nostr-dev-kit/ndk'
 import { KIND_RPC } from '@noauth/common'
+import { isNip04 } from './utils'
+import { Signer } from './signer'
 
 export class Watcher {
   private ndk: NDK
-  private signer: NDKSigner
+  private signer: Signer
   private onReply: (id: string) => void
   private sub?: NDKSubscription
 
-  constructor(ndk: NDK, signer: NDKSigner, onReply: (id: string) => void) {
+  constructor(ndk: NDK, signer: Signer, onReply: (id: string) => void) {
     this.ndk = ndk
     this.signer = signer
     this.onReply = onReply
@@ -29,7 +31,8 @@ export class Watcher {
       const peer = e.tags.find((t) => t.length >= 2 && t[0] === 'p')
       console.log('watcher got event', { e, peer })
       if (!peer) return
-      const decryptedContent = await this.signer.decrypt(new NDKUser({ pubkey: peer[1] }), e.content)
+      const decrypt = isNip04(e.content) ? this.signer.decrypt : this.signer.decryptNip44
+      const decryptedContent = await decrypt.call(this.signer, new NDKUser({ pubkey: peer[1] }), e.content)
       const parsedContent = JSON.parse(decryptedContent)
       const { id, method, params, result, error } = parsedContent
       console.log('watcher got', {
