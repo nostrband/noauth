@@ -33,6 +33,6 @@
     "start": "npm run start -w @noauth/client",
     "start:hosted": "npm run start:hosted -w @noauth/client",
     "start:server": "npm run start -w @noauth/server",
-    "capacitor:sync:after": "node fix-ios-frameworks.js"
+    "capacitor:sync:after": "node fix-ios-frameworks.mjs"
   }
 }
