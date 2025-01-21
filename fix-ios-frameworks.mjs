@@ -1,5 +1,5 @@
 import { execSync } from 'child_process'
-import { existsSync } from 'fs'
+import fs from 'fs'
 
 const appName = 'App'
 const filePath = `ios/App/Pods/Target Support Files/Pods-${appName}/Pods-${appName}-frameworks.sh`
