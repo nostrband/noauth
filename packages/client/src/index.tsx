@@ -18,7 +18,11 @@ root.render(
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider>
-            <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+            <SnackbarProvider
+              maxSnack={3}
+              autoHideDuration={3000}
+              classes={{ containerRoot: 'snackbar-container-root' }}
+            >
               <App />
             </SnackbarProvider>
           </ThemeProvider>

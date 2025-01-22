@@ -69,3 +69,7 @@ body,
 body {
   padding-top: env(safe-area-inset-top);
 }
+
+.snackbar-container-root {
+  top: calc(env(safe-area-inset-top) + 16px);
+}
