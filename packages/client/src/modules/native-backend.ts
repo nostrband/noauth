@@ -6,11 +6,11 @@ import { BackendReply } from './client'
 
 class BrowserApi extends Api {
   // send push api subsciption to server
-  public async sendSubscriptionToServer(npub: string, token: string) {
+  public async sendSubscriptionToServer(npub: string, apnToken: string) {
     const body = JSON.stringify({
       npub,
       relays: NIP46_RELAYS,
-      token,
+      apnToken,
     })
 
     const method = 'POST'
@@ -302,12 +302,9 @@ export class NativeBackend extends NoauthBackend {
   }
 
   protected async enablePush(): Promise<boolean> {
-    console.log(this.browserApi, 'BROWSER API HISH')
-    console.log(this.getUnlockedNpubs(), 'this.getUnlockedNpubs() HISH')
-
     return new Promise<boolean>(async (resolve) => {
       const onRegistration = async (token: Token) => {
-        console.log('HISH Push registration success, token:', token.value)
+        console.log('Push registration success, token:', token.value)
         try {
           for (const npub of this.getUnlockedNpubs()) {
             await this.browserApi.sendSubscriptionToServer(npub, token.value)
@@ -318,14 +315,14 @@ export class NativeBackend extends NoauthBackend {
           console.log('Failed to send token to server', e)
           resolve(false)
         } finally {
-          // PushNotifications.removeAllListeners()
+          PushNotifications.removeAllListeners()
         }
       }
 
       const onRegistrationError = (error: any) => {
         console.log('Failed to enable push notifications', error)
         resolve(false)
-        // PushNotifications.removeAllListeners()
+        PushNotifications.removeAllListeners()
       }
 
       PushNotifications.addListener('registration', onRegistration)
