@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useAppDispatch } from './store/hooks/redux'
 import { setApps, setKeys, setPending, setPerms } from './store/reducers/content.slice'
 import AppRoutes from './routes/AppRoutes'
@@ -99,7 +99,7 @@ function App() {
     })
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const exec = async () => {
       try {
         SafeArea.getSafeAreaInsets().then(({ insets }) => {
