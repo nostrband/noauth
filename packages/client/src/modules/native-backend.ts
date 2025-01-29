@@ -30,6 +30,7 @@ export class NativeBackend extends NoauthBackend {
   private browserApi: BrowserApi
   private notifCallback: (() => void) | null = null
   private lastPushTime = 0
+  private onUIUpdate: () => void = () => undefined
 
   constructor() {
     let self: NativeBackend
@@ -139,7 +140,7 @@ export class NativeBackend extends NoauthBackend {
         id,
         result,
       } as BackendReply)
-      this.updateUI(onReply)
+      this.updateUI()
 
       // ensure it's sent to make checkpoint work
     } catch (e: any) {
@@ -149,8 +150,13 @@ export class NativeBackend extends NoauthBackend {
         error: e.toString(),
       } as BackendReply)
       // checkpoint
-      this.updateUI(onReply)
+      this.updateUI()
     }
+  }
+
+  public setOnUIUpdate(onUIUpdate: () => void) {
+    if (typeof onUIUpdate !== 'function') return
+    this.onUIUpdate = onUIUpdate
   }
 
   private async reloadUI() {
@@ -297,8 +303,8 @@ export class NativeBackend extends NoauthBackend {
   //     this.notifCallback = null
   //   }
 
-  protected async updateUI(onReply?: (data: any) => void) {
-    onReply && onReply({})
+  protected async updateUI() {
+    this.onUIUpdate()
   }
 
   protected async enablePush(): Promise<boolean> {

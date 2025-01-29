@@ -16,6 +16,7 @@ class NativeClient implements BackendClient {
 
   constructor() {
     this.backend = new NativeBackend()
+    this.backend.setOnUIUpdate(() => this.onMessage({} as BackendReply))
     this.backend.start()
   }
 

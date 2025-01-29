@@ -315,7 +315,7 @@ export class Nip46Backend extends NDKNip46Backend {
   }
 
   public async sendAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
-    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl);
-    await event.publish();
+    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl)
+    await event.publish()
   }
 }
