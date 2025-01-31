@@ -29,6 +29,9 @@ FROM nginx:alpine AS client
 # Копируем собранные файлы из предыдущего этапа
 COPY --from=build /usr/src/app/packages/client/build /usr/share/nginx/html
 
+# Копируем apple-app-site-association в директорию .well-known
+COPY --from=build /usr/src/app/packages/client/build/.well-known/apple-app-site-association /usr/share/nginx/html/.well-known/apple-app-site-association
+
 # Копируем конфигурационный файл Nginx
 COPY packages/client/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
