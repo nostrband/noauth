@@ -765,7 +765,7 @@ export class NoauthBackend extends EventEmitter {
               timestamp: Date.now(),
               name: '',
               icon: '',
-              url: confirmOptions.appUrl || '',
+              url: confirmOptions?.appUrl || '',
               updateTimestamp: Date.now(),
               permUpdateTimestamp: Date.now(),
               userAgent: globalThis?.navigator?.userAgent || '',
@@ -825,7 +825,7 @@ export class NoauthBackend extends EventEmitter {
               // after the app perms are published we can
               // tell the iframe to import this nsec, it will
               // be able to read the perms from the network now
-              if (exportToIframe && confirmOptions.port)
+              if (exportToIframe && confirmOptions?.port)
                 this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
             })
           }
