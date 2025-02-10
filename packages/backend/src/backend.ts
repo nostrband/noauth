@@ -111,13 +111,14 @@ export class NoauthBackend extends EventEmitter {
     // there was no push
     console.log('pushNpubs', JSON.stringify(this.pushNpubs))
     for (const k of this.enckeys) {
-      if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
+      const isPush = !!this.pushNpubs.find((n) => n === k.npub)
+      if (!this.pushNpubs.length || isPush) {
         await this.unlock(k.npub)
-        await this.notifyNpub(k.npub)
+        if (isPush) await this.notifyNpub(k.npub)
       }
     }
 
-    // pause to let SW processing pushed pubkey's incoming requests
+    // pause to let SW process pushed pubkey's incoming requests
     setTimeout(async () => {
       // unlock the rest of keys
       if (this.pushNpubs.length > 0) {

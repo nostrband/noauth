@@ -338,23 +338,30 @@ export class NativeBackend extends NoauthBackend {
     })
   }
 
-  //   protected async subscribeAllKeys(): Promise<void> {
-  //     let sub = await this.swg.registration.pushManager?.getSubscription()
-  //     if (!sub && Notification && Notification.permission === 'granted') {
-  //       const enabled = await this.enablePush()
-  //       if (enabled) sub = await this.swg.registration.pushManager.getSubscription()
-  //     }
+  private async getToken() {
+    return await new Promise<{ value: string } | undefined>((ok) => {
+      PushNotifications.addListener('registration', (token: { value: string }) => {
+        ok(token)
+      })
+      PushNotifications.addListener('registrationError', () => {
+        ok(undefined)
+      })
+    })
+  }
 
-  //     if (sub) {
-  //       // subscribe in the background to avoid blocking
-  //       // the request processing
-  //       for (const npub of this.getUnlockedNpubs()) this.browserApi.sendSubscriptionToServer(npub, sub)
-  //     }
-  //   }
+  protected async subscribeAllKeys(): Promise<void> {
+    // returns token if perms are granted and registration is successful
+    const token = await this.getToken()
+    if (token) {
+      // subscribe in the background to avoid blocking
+      // the request processing
+      for (const npub of this.getUnlockedNpubs()) this.browserApi.sendSubscriptionToServer(npub, token.value)
+    }
+  }
 
-  //   protected async subscribeNpub(npub: string) {
-  //     const sub = await this.swg.registration.pushManager?.getSubscription()
-  //     if (sub) await this.browserApi.sendSubscriptionToServer(npub, sub)
-  //     console.log('subscribed', npub)
-  //   }
+  protected async subscribeNpub(npub: string) {
+    const token = await this.getToken()
+    if (token) await this.browserApi.sendSubscriptionToServer(npub, token.value)
+    console.log('subscribed', npub)
+  }
 }
