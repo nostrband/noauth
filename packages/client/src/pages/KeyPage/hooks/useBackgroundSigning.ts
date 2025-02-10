@@ -18,11 +18,10 @@ export const useBackgroundSigning = () => {
       if (!swr) return
       const isBackgroundEnable = await swr.pushManager?.getSubscription()
       setShowWarning(!isBackgroundEnable)
+    } else {
+      const permissionsStatus = await PushNotifications.checkPermissions()
+      setShowWarning(permissionsStatus.receive !== 'granted')
     }
-    const permissionsStatus = await PushNotifications.checkPermissions()
-    if (permissionsStatus.receive !== 'granted') return setShowWarning(true)
-    PushNotifications.addListener('registration', (token) => setShowWarning(!token))
-    await PushNotifications.register()
   }, [])
 
   const handleEnableBackground = useCallback(async () => {
