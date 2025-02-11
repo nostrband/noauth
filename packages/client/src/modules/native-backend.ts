@@ -84,7 +84,8 @@ export class NativeBackend extends NoauthBackend {
       })
     })
 
-    PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
+    PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+      console.log('got push action', action)
       // FIXME now what?
     })
 
