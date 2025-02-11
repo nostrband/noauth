@@ -262,15 +262,16 @@ export class NativeBackend extends NoauthBackend {
   }
 
   protected async subscribeAllKeys(): Promise<void> {
-    await new Promise(ok => setTimeout(ok, 10000));
+    await new Promise((ok) => setTimeout(ok, 10000))
 
-    console.log("push subscribeAllKeys");
-    await PushNotifications.removeAllDeliveredNotifications()
+    console.log('push subscribeAllKeys')
 
     // returns token if perms are granted and registration is successful
     const token = await this.getPushToken()
-    console.log("push token", token);
+    console.log('push token', token)
     if (token) {
+      await PushNotifications.removeAllDeliveredNotifications()
+
       // subscribe in the background to avoid blocking
       // the request processing
       for (const npub of this.getUnlockedNpubs()) this.browserApi.sendSubscriptionToServer(npub, token.value)
