@@ -13,6 +13,7 @@ export const StyledAppBar = styled(AppBar)(({ theme }) => {
     left: '50%',
     transform: 'translateX(-50%)',
     borderRadius: '8px',
+    top: 'env(safe-area-inset-top)',
   }
 })
 
