@@ -199,23 +199,13 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   protected async notifyNpub(npub: string) {
-    // check existing notifs and check if we should show
-    // this new one
-    let show = true
+    // clear existing notifications to avoid generating a pile of them
     const tag = npub
     try {
       const notifs = await this.swg.registration.getNotifications({
         tag,
       })
-      // hide existing notifications
-      for (const n of notifs) n.close();
-      // // FIXME: why different behaviour for Safari?
-      // if (this.isSafari()) {
-      // } else {
-      //   // don't show if same notification
-      //   // is already visible
-      //   show = !notifs.length
-      // }
+      for (const n of notifs) n.close()
     } catch (e) {
       console.log('failed to clean notifications', e)
     }
@@ -232,28 +222,27 @@ export class ServiceWorkerBackend extends NoauthBackend {
     this.lastPushTime = Date.now()
 
     try {
-      if (show) {
-        const icon = '/favicon-32x32.png'
-        const title = this.getNpubName(npub)
-        const body = `Processed request`
-        await this.swg.registration.showNotification(title, {
-          body,
-          tag,
-          silent: true,
-          icon,
-          data: { npub },
-        })
-      }
+      const icon = '/favicon-32x32.png'
+      const title = this.getNpubName(npub)
+      const body = `Processed request`
+      await this.swg.registration.showNotification(title, {
+        body,
+        tag,
+        silent: true,
+        icon,
+        data: { npub },
+      })
     } catch (e) {
       console.log('failed to show notification', e)
     }
 
     // unlock the onPush to let browser know we're done,
-    // give sw 1 sec to process the requests
+    // give sw 5 sec to process the requests without
+    // being shut down
     setTimeout(() => {
       if (this.notifCallback) this.notifCallback()
       this.notifCallback = null
-    }, 1000)
+    }, 5000)
   }
 
   protected notifyConfirmTODO() {

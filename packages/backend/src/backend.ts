@@ -118,7 +118,12 @@ export class NoauthBackend extends EventEmitter {
       }
     }
 
-    // pause to let SW processing pushed pubkey's incoming requests
+    // sync app perms, start immediately even if woken-up by push
+    // to make sure we load the new perms for pushed pubkey,
+    // we're using incremental sync now so it should be pretty fast
+    this.subscribeToAppPerms()
+
+    // pause to let SW process pushed pubkey's incoming requests
     setTimeout(async () => {
       // unlock the rest of keys
       if (this.pushNpubs.length > 0) {
@@ -129,12 +134,8 @@ export class NoauthBackend extends EventEmitter {
 
       // ensure we're subscribed on the server, re-create the
       // subscription endpoint if we have permissions granted
-      // FIXME only do this if we're not in iframe mode!
       await this.subscribeAllKeys()
-
-      // sync app perms
-      this.subscribeToAppPerms()
-    }, 3000)
+    }, 5000)
 
     this.emit(`start`)
     console.log(Date.now(), 'started')
