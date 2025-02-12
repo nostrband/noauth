@@ -12,7 +12,6 @@ package-lock.json
 .DS_Store
 **/.DS_Store
 
-
 # Logs
 *.log
 *.tmp
@@ -21,39 +20,17 @@ package-lock.json
 *.swo
 *.lock
 
-# =========================================
 # Web application build
-# =========================================
 build/
 dist/
 
-
-# =========================================
-# Capacitor: Android
-# =========================================
-android/.gradle/
-android/build/
-android/app/build/
-android/capacitor.build.gradle
-android/local.properties
-android/gradle.properties
-android/*.keystore
-
-# Файлы IDE (Android Studio/IntelliJ)
+# IDE files (Android Studio/IntelliJ)
 *.iml
 .idea/
 *.ipr
 *.iws
 
-# =========================================
-# Capacitor: iOS
-# =========================================
-ios/App/App.xcworkspace/
-ios/App/App.xcodeproj/
-ios/build/
-ios/Pods/
-ios/Podfile.lock
-# DerivedData and other Xcode file
+# DerivedData and other Xcode files
 ios/DerivedData/
 ios/*/DerivedData/
 xcuserdata/

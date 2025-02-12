@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   ios: {
     limitsNavigationsToAppBoundDomains: true,
   },
+  // android: { buildOptions: {} },
   // If you want to use a service worker, you need to include the code below:
   // server: {
   //   // url: 'http://192.168.31.132:3000', // for test on real phone
