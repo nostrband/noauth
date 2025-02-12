@@ -1,6 +1,7 @@
 import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+// @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
 class BrowserApi extends Api {
@@ -198,6 +199,18 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   protected async notifyNpub(npub: string) {
+    // clear existing notifications to avoid generating a pile of them
+    const tag = npub
+    try {
+      const notifs = await this.swg.registration.getNotifications({
+        tag,
+      })
+      for (const n of notifs) n.close()
+    } catch (e) {
+      console.log('failed to clean notifications', e)
+    }
+
+    // no need to show if we're already launched
     if (await this.isClientFocused()) return
 
     // annoying when several pushes show up too fast
@@ -208,37 +221,28 @@ export class ServiceWorkerBackend extends NoauthBackend {
     // remember
     this.lastPushTime = Date.now()
 
-    const tag = npub
-
     try {
-      let show = true
-      if (!this.isSafari()) {
-        const notifs = await this.swg.registration.getNotifications({
-          tag,
-        })
-        show = !notifs.length
-      }
-
-      if (show) {
-        const icon = '/favicon-32x32.png'
-        const title = this.getNpubName(npub)
-        const body = `Processed request.`
-        await this.swg.registration.showNotification(title, {
-          body,
-          tag,
-          silent: true,
-          icon,
-          data: { npub },
-        })
-      }
+      const icon = '/favicon-32x32.png'
+      const title = this.getNpubName(npub)
+      const body = `Processed request`
+      await this.swg.registration.showNotification(title, {
+        body,
+        tag,
+        silent: true,
+        icon,
+        data: { npub },
+      })
     } catch (e) {
       console.log('failed to show notification', e)
     }
 
     // unlock the onPush to let browser know we're done,
-    // FIXME what if it shuts us down immediately?
-    if (this.notifCallback) this.notifCallback()
-    this.notifCallback = null
+    // give sw 5 sec to process the requests without
+    // being shut down
+    setTimeout(() => {
+      if (this.notifCallback) this.notifCallback()
+      this.notifCallback = null
+    }, 5000)
   }
 
   protected notifyConfirmTODO() {
