@@ -204,22 +204,23 @@ export class ServiceWorkerBackend extends NoauthBackend {
     // this new one
     let show = true
     const tag = npub
-    try {
-      const notifs = await this.swg.registration.getNotifications({
-        tag,
-      })
-      // FIXME: why different behaviour for Safari?
-      if (this.isSafari()) {
-        // hide existing notifications
-        for (const n of notifs) n.close();
-      } else {
-        // don't show if same notification 
-        // is already visible
-        show = !notifs.length
-      }
-    } catch (e) {
-      console.log('failed to clean notifications', e)
-    }
+    // FIXME debugging
+    // try {
+    //   const notifs = await this.swg.registration.getNotifications({
+    //     tag,
+    //   })
+    //   // FIXME: why different behaviour for Safari?
+    //   if (this.isSafari()) {
+    //     // hide existing notifications
+    //     for (const n of notifs) n.close();
+    //   } else {
+    //     // don't show if same notification 
+    //     // is already visible
+    //     show = !notifs.length
+    //   }
+    // } catch (e) {
+    //   console.log('failed to clean notifications', e)
+    // }
 
     // no need to show if we're already launched
     if (await this.isClientFocused()) return
