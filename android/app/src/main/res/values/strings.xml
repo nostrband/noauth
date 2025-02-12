@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nsec.app</string>
+    <string name="title_activity_main">Nsec.app</string>
+    <string name="package_name">nostr.nsec.app</string>
+    <string name="custom_url_scheme">nostr.nsec.app</string>
+</resources>

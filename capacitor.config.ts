@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'app.nsec.native',
+  appId: 'nostr.nsec.app',
   appName: 'Nsec.app',
   webDir: './packages/client/build',
   ios: {

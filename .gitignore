@@ -1,4 +1,60 @@
-node_modules/
-dist/
 .nx/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+.pnp/
+.pnp.js
+
+# macOS
+.DS_Store
 **/.DS_Store
+
+
+# Logs
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.lock
+
+# =========================================
+# Web application build
+# =========================================
+build/
+dist/
+
+
+# =========================================
+# Capacitor: Android
+# =========================================
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor.build.gradle
+android/local.properties
+android/gradle.properties
+android/*.keystore
+
+# Файлы IDE (Android Studio/IntelliJ)
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# =========================================
+# Capacitor: iOS
+# =========================================
+ios/App/App.xcworkspace/
+ios/App/App.xcodeproj/
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+# DerivedData and other Xcode file
+ios/DerivedData/
+ios/*/DerivedData/
+xcuserdata/
+*.xcuserstate
