@@ -199,28 +199,26 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   protected async notifyNpub(npub: string) {
-
     // check existing notifs and check if we should show
     // this new one
     let show = true
     const tag = npub
-    // FIXME debugging
-    // try {
-    //   const notifs = await this.swg.registration.getNotifications({
-    //     tag,
-    //   })
-    //   // FIXME: why different behaviour for Safari?
-    //   if (this.isSafari()) {
-    //     // hide existing notifications
-    //     for (const n of notifs) n.close();
-    //   } else {
-    //     // don't show if same notification 
-    //     // is already visible
-    //     show = !notifs.length
-    //   }
-    // } catch (e) {
-    //   console.log('failed to clean notifications', e)
-    // }
+    try {
+      const notifs = await this.swg.registration.getNotifications({
+        tag,
+      })
+      // hide existing notifications
+      for (const n of notifs) n.close();
+      // // FIXME: why different behaviour for Safari?
+      // if (this.isSafari()) {
+      // } else {
+      //   // don't show if same notification
+      //   // is already visible
+      //   show = !notifs.length
+      // }
+    } catch (e) {
+      console.log('failed to clean notifications', e)
+    }
 
     // no need to show if we're already launched
     if (await this.isClientFocused()) return
@@ -237,7 +235,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
       if (show) {
         const icon = '/favicon-32x32.png'
         const title = this.getNpubName(npub)
-        const body = `Processed request.`
+        const body = `Processed request`
         await this.swg.registration.showNotification(title, {
           body,
           tag,
@@ -251,9 +249,11 @@ export class ServiceWorkerBackend extends NoauthBackend {
     }
 
     // unlock the onPush to let browser know we're done,
-    // FIXME what if it shuts us down immediately?
-    if (this.notifCallback) this.notifCallback()
-    this.notifCallback = null
+    // give sw 1 sec to process the requests
+    setTimeout(() => {
+      if (this.notifCallback) this.notifCallback()
+      this.notifCallback = null
+    }, 1000)
   }
 
   protected notifyConfirmTODO() {
