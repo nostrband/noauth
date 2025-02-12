@@ -1,6 +1,7 @@
 import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+// @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
 class BrowserApi extends Api {
@@ -198,6 +199,29 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   protected async notifyNpub(npub: string) {
+
+    // check existing notifs and check if we should show
+    // this new one
+    let show = true
+    const tag = npub
+    try {
+      const notifs = await this.swg.registration.getNotifications({
+        tag,
+      })
+      // FIXME: why different behaviour for Safari?
+      if (this.isSafari()) {
+        // hide existing notifications
+        for (const n of notifs) n.close();
+      } else {
+        // don't show if same notification 
+        // is already visible
+        show = !notifs.length
+      }
+    } catch (e) {
+      console.log('failed to clean notifications', e)
+    }
+
+    // no need to show if we're already launched
     if (await this.isClientFocused()) return
 
     // annoying when several pushes show up too fast
@@ -208,17 +232,7 @@ export class ServiceWorkerBackend extends NoauthBackend {
     // remember
     this.lastPushTime = Date.now()
 
-    const tag = npub
-
     try {
-      let show = true
-      if (!this.isSafari()) {
-        const notifs = await this.swg.registration.getNotifications({
-          tag,
-        })
-        show = !notifs.length
-      }
-
       if (show) {
         const icon = '/favicon-32x32.png'
         const title = this.getNpubName(npub)

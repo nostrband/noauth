@@ -111,9 +111,10 @@ export class NoauthBackend extends EventEmitter {
     // there was no push
     console.log('pushNpubs', JSON.stringify(this.pushNpubs))
     for (const k of this.enckeys) {
-      if (!this.pushNpubs.length || this.pushNpubs.find((n) => n === k.npub)) {
+      const isPush = !!this.pushNpubs.find((n) => n === k.npub)
+      if (!this.pushNpubs.length || isPush) {
         await this.unlock(k.npub)
-        await this.notifyNpub(k.npub)
+        if (isPush) await this.notifyNpub(k.npub)
       }
     }
 
@@ -139,6 +140,45 @@ export class NoauthBackend extends EventEmitter {
     console.log(Date.now(), 'started')
   }
 
+  private async processAppPermEvent(e: NDKEvent) {
+    const npub = nip19.npubEncode(e.pubkey)
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) return
+
+    // parse
+    try {
+      const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
+      const data = JSON.parse(payload)
+      console.log('Got app perm event', e.id, { e, data })
+      // validate first
+      if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
+      else console.log('Skip invalid app perms', data)
+      console.log('Finished app perm event', e.id)
+    } catch (err) {
+      console.log('Bad app perm event', e, err)
+    }
+
+    // notify UI
+    this.updateUI()
+  }
+
+  private async fetchAppPerms(authors: string[]) {
+    const events = await this.ndk.fetchEvents(
+      {
+        authors,
+        kinds: [KIND_DATA],
+        '#t': [APP_TAG],
+        limit: 100,
+      },
+      {},
+      NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk)
+    )
+
+    for (const e of events) await this.processAppPermEvent(e)
+
+    console.log('processed fetched app perm events', events.size, authors)
+  }
+
   private async subscribeToAppPerms() {
     if (this.permSub) {
       this.permSub.stop()
@@ -146,60 +186,30 @@ export class NoauthBackend extends EventEmitter {
       this.permSub = undefined
     }
 
+    // incremental update - use last perm update as 'since' filter
+    const lastPermTimestamp = this.apps.reduce((tm, app) => Math.max(tm, app.permUpdateTimestamp), 0)
+    // subtract some margin
+    const since = Math.max(0, Math.floor(lastPermTimestamp / 1000) - 3600)
+
     const authors = this.keys.map((k) => nip19.decode(k.npub).data as string)
+    console.log('subscribeToAppPerms since', since, authors)
+
     this.permSub = this.ndk.subscribe(
       {
         authors,
         kinds: [KIND_DATA],
         '#t': [APP_TAG],
         limit: 100,
+        since,
       },
       {
         closeOnEose: false,
         cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
       },
       NDKRelaySet.fromRelayUrls(OUTBOX_RELAYS, this.ndk),
-      true // auto-start
+      true
     )
-
-    // NOTE: we want to process existing events
-    // but also want to receive and process all future events,
-    // so we launch the async handler on all events, but
-    // the first run waits until eose and blocks until queued
-    // handlers are finished
-    const queue: Promise<void>[] = []
-    this.permSub.on('event', (e) => {
-      queue.push(
-        (async (e) => {
-          const npub = nip19.npubEncode(e.pubkey)
-          const key = this.keys.find((k) => k.npub === npub)
-          if (!key) return
-
-          // parse
-          try {
-            const payload = await key.signer.decrypt(new NDKUser({ pubkey: e.pubkey }), e.content)
-            const data = JSON.parse(payload)
-            console.log('Got app perm event', { e, data })
-            // validate first
-            if (this.isValidAppPerms(data)) await this.mergeAppPerms(data)
-            else console.log('Skip invalid app perms', data)
-          } catch (err) {
-            console.log('Bad app perm event', e, err)
-          }
-
-          // notify UI
-          this.updateUI()
-        })(e)
-      )
-    })
-
-    // wait for eose before proceeding
-    await new Promise((ok) => this.permSub!.on('eose', ok))
-
-    // wait until all existing perms are processed
-    await Promise.allSettled(queue)
-
-    console.log('processed app perm events', queue.length)
+    this.permSub.on('event', (e) => this.processAppPermEvent(e))
   }
 
   private isValidAppPerms(d: any) {
@@ -241,7 +251,7 @@ export class NoauthBackend extends EventEmitter {
         updateTimestamp: data.updateTimestamp,
         // choose newer perm update timestamp
         permUpdateTimestamp: app
-          ? Math.min(app.permUpdateTimestamp, data.permUpdateTimestamp)
+          ? Math.max(app.permUpdateTimestamp, data.permUpdateTimestamp)
           : data.permUpdateTimestamp,
       }
     }
@@ -402,8 +412,11 @@ export class NoauthBackend extends EventEmitter {
     if (!iframe) await this.subscribeNpub(npub)
 
     // fetch perms from relays
-    await this.subscribeToAppPerms()
+    await this.fetchAppPerms([pubkey])
     console.log('synched apps', npub)
+
+    // resubscribe to new app perms for all keys, this one included
+    await this.subscribeToAppPerms()
 
     // seed new key with profile, relays etc
     if (!nsec) {
@@ -781,7 +794,7 @@ export class NoauthBackend extends EventEmitter {
           }
         } else {
           // just send to db w/o waiting for it
-          this.dbi.addConfirmed({
+          await this.dbi.addConfirmed({
             ...req,
             allowed: allow,
           })
@@ -1384,10 +1397,10 @@ export class NoauthBackend extends EventEmitter {
 
   private async registerIframeWorker(port: MessagePort) {
     port.onmessage = async (ev: MessageEvent) => {
-      console.log("got iframe request", ev.data);
+      console.log('got iframe request', ev.data)
 
       const sendReply = (reply: any) => {
-        port.postMessage(reply);
+        port.postMessage(reply)
       }
 
       // parse, verify
@@ -1398,7 +1411,7 @@ export class NoauthBackend extends EventEmitter {
         if (!verifySignature(event as Event)) return
       } catch (e) {
         console.log('invalid iframe worker event', e, ev)
-        return sendReply("Invalid request event")
+        return sendReply('Invalid request event')
       }
 
       console.log('iframe request event', event)
@@ -1421,24 +1434,24 @@ export class NoauthBackend extends EventEmitter {
         sendReply(ERROR_NO_KEY + ':' + event.id)
 
         // now wait for the rebound key
-        await this.waitKey(npub);
+        await this.waitKey(npub)
 
         // try again
         key = this.keys.find((k) => k.npub === npub)
-        if (!key) return sendReply("Key not found")
+        if (!key) return sendReply('Key not found')
       }
 
       // process the request
       try {
         const be = key.backend as Nip46Backend
         const reply = await be.processEventIframe(new NDKEvent(key.ndk, event), (auth_url: NostrEvent) => {
-          sendReply(auth_url);
-        });
+          sendReply(auth_url)
+        })
 
-        sendReply(reply);
+        sendReply(reply)
       } catch (e: any) {
-        console.log("Failed to process iframe request", event);
-        sendReply("Failed to process request");
+        console.log('Failed to process iframe request', event)
+        sendReply('Failed to process request')
       }
     }
   }
@@ -1549,7 +1562,7 @@ export class NoauthBackend extends EventEmitter {
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
     } else if (method === 'ping') {
-      result = null;
+      result = null
     } else {
       console.log('unknown method from UI ', method)
     }
