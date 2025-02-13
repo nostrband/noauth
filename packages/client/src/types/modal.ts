@@ -15,6 +15,7 @@ export enum MODAL_PARAMS_KEYS {
   ADD_PERMISSION = 'add-permission',
   IMPORT_CONNECT = 'import-connect',
   REBIND = 'rebind',
+  CONFIRM_LOGOUT = 'confirm-logout',
 }
 
 export enum EXPLANATION_MODAL_KEYS {
