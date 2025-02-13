@@ -1,5 +1,5 @@
 import { nip19 } from 'nostr-tools'
-import { ACTIONS, DOMAIN, NOAUTHD_URL } from '../consts'
+import { ACTIONS, DOMAIN, EVENT_KINDS, NOAUTHD_URL, RANGED_EVENT_KINDS } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@noauth/common'
 import { fetchNip05, getSignReqKind } from '@noauth/common'
 
@@ -191,24 +191,8 @@ export function getActionName(method: string, kind?: number) {
   const action = ACTIONS[method]
   if (method === 'sign_event') {
     if (kind !== undefined) {
-      switch (kind) {
-        case 0:
-          return 'Update your profile'
-        case 1:
-          return 'Publish note'
-        case 3:
-          return 'Update your contact list'
-        case 4:
-          return 'Send direct message'
-        case 5:
-          return 'Delete event'
-        case 6:
-          return 'Publish repost'
-        case 7:
-          return 'Publish reaction'
-        case 10002:
-          return 'Update your relay list'
-      }
+      const label = getEventKindLabel(kind)
+      if (label) return label
       return `${action} of kind ${kind}`
     }
   }
@@ -309,6 +293,16 @@ export const generateNip05 = async () => {
 export function isDomainOrSubdomain(domain: string, sub: string) {
   console.log('isDomainOrSubdomain', domain, sub)
   return domain === sub || sub.endsWith('.' + domain)
+}
+
+export function getEventKindLabel(kind: number) {
+  if (EVENT_KINDS.has(kind)) return EVENT_KINDS.get(kind)
+
+  for (const range of RANGED_EVENT_KINDS) {
+    if (kind >= range.start && kind <= range.end) return range.label
+  }
+
+  return ''
 }
 
 // export function parseRebindToken(token: string) {
