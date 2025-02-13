@@ -72,6 +72,7 @@ export interface DbConnectToken {
 
 export interface DbInterface {
   addKey: (key: DbKey) => Promise<void>
+  deleteKey: (npub: string) => Promise<void>
   getKey: (npub: string) => Promise<DbKey | undefined>
   listKeys: () => Promise<DbKey[]>
   editName: (npub: string, name: string) => Promise<void>

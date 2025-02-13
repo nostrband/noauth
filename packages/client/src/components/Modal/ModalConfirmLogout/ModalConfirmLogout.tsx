@@ -5,19 +5,30 @@ import { Modal } from '@/shared/Modal/Modal'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { StyledSubtitle } from './styled'
+import { client } from '@/modules/client'
+import { useNavigate } from 'react-router-dom'
 
-export const ModalConfirmLogout: FC = () => {
+type ModalConfirmLogoutSettings = {
+  npub: string
+}
+
+export const ModalConfirmLogout: FC<ModalConfirmLogoutSettings> = ({ npub }) => {
+  const navigate = useNavigate()
   const { getModalOpened, createHandleCloseBack } = useModalSearchParams()
   const handleClose = createHandleCloseBack(MODAL_PARAMS_KEYS.CONFIRM_LOGOUT, MODAL_PARAMS_KEYS.SETTINGS)
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_LOGOUT)
 
-  const handleConfirmLogout = () => {
-    // delete_key(npub)
+  const handleConfirmLogout = async () => {
+    await client.deleteKey(npub)
+    navigate(`/home/`)
   }
   return (
     <Modal open={isModalOpened} onClose={handleClose} title="Are you sure?" withCloseButton={false}>
       <Stack gap={'1rem'}>
-        <StyledSubtitle>This action will terminate all applications bound to your key</StyledSubtitle>
+        <StyledSubtitle>
+          Your key will be removed from this device. Please make sure you remember your password or have a backup of the
+          key.
+        </StyledSubtitle>
         <Button type="button" varianttype="secondary" onClick={handleClose}>
           Cancel
         </Button>

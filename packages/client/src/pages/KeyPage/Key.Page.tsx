@@ -134,7 +134,7 @@ const KeyPage = () => {
       <ModalEditName />
       <ModalSetPassword isPasswordSet={isPasswordSet} />
       <ModalRebind />
-      <ModalConfirmLogout />
+      <ModalConfirmLogout npub={npub} />
     </>
   )
 }
