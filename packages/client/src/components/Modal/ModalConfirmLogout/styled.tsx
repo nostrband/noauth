@@ -7,9 +7,6 @@ export const StyledSubtitle = styled(Typography)(({ theme }) => {
     lineHeight: '18px',
     color: theme.palette.textSecondaryDecorate.light,
     textAlign: 'center',
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
     maxWidth: '328px',
     margin: '0 auto',
   }
