@@ -1162,6 +1162,26 @@ export class NoauthBackend extends EventEmitter {
     return k
   }
 
+  private async deleteKey(npub: string) {
+    await this.dbi.deleteKey(npub)
+
+    const key = this.keys.find((k) => k.npub === npub)
+    if (key) {
+      key.backend.handlers = {}
+      key.watcher.stop()
+      key.ndk.pool.removeAllListeners()
+      for (const r of key.ndk.pool.relays.values()) r.disconnect()
+    }
+
+    this.enckeys = this.enckeys.filter((e) => e.npub !== npub)
+    this.keys = this.keys.filter((e) => e.npub !== npub)
+    this.perms = this.perms.filter((e) => e.npub !== npub)
+    this.apps = this.apps.filter((e) => e.npub !== npub)
+    this.connectTokens = this.connectTokens.filter((e) => e.npub !== npub)
+
+    this.updateUI()
+  }
+
   private async importKeyIframe(nsec: string, appNpub: string) {
     // FIXME add appNpub to iframeKeys table,
     // and when this app is deleted - delete the key too
@@ -1520,6 +1540,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.importKey(args[0], args[1], args[2])
     } else if (method === 'importKeyIframe') {
       result = await this.importKeyIframe(args[0], args[1])
+    } else if (method === 'deleteKey') {
+      result = await this.deleteKey(args[0])
     } else if (method === 'setPassword') {
       result = await this.setPassword(args[0], args[1], args[2])
     } else if (method === 'fetchKey') {

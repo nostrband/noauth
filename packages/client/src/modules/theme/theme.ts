@@ -56,7 +56,7 @@ const lightTheme: Theme = createTheme({
     },
     textSecondaryDecorate: {
       main: '#6b6b6b',
-      light: '#000',
+      light: '#000000A8',
       dark: '#000',
       contrastText: '#000',
     },
@@ -90,7 +90,7 @@ const darkTheme: Theme = createTheme({
     },
     textSecondaryDecorate: {
       main: '#6b6b6b',
-      light: '#000',
+      light: '#FFFFFFA8',
       dark: '#000',
       contrastText: '#000',
     },
