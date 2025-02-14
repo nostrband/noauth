@@ -220,6 +220,10 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('waitKey', [], npub)
   }
 
+  public async deleteKey(npub: string) {
+    return this.call<void>('deleteKey', [], npub)
+  }
+
   public async ping() {
     return this.call<void>('ping', [])
   }

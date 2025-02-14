@@ -301,6 +301,10 @@ export class ClientWebSocket implements BackendClient {
     throw new Error('waitKey not implemented')
   }
 
+  public async deleteKey(npub: string) {
+    throw new Error('deleteKey not implemented')
+  }
+
   public async ping() {
     // noop
   }

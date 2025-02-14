@@ -40,6 +40,9 @@ const dbiPrisma: DbInterface = {
       throw error
     }
   },
+  deleteKey: async (npub: string) => {
+    throw new Error('Not implemented')
+  },
   getKey: async (npub: string) => {
     try {
       const key = await prisma.keys.findUnique({ where: { npub } })

@@ -23,6 +23,7 @@ import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
 import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPassword'
 import { client } from '@/modules/client'
 import { ModalRebind } from '@/components/Modal/ModalRebind/ModalRebind'
+import { ModalConfirmLogout } from '@/components/Modal/ModalConfirmLogout/ModalConfirmLogout'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -33,7 +34,9 @@ const KeyPage = () => {
   const [isCheckingSync, setIsChecking] = useState(true)
   const handleStopChecking = () => setIsChecking(false)
 
-  const { handleOpen } = useModalSearchParams()
+  const { handleOpen, createHandleCloseReplace } = useModalSearchParams()
+  const handleCloseSettingsModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.SETTINGS)
+
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
   const key = keys.find((k) => k.npub === npub)
@@ -73,6 +76,10 @@ const KeyPage = () => {
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
   const handleOpenEditNameModal = () => handleOpen(MODAL_PARAMS_KEYS.EDIT_NAME)
+  const handleLogout = () => {
+    handleCloseSettingsModal()
+    handleOpen(MODAL_PARAMS_KEYS.CONFIRM_LOGOUT)
+  }
 
   return (
     <>
@@ -120,13 +127,14 @@ const KeyPage = () => {
       </Stack>
 
       <ModalConnectApp />
-      <ModalSettings isSynced={isSynced} />
+      <ModalSettings isSynced={isSynced} onLogout={handleLogout} />
       <ModalExplanation />
       <ModalConfirmConnect />
       <ModalConfirmEvent />
       <ModalEditName />
       <ModalSetPassword isPasswordSet={isPasswordSet} />
       <ModalRebind />
+      <ModalConfirmLogout npub={npub} />
     </>
   )
 }

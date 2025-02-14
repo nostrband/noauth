@@ -16,7 +16,7 @@ export const ModalSetPassword: FC<ModalSetPasswordProps> = ({ isPasswordSet }) =
   const title = isPasswordSet ? 'Change password' : 'Set password'
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal} title={title} withCloseButton={false}>
+    <Modal open={isModalOpened} onClose={handleCloseModal} title={title}>
       {isPasswordSet ? (
         <ChangePasswordForm onClose={handleCloseModal} />
       ) : (
