@@ -24,6 +24,7 @@ import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPa
 import { client } from '@/modules/client'
 import { ModalRebind } from '@/components/Modal/ModalRebind/ModalRebind'
 import { ModalConfirmLogout } from '@/components/Modal/ModalConfirmLogout/ModalConfirmLogout'
+import { ModalRelays } from '@/components/Modal/ModalRelays/ModalRelays'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -128,6 +129,7 @@ const KeyPage = () => {
 
       <ModalConnectApp />
       <ModalSettings isSynced={isSynced} onLogout={handleLogout} />
+      <ModalRelays />
       <ModalExplanation />
       <ModalConfirmConnect />
       <ModalConfirmEvent />
