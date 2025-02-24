@@ -2,7 +2,7 @@ import { DbHistory, DbPending } from '@noauth/common'
 import { client } from '@/modules/client'
 import { nip19 } from 'nostr-tools'
 
-function printPrettyJson(json: string) {
+export function printPrettyJson(json: string) {
   try {
     const val = JSON.parse(json)
     return JSON.stringify(val, null, 3)
