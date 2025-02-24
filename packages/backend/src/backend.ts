@@ -847,7 +847,11 @@ export class NoauthBackend extends EventEmitter {
 
         // release this promise to send reply
         // to this req
-        ok([decision, resultCb])
+        const saveResult = async (result: string | undefined) => {
+          await this.dbi.addResult(id, result)
+          resultCb && resultCb(result)
+        }
+        ok([decision, saveResult])
 
         // notify UI that it was confirmed
         // if (!PERF_TEST)
@@ -1408,6 +1412,7 @@ export class NoauthBackend extends EventEmitter {
       subNpub,
       timestamp: Date.now(),
       expiry: Date.now() + TOKEN_TTL,
+      // @ts-ignore
       token: bytesToHex(randomBytes(TOKEN_SIZE)),
     }
     await this.dbi.addConnectToken(t)
