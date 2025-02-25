@@ -37,6 +37,7 @@ export interface CreateConnectParams {
   perms: string
   appUrl: string
   port?: MessagePort
+  email?: string
 }
 
 export interface BackendRequest {
@@ -49,5 +50,6 @@ export interface KeyInfo {
   npub: string
   nip05?: string
   name?: string
+  email?: string
   locked: boolean
 }

@@ -114,6 +114,24 @@ const dbiPrisma: DbInterface = {
       throw error
     }
   },
+  editEmail: async (npub: string, email: string) => {
+    try {
+      const key = await prisma.keys.findUnique({
+        where: {
+          npub,
+        },
+      })
+
+      if (!key) throw new Error('Key not found!')
+
+      const parseJsonData = JSON.parse(key.jsonData)
+      const editEmail = { ...parseJsonData, email }
+      await prisma.keys.update({ where: { npub }, data: { jsonData: JSON.stringify(editEmail) } })
+    } catch (error: any) {
+      console.error(`Error editing name: ${error.message}`)
+      throw error
+    }
+  },
   // getApp: async (appNpub: string) => {
   //   try {
   //     const app = await prisma.apps.findUnique({ where: { appNpub } })

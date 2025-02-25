@@ -41,6 +41,7 @@ import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { validateEmail } from './utils'
 
 interface Pending {
   req: DbPending
@@ -65,6 +66,7 @@ export class NoauthBackend extends EventEmitter {
   private pendingNpubEvents = new Map<string, NDKEvent[]>()
   private permSub?: NDKSubscription
   private pushNpubs: string[] = []
+  private emailStatusCache = new Map<string, boolean>()
 
   private dbi: DbInterface
 
@@ -343,6 +345,7 @@ export class NoauthBackend extends EventEmitter {
       npub: k.npub,
       nip05: k.nip05,
       name: k.name,
+      email: k.email,
       locked: this.isLocked(k.npub),
     }
   }
@@ -357,12 +360,14 @@ export class NoauthBackend extends EventEmitter {
     existingName,
     passphrase,
     iframe,
+    email,
   }: {
     name: string
     nsec?: string
     existingName?: boolean
     passphrase?: string
     iframe?: boolean
+    email?: string
   }): Promise<KeyInfo> {
     // lowercase
     name = name.trim().toLocaleLowerCase()
@@ -407,6 +412,18 @@ export class NoauthBackend extends EventEmitter {
         // clear it
         await this.dbi.editName(npub, '')
         dbKey.name = ''
+      }
+    }
+
+    if (email) {
+      // write locally
+      await this.dbi.editEmail(npub, email)
+
+      // try sending to server, will retry later if fails
+      try {
+        await this.api.setEmail(npub, email)
+      } catch (e) {
+        console.log('Failed to set email', e)
       }
     }
 
@@ -1048,6 +1065,33 @@ export class NoauthBackend extends EventEmitter {
     })
   }
 
+  private async checkName(input: string) {
+    // plain npub
+    if (input.startsWith('npub1')) return input
+
+    // maybe nip05?
+    let nip05 = input
+    if (!nip05.includes('@')) {
+      // name only - append @nsec.app
+      nip05 += '@' + this.global.getDomain()
+    }
+
+    // check nip05
+    const npubNip05 = await fetchNip05(nip05)
+    if (npubNip05) return npubNip05
+
+    // is valid email?
+    if (!validateEmail(input)) return 'invalid_email'
+
+    // check if email is bound to a user
+    const isUser = await this.api.checkEmail(input)
+    // we don't get npub, but we know it has one
+    if (isUser) return 'is_user'
+
+    // no user
+    return 'is_not_user'
+  }
+
   private async checkPendingRequest(npub: string, reqId: string) {
     console.log('checkPendingRequest', {
       npub,
@@ -1127,28 +1171,46 @@ export class NoauthBackend extends EventEmitter {
     return k
   }
 
+  private async generateKeyForEmail(name: string, email: string) {
+    const k = await this.addKey({ name, email })
+    this.updateUI()
+    return k
+  }
+
   private async generateKeyConnect(params: CreateConnectParams) {
     const k = await this.addKey({
       name: params.name,
       passphrase: params.password,
+      email: params.email,
     })
 
+    const { npub } = k
     const perms = ['connect', 'get_public_key']
     const allowedPerms = packageToPerms(ACTION_TYPE.BASIC)
     perms.push(...params.perms.split(',').filter((p) => allowedPerms?.includes(p)))
 
     await this.connectApp({
-      npub: k.npub,
+      npub,
       appNpub: params.appNpub,
       appUrl: params.appUrl,
       perms,
     })
 
-    if (params.port) await this.exportNsecToIframe(k.npub, params.appNpub, params.port)
+    if (params.port) await this.exportNsecToIframe(npub, params.appNpub, params.port)
 
     this.updateUI()
 
-    return k.npub
+    return npub
+  }
+
+  private async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
+    const pwh = await this.getEmailPWH(email, passphrase)
+    // will throw on invalid code etc
+    await this.api.confirmEmail(npub, code, pwh)
+
+    // can write locally now
+    await this.dbi.editEmail(npub, email)
+    this.emailStatusCache.set(npub, true)
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1235,11 +1297,27 @@ export class NoauthBackend extends EventEmitter {
     await this.uploadKey(npub, passphrase)
   }
 
+  private async getEmailPWH(email: string, passphrase: string) {
+    const saltHex = bytesToHex(sha256(email))
+    const { pwh } = await this.keysModule.generatePassKey(saltHex, passphrase)
+    return pwh
+  }
+
+  private async fetchKeyByEmail(email: string, passphrase: string) {
+    const pwh = await this.getEmailPWH(email, passphrase)
+    const { npub } = await this.api.fetchEmailFromServer(email, pwh)
+    if (!npub) throw new Error('Invalid email or password')
+    return await this.fetchKey(npub, passphrase, '')
+  }
+
   private async fetchKey(npub: string, passphrase: string, nip05: string) {
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== 'npub') throw new Error(`Invalid npub ${npub}`)
     const { pwh } = await this.keysModule.generatePassKey(pubkey, passphrase)
     const { data: enckey } = await this.api.fetchKeyFromServer(npub, pwh)
+
+    // needs 2fa
+    if (!enckey) return undefined
 
     // key already exists?
     const key = this.enckeys.find((k) => k.npub === npub)
@@ -1291,6 +1369,38 @@ export class NoauthBackend extends EventEmitter {
     const k = await this.addKey({ name, nsec, existingName, passphrase })
     this.updateUI()
     return k
+  }
+
+  private async checkEmailStatus(npub: string, email?: string) {
+    if (this.emailStatusCache.has(npub)) return this.emailStatusCache.get(npub)
+
+    const r = await this.api.getEmail(npub)
+
+    // not passed to server yet? treat as not-confirmed,
+    // will be send if resendEmail is called
+    if (!r.email) return false
+
+    // server has a different email?
+    if (r.email !== email) {
+      // different one confirmed, or no local email?
+      if (r.confirmed || !email) {
+        // set locally
+        await this.dbi.editEmail(npub, r.email)
+      }
+    }
+
+    // cache
+    this.emailStatusCache.set(npub, r.confirmed)
+
+    // return server-side status
+    return r.confirmed
+  }
+
+  private async setEmail(npub: string, email: string) {
+    // write locally
+    await this.dbi.editEmail(npub, email)
+    // retry setting on the server
+    await this.api.setEmail(npub, email)
   }
 
   protected async confirm(id: string, allow: boolean, remember: boolean, options?: any) {
@@ -1532,6 +1642,8 @@ export class NoauthBackend extends EventEmitter {
     let result = undefined
     if (method === 'generateKey') {
       result = await this.generateKey(args[0], args[1])
+    } else if (method === 'generateKeyForEmail') {
+      result = await this.generateKeyForEmail(args[0], args[1])
     } else if (method === 'generateKeyConnect') {
       result = await this.generateKeyConnect(args[0])
     } else if (method === 'redeemToken') {
@@ -1546,6 +1658,8 @@ export class NoauthBackend extends EventEmitter {
       result = await this.setPassword(args[0], args[1], args[2])
     } else if (method === 'fetchKey') {
       result = await this.fetchKey(args[0], args[1], args[2])
+    } else if (method === 'fetchKeyByEmail') {
+      result = await this.fetchKeyByEmail(args[0], args[1])
     } else if (method === 'confirm') {
       result = await this.confirm(args[0], args[1], args[2], args[3])
     } else if (method === 'connectApp') {
@@ -1584,6 +1698,14 @@ export class NoauthBackend extends EventEmitter {
       result = await this.registerIframeWorker(args[0])
     } else if (method === 'waitKey') {
       result = await this.waitKey(args[0])
+    } else if (method === 'checkName') {
+      result = await this.checkName(args[0])
+    } else if (method === 'checkEmailStatus') {
+      result = await this.checkEmailStatus(args[0], args[1])
+    } else if (method === 'confirmEmail') {
+      result = await this.confirmEmail(args[0], args[1], args[2], args[3])
+    } else if (method === 'setEmail') {
+      result = await this.setEmail(args[0], args[1])
     } else if (method === 'ping') {
       result = null
     } else {

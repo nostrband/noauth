@@ -79,6 +79,16 @@ const dbiDexie: DbInterface = {
       return
     }
   },
+  editEmail: async (npub: string, email: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        email,
+      })
+    } catch (error) {
+      console.log(`db editEmail error: ${error}`)
+      return
+    }
+  },
   // getApp: async (appNpub: string) => {
   //   try {
   //     return await db.apps.get(appNpub)

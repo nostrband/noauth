@@ -10,6 +10,7 @@ export interface DbKey {
   profile?: MetaEvent | null
   ncryptsec?: string
   localKey?: CryptoKey
+  email?: string
 }
 
 export interface DbApp {
@@ -77,6 +78,7 @@ export interface DbInterface {
   listKeys: () => Promise<DbKey[]>
   editName: (npub: string, name: string) => Promise<void>
   editNcryptsec: (npub: string, ncryptsec: string) => Promise<void>
+  editEmail: (npub: string, email: string) => Promise<void>
 
   addApp: (app: DbApp) => Promise<void>
   // getApp: (appNpub: string) => Promise<DbApp | undefined>

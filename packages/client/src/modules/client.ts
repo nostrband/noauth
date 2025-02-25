@@ -56,6 +56,8 @@ export interface BackendClient {
 
   getConnectToken: (npub: string, subNpub?: string) => Promise<DbConnectToken>
 
+  checkName: (name: string) => Promise<string>
+
   editName: (npub: string, newName: string) => Promise<void>
 
   transferName: (npub: string, name: string, receiverNpub: string) => Promise<void>
@@ -66,13 +68,23 @@ export interface BackendClient {
 
   importKeyIframe: (nsec: string, appNpub: string) => Promise<KeyInfo>
 
-  fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo>
+  fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo | undefined>
+
+  fetchKeyByEmail: (email: string, passphrase: string) => Promise<KeyInfo | undefined>
+
+  checkEmailStatus: (npub: string, email: string) => Promise<boolean>
+
+  confirmEmail: (npub: string, email: string, code: string, passphrase: string) => Promise<void>
+
+  setEmail: (npub: string, email: string) => Promise<void>
 
   exportKey: (npub: string) => Promise<string>
 
   nostrConnect: (npub: string, nostrconnect: string, options: any) => Promise<string>
 
   generateKey: (name: string, passphrase: string) => Promise<KeyInfo>
+
+  generateKeyForEmail: (name: string, email: string) => Promise<KeyInfo>
 
   generateKeyConnect: (params: CreateConnectParams) => Promise<string>
 
