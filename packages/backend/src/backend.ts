@@ -1204,13 +1204,24 @@ export class NoauthBackend extends EventEmitter {
   }
 
   private async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
-    const pwh = await this.getEmailPWH(email, passphrase)
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Npub not found')
+
+    // check, throws if password was set and this one is wrong
+    this.checkPassword(key, passphrase)
+
     // will throw on invalid code etc
-    await this.api.confirmEmail(npub, code, pwh)
+    await this.api.confirmEmail(npub, email, code)
 
     // can write locally now
     await this.dbi.editEmail(npub, email)
     this.emailStatusCache.set(npub, true)
+
+    // ensure
+    key.email = email
+
+    // set password if it's new
+    if (!key.ncryptsec) await this.setPassword(npub, passphrase, '')
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1262,8 +1273,23 @@ export class NoauthBackend extends EventEmitter {
       key: sk,
       passphrase,
     })
-    await this.api.sendKeyToServer(npub, enckey, pwh)
+
+    const email = info.email
+    const epwh = email ? await this.getEmailPWH(email, passphrase) : undefined
+    await this.api.sendKeyToServer(npub, enckey, pwh, email, epwh)
     await this.dbi.setSynced(npub)
+  }
+
+  private checkPassword(info: DbKey, passphrase: string) {
+    if (!info.ncryptsec) return
+    try {
+      const sk = decryptNip49(info.ncryptsec, passphrase)
+      const decNpub = nip19.npubEncode(getPublicKey(bytesToHex(sk)))
+      sk.fill(0) // clear
+      if (decNpub !== info.npub) throw new Error('Wrong password')
+    } catch {
+      throw new Error('Wrong password')
+    }
   }
 
   private async setPassword(npub: string, passphrase: string, existingPassphrase: string) {
@@ -1271,16 +1297,7 @@ export class NoauthBackend extends EventEmitter {
     if (!info) throw new Error(`Key ${npub} not found`)
 
     // check existing password locally
-    if (info.ncryptsec) {
-      try {
-        const sk = decryptNip49(info.ncryptsec, existingPassphrase)
-        const decNpub = nip19.npubEncode(getPublicKey(bytesToHex(sk)))
-        sk.fill(0) // clear
-        if (decNpub !== npub) throw new Error('Wrong password')
-      } catch {
-        throw new Error('Wrong password')
-      }
-    }
+    this.checkPassword(info, existingPassphrase)
 
     // decrypt sk
     const sk = await this.keysModule.decryptKeyLocal({

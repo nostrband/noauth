@@ -14,13 +14,17 @@ export class Api {
    * @param npub - user npub
    * @param enckey - encrypted key
    * @param pwh - password hash to be checked by fetchKeyFromServer
+   * @param email - email if set
+   * @param epwh - email password hash to be checked by fetchEmailFromServer
    * @returns data: { ok: true }
    */
-  public async sendKeyToServer(npub: string, enckey: string, pwh: string) {
+  public async sendKeyToServer(npub: string, enckey: string, pwh: string, email?: string, epwh?: string) {
     const body = JSON.stringify({
       npub,
       data: enckey,
       pwh,
+      email,
+      epwh,
     })
 
     const method = 'POST'
@@ -193,7 +197,7 @@ export class Api {
     const url = `${this.global.getNoauthdUrl()}/is_user?email=${email}`
     const r = await fetch(url)
     const d = await r.json()
-    return d.is_user === true;
+    return d.is_user === true
   }
 
   /**
@@ -244,18 +248,17 @@ export class Api {
   }
 
   /**
-   * Send when user clicks on confirmation link and enters 
-   * their password (authed)
+   * Send when user clicks on confirmation link (authed)
    * @param npub - user npub
+   * @param email - email mathing the code
    * @param code - code from confirmation email
-   * @param pwh - password hash (might differ from one use for /put)
    * @returns data: { ok: true }
    */
-  public async confirmEmail(npub: string, code: string, pwh: string) {
+  public async confirmEmail(npub: string, email: string, code: string) {
     const body = JSON.stringify({
       npub,
+      email,
       code,
-      pwh
     })
 
     const method = 'POST'
@@ -292,5 +295,4 @@ export class Api {
       body,
     })
   }
-
 }
