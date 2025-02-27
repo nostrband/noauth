@@ -1,4 +1,4 @@
-import { sendPost, sendPostAuthd } from './utils'
+import { fetchJson, sendAuthd } from './utils'
 import { GlobalContext } from './global'
 import { MAX_POW, MIN_POW } from '@noauth/common'
 
@@ -30,7 +30,7 @@ export class Api {
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/put`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -54,7 +54,7 @@ export class Api {
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/get`
 
-    return await sendPost({
+    return await fetchJson({
       url,
       method,
       headers: {},
@@ -85,7 +85,7 @@ export class Api {
     while (pow <= MAX_POW) {
       console.log('Try name', name, 'pow', pow)
       try {
-        return await sendPostAuthd({
+        return await sendAuthd({
           global: this.global,
           key,
           url,
@@ -117,7 +117,7 @@ export class Api {
     const method = 'DELETE'
     const url = `${this.global.getNoauthdUrl()}/name`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -143,7 +143,7 @@ export class Api {
     const method = 'PUT'
     const url = `${this.global.getNoauthdUrl()}/name`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -167,7 +167,7 @@ export class Api {
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/created`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -214,9 +214,9 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${this.global.getNoauthdUrl()}/set-email`
+    const url = `${this.global.getNoauthdUrl()}/email`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -231,19 +231,11 @@ export class Api {
    * @returns data: { email: string, confirmed: boolean }
    */
   public async getEmail(npub: string) {
-    const body = JSON.stringify({
-      npub,
-    })
-
-    const method = 'POST'
-    const url = `${this.global.getNoauthdUrl()}/get-email`
-
-    return sendPostAuthd({
+    const url = `${this.global.getNoauthdUrl()}/email?npub=${npub}`
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
-      method,
-      body,
     })
   }
 
@@ -261,10 +253,10 @@ export class Api {
       code,
     })
 
-    const method = 'POST'
-    const url = `${this.global.getNoauthdUrl()}/confirm-email`
+    const method = 'PUT'
+    const url = `${this.global.getNoauthdUrl()}/email`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -286,9 +278,9 @@ export class Api {
     })
 
     const method = 'POST'
-    const url = `${this.global.getNoauthdUrl()}/get-email-npub`
+    const url = `${this.global.getNoauthdUrl()}/email_npub`
 
-    return await sendPost({
+    return await fetchJson({
       url,
       method,
       headers: {},
