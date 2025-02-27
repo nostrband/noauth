@@ -1220,8 +1220,8 @@ export class NoauthBackend extends EventEmitter {
     // ensure
     key.email = email
 
-    // set password if it's new
-    if (!key.ncryptsec) await this.setPassword(npub, passphrase, '')
+    // re-set password to make sure it's set for this email
+    await this.setPassword(npub, passphrase, passphrase)
   }
 
   private async redeemToken(npub: string, token: string) {
