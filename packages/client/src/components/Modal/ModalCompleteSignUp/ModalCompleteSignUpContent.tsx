@@ -3,12 +3,14 @@ import { MODAL_STEPS, ModalStep } from './utils'
 import { StepSavePassword } from './components/StepSavePassword/StepSavePassword'
 import { StepBackupKeys } from './components/StepBackupKeys/StepBackupKeys'
 import { StepFinishSignUp } from './components/StepFinishSignUp/StepFinishSignUp'
-import { FormInputType } from './const'
+import { FormInputType, schema } from './const'
 import { usePassword } from '@/hooks/usePassword'
 import { client } from '@/modules/client'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useUnmount } from 'usehooks-ts'
+import { FormProvider, useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 
 type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
@@ -22,9 +24,16 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   onClose,
 }) => {
   const notify = useEnqueueSnackbar()
+  const methods = useForm<FormInputType>({
+    defaultValues: {
+      password: '',
+    },
+    resolver: yupResolver(schema),
+  })
 
   const { npub = '' } = useParams<{ npub: string }>()
   const [searchParams] = useSearchParams()
+  const email = searchParams.get('email') || ''
   const emailCode = searchParams.get('code') || ''
 
   const { hidePassword, inputProps } = usePassword()
@@ -33,11 +42,11 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
 
   const handleSubmit = async (values: FormInputType) => {
     try {
-      if (!emailCode || isLoading) return
+      if (!email || !emailCode || isLoading) return
 
       setIsLoading(true)
       hidePassword()
-      const { email, password } = values
+      const { password } = values
 
       await client.confirmEmail(npub, email, emailCode, password)
       setIsLoading(false)
@@ -51,15 +60,20 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   }
 
   useUnmount(() => {
-    console.log("useUnmount");
+    console.log('useUnmount')
     onChangeStep(MODAL_STEPS[0])
     onClose()
     hidePassword()
   })
 
-  console.log("render", currentStep);
+  console.log('render', currentStep)
+
   if (currentStep === 'password') {
-    return <StepSavePassword onSubmit={handleSubmit} isLoading={isLoading} inputProps={inputProps} />
+    return (
+      <FormProvider {...methods}>
+        <StepSavePassword onSubmit={handleSubmit} isLoading={isLoading} inputProps={inputProps} email={email} />
+      </FormProvider>
+    )
   }
 
   if (currentStep === 'backup') {

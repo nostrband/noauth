@@ -13,9 +13,10 @@ type StepSavePasswordProps = {
     endAdornment: JSX.Element
     type: string
   }
+  email: string
 }
 
-export const StepSavePassword: FC<StepSavePasswordProps> = ({ onSubmit, isLoading, inputProps }) => {
+export const StepSavePassword: FC<StepSavePasswordProps> = ({ onSubmit, isLoading, inputProps, email }) => {
   const {
     register,
     handleSubmit,
@@ -27,9 +28,9 @@ export const StepSavePassword: FC<StepSavePasswordProps> = ({ onSubmit, isLoadin
       <Input
         label="Email address"
         fullWidth
-        placeholder="example@mail.com"
-        {...register('email')}
-        error={!!errors.email}
+        readOnly
+        value={email}
+        onChange={() => undefined}
         type="email"
         autoComplete="username"
       />
