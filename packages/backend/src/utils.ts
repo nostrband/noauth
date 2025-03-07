@@ -17,14 +17,16 @@ export async function fetchJson({
   headers: any
   body: string
 }) {
-  const r = await fetch(url, {
+  const options: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
       ...headers,
     },
-    body,
-  })
+  }
+  if (body) options.body = body
+
+  const r = await fetch(url, options)
   if (r.status !== 200 && r.status !== 201) {
     console.log('Fetch error', url, method, r.status)
     const body = await r.json()

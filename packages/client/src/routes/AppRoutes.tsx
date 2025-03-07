@@ -7,6 +7,8 @@ import { CircularProgress, Stack } from '@mui/material'
 import CreatePage from '@/pages/CreatePage/Create.Page'
 import HomePage from '@/pages/HomePage/Home.Page'
 import IframePage from '@/pages/IframePage/Iframe.Page'
+import CompleteSignUpPage from '@/pages/CompleteSignUpPage/CompleteSignUp.Page'
+
 import { useHandleNostrConnect } from '@/hooks/useHandleNostrConnect'
 
 const KeyPage = lazy(() => import('@/pages/KeyPage/Key.Page'))
@@ -30,6 +32,7 @@ const AppRoutes = () => {
           <Route path="/home" element={<HomePage />} />
           <Route path="/iframe" element={<IframePage />} />
           <Route path="/key/:npub" element={<KeyPage />} />
+          <Route path="/key/:npub/confirm-email" element={<CompleteSignUpPage />} />
           <Route path="/key/:npub/app/:appNpub" element={<AppPage />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/nostrconnect/:pubkey" element={<NostrConnectPage />} />

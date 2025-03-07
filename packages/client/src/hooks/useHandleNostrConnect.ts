@@ -2,11 +2,10 @@ import { client } from '@/modules/client'
 import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
 import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from './useEnqueueSnackbar'
-import { parseNostrConnectMeta } from '@/components/Modal/ModalNostrConnect/utils/helpers'
-import { useModalSearchParams } from './useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
+import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
 const NOSTR_CONNECT_PROTOCOL = 'nostrconnect://'
 const IMPORT_QUERY_KEY = 'import'
@@ -17,10 +16,9 @@ export const useHandleNostrConnect = () => {
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
   const { pathname, search, hash } = useLocation()
+  const [searchParams] = useSearchParams()
 
   const keys = useAppSelector(selectKeys)
-
-  const { handleOpen } = useModalSearchParams()
 
   const connect = async (npub: string, pubkey: string) => {
     try {
@@ -56,10 +54,18 @@ export const useHandleNostrConnect = () => {
         return notify('Invalid email!', 'error')
       }
       if (checkEmail === 'is_user') {
-        return handleOpen(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
+        const nc = pathname.slice(1) + search
+        return navigate({
+          pathname: '/home?',
+          search: `${MODAL_PARAMS_KEYS.EMAIL_LOGIN}=true&connect=${encodeURIComponent(nc)}`,
+        })
       }
       if (checkEmail === 'is_not_user') {
-        return handleOpen(MODAL_PARAMS_KEYS.SIGNING_UP, { pathname: '/home', search: { email, pubkey } })
+        const nc = pathname.slice(1) + search
+        return navigate({
+          pathname: '/home?',
+          search: `${MODAL_PARAMS_KEYS.SIGNING_UP}=true&email=${email}&connect=${encodeURIComponent(nc)}`,
+        })
       }
     } catch (error: any) {
       notify('Error: ' + error.toString(), 'error')
@@ -73,7 +79,7 @@ export const useHandleNostrConnect = () => {
       const hashParams = new URLSearchParams(hash)
       const nsec = hashParams.get(IMPORT_HASH_KEY)
       const email = hashParams.get(EMAIL_HASH_KEY)
-      const isImport = new URLSearchParams(search).get(IMPORT_QUERY_KEY) === 'true'
+      const isImport = searchParams.get(IMPORT_QUERY_KEY) === 'true'
 
       if (email) {
         await handleConnectWithEmail(email, pubkey)

@@ -18,6 +18,7 @@ export enum MODAL_PARAMS_KEYS {
   CONFIRM_LOGOUT = 'confirm-logout',
   EMAIL_LOGIN = 'email-login',
   SIGNING_UP = 'signing-up',
+  CONFIRM_EMAIL = 'confirm-email',
 }
 
 export enum EXPLANATION_MODAL_KEYS {
