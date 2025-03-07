@@ -9,8 +9,8 @@ import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
 const NOSTR_CONNECT_PROTOCOL = 'nostrconnect://'
 const IMPORT_QUERY_KEY = 'import'
-const IMPORT_HASH_KEY = '#import'
-const EMAIL_HASH_KEY = '#email'
+const IMPORT_HASH_KEY = 'import'
+const EMAIL_HASH_KEY = 'email'
 
 export const useHandleNostrConnect = () => {
   const navigate = useNavigate()
@@ -49,6 +49,7 @@ export const useHandleNostrConnect = () => {
       if (keyByEmail) return await connect(keyByEmail.npub, pubkey)
 
       const checkEmail = await client.checkName(email)
+      console.log("checkEmail", checkEmail);
 
       if (checkEmail === 'invalid_email') {
         return notify('Invalid email!', 'error')
@@ -62,6 +63,7 @@ export const useHandleNostrConnect = () => {
       }
       if (checkEmail === 'is_not_user') {
         const nc = pathname.slice(1) + search
+        console.log("nc");
         return navigate({
           pathname: '/home?',
           search: `${MODAL_PARAMS_KEYS.SIGNING_UP}=true&email=${email}&connect=${encodeURIComponent(nc)}`,
@@ -76,7 +78,7 @@ export const useHandleNostrConnect = () => {
     const exec = async () => {
       if (!pathname.includes(NOSTR_CONNECT_PROTOCOL)) return
       const pubkey = pathname.split(NOSTR_CONNECT_PROTOCOL)[1]
-      const hashParams = new URLSearchParams(hash)
+      const hashParams = new URLSearchParams(hash.substring(1))
       const nsec = hashParams.get(IMPORT_HASH_KEY)
       const email = hashParams.get(EMAIL_HASH_KEY)
       const isImport = searchParams.get(IMPORT_QUERY_KEY) === 'true'

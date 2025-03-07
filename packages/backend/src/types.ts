@@ -32,7 +32,7 @@ export interface Key {
 
 export interface CreateConnectParams {
   name: string
-  password: string
+  password?: string
   appNpub: string
   perms: string
   appUrl: string

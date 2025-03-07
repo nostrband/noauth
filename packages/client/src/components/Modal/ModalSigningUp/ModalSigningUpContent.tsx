@@ -9,7 +9,6 @@ import { Stack } from '@mui/material'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useUnmount } from 'usehooks-ts'
 import { CreateConnectParams } from '@noauth/backend'
-import useIframePort from '@/hooks/useIframePort'
 import { nip19 } from 'nostr-tools'
 
 const isPopup = false
@@ -30,47 +29,46 @@ export const ModalSigningUpContent: FC = memo(() => {
   const email = searchParams.get('email') || ''
   const nostrconnect = searchParams.get('connect') || ''
 
-  const { port, referrer } = useIframePort(true)
-
   const handleGenerateKeyConnect = useCallback(async () => {
     try {
       if (!email || !nostrconnect || !nostrconnect.startsWith('nostrconnect://')) return handleCloseModal()
 
       const nostrconnectURL = new URL(nostrconnect)
       const appPubkey = nostrconnectURL.host
-
-      // const key = await client.generateKeyForEmail(name, email)
+      const meta = parseNostrConnectMeta('?' + nostrconnectURL.search)
+      if (!meta) throw new Error('Bad nostrconnect metadata')
 
       const name = await generateNip05()
       const appNpub = nip19.npubEncode(appPubkey)
-      const appUrl = referrer || getReferrerAppUrl()
+      // FIXME why referrer? Is it more reliable?
+      // are we gonna use the URL for our welcome email
+      // and to redirect back to the app after email confirmed?
+      const appUrl = getReferrerAppUrl() || meta.appUrl
 
+      // create key and add this new app as "connected"
       const params: CreateConnectParams = {
         name,
         email,
-        port,
         appNpub,
         appUrl,
-        perms: '', /// ???
-        password: '', /// ???
+        perms: meta.perms,
+        password: '',
       }
       const npub = await client.generateKeyConnect(params)
-      notify('New key successfully created: ' + npub, 'success')
 
-      const meta = parseNostrConnectMeta(nostrconnectURL.search)
-      if (!meta) return
-
+      // now process nostrconnect request by this app
       const requestId = await client.nostrConnect(npub, nostrconnect, {
         appName: meta.appName,
-        appUrl: meta.appUrl,
+        appUrl,
         appIcon: meta.appIcon,
         perms: meta.perms,
       })
 
       console.log('requestId', { requestId })
+      notify('New key successfully created: ' + npub, 'success')
 
-      handleCloseModal()
-      if (isPopup) window.close()
+      // handleCloseModal()
+      // if (isPopup) window.close()
     } catch (error: any) {
       notify('Error: ' + error.toString(), 'error')
       handleCloseModal()

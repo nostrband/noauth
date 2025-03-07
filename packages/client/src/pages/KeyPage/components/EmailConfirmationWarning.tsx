@@ -17,16 +17,15 @@ export const EmailConfirmationWarning: FC<EmailConfirmationWarningProps> = ({ is
         <Stack justifyContent={'space-between'} alignItems={'center'} width={'100%'} direction={'row'}>
           <Stack>
             <Typography variant="body1" noWrap fontWeight={'500'} textOverflow={'ellipsis'}>
-              Please confirm email - {email}
+              Please confirm your email
             </Typography>
             <StyledHint>
-              Confirm your email to continue. If you didn't receive the verification code, please use the 'Resend code'
-              button
+              We sent confirmation email to <b>{email}</b>
             </StyledHint>
           </Stack>
 
           <Button onClick={onResend} disabled={isLoading}>
-            Resend code
+            Resend
           </Button>
         </Stack>
       }
