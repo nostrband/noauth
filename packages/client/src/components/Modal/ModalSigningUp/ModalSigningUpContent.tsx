@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import { Stack } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { useUnmount } from 'usehooks-ts'
 import { CreateConnectParams } from '@noauth/backend'
@@ -65,10 +65,15 @@ export const ModalSigningUpContent: FC = memo(() => {
       })
 
       console.log('requestId', { requestId })
+
+      // let people see the spinner and realize what's happening
+      await new Promise(ok => setTimeout(ok, 3000));
+
+      // done
       notify('New key successfully created: ' + npub, 'success')
 
-      // handleCloseModal()
-      // if (isPopup) window.close()
+      handleCloseModal()
+      if (isPopup) window.close()
     } catch (error: any) {
       notify('Error: ' + error.toString(), 'error')
       handleCloseModal()
@@ -86,7 +91,10 @@ export const ModalSigningUpContent: FC = memo(() => {
   })
 
   return (
-    <Stack height={'150px'} alignItems={'center'} justifyContent={'center'}>
+    <Stack gap={'1rem'} height={'150px'} alignItems={'center'} justifyContent={'center'}>
+      <Typography>
+        Generating Nostr keys...
+      </Typography>
       <LoadingSpinner size={40} mode="secondary" />
     </Stack>
   )

@@ -51,11 +51,13 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   }
 
   useUnmount(() => {
+    console.log("useUnmount");
     onChangeStep(MODAL_STEPS[0])
     onClose()
     hidePassword()
   })
 
+  console.log("render", currentStep);
   if (currentStep === 'password') {
     return <StepSavePassword onSubmit={handleSubmit} isLoading={isLoading} inputProps={inputProps} />
   }

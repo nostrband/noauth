@@ -19,9 +19,10 @@ export const ModalCompleteSignUp: FC = () => {
     navigate(`/key/${npub}`)
   }
 
-  const [currentStep, setCurrentStep] = useState(MODAL_STEPS[2])
+  const [currentStep, setCurrentStep] = useState(MODAL_STEPS[0])
 
   const title = getModalTitle(currentStep)
+  console.log("complete signup", currentStep, title);
 
   const handleChangeStep = (newStep: ModalStep) => {
     setCurrentStep(newStep)

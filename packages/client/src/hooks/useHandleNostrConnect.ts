@@ -49,24 +49,24 @@ export const useHandleNostrConnect = () => {
       if (keyByEmail) return await connect(keyByEmail.npub, pubkey)
 
       const checkEmail = await client.checkName(email)
-      console.log("checkEmail", checkEmail);
+      console.log('checkEmail', checkEmail)
 
       if (checkEmail === 'invalid_email') {
         return notify('Invalid email!', 'error')
       }
+
+      const nc = pathname.slice(1) + search
+      console.log('nc', nc)
       if (checkEmail === 'is_user') {
-        const nc = pathname.slice(1) + search
         return navigate({
-          pathname: '/home?',
-          search: `${MODAL_PARAMS_KEYS.EMAIL_LOGIN}=true&connect=${encodeURIComponent(nc)}`,
+          pathname: '/home',
+          search: `?${MODAL_PARAMS_KEYS.EMAIL_LOGIN}=true&connect=${encodeURIComponent(nc)}`,
         })
       }
       if (checkEmail === 'is_not_user') {
-        const nc = pathname.slice(1) + search
-        console.log("nc");
         return navigate({
-          pathname: '/home?',
-          search: `${MODAL_PARAMS_KEYS.SIGNING_UP}=true&email=${email}&connect=${encodeURIComponent(nc)}`,
+          pathname: '/home',
+          search: `?${MODAL_PARAMS_KEYS.SIGNING_UP}=true&email=${email}&connect=${encodeURIComponent(nc)}`,
         })
       }
     } catch (error: any) {
