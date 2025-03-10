@@ -378,7 +378,7 @@ const dbiPrisma: DbInterface = {
         where: { id: id },
       })
 
-      const { id: hId, appNpub, method, npub, timestamp, allowed: hAllowed, ...rest } = h
+      const { id: hId, appNpub, method, npub, timestamp, allowed: hAllowed, result = '', ...rest } = h
       await prisma.history.create({
         data: {
           id: hId,
@@ -388,6 +388,7 @@ const dbiPrisma: DbInterface = {
           timestamp,
           allowed: hAllowed,
           jsonData: JSON.stringify(rest),
+          result: result || '',
         },
       })
     } catch (error) {
@@ -396,7 +397,7 @@ const dbiPrisma: DbInterface = {
   },
   addConfirmed: async (r: DbHistory) => {
     try {
-      const { id, appNpub, method, npub, timestamp, allowed, ...rest } = r
+      const { id, appNpub, method, npub, timestamp, allowed, result = '', ...rest } = r
       await prisma.history.create({
         data: {
           id,
@@ -406,11 +407,24 @@ const dbiPrisma: DbInterface = {
           timestamp,
           allowed,
           jsonData: JSON.stringify(rest),
+          result: result || '',
         },
       })
     } catch (error) {
       console.log(`Error adding confirm: ${error}`)
       return false
+    }
+  },
+  addResult: async (id: string, result: string | undefined) => {
+    try {
+      if (!result) return
+
+      await prisma.history.update({
+        where: { id: id },
+        data: { result: result },
+      })
+    } catch (error) {
+      console.log(`Error adding result: ${error}`)
     }
   },
   getSynced: async (npub: string) => {
@@ -528,6 +542,7 @@ const dbiPrisma: DbInterface = {
           npub: h.npub,
           timestamp: Number(h.timestamp),
           ...JSON.parse(h.jsonData),
+          result: h?.result || '',
         }
       })
 

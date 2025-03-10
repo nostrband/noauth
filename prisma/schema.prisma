@@ -54,6 +54,7 @@ model History {
   method    String
   allowed   Boolean?
   jsonData  String
+  result    String?
 
   @@index([npub, appNpub])
 }

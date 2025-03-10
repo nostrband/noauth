@@ -239,6 +239,14 @@ const dbiDexie: DbInterface = {
       return false
     }
   },
+  addResult: async (id: string, result: string | undefined) => {
+    try {
+      if (!result) return
+      await db.history.where({ id }).modify({ result })
+    } catch (error) {
+      console.log(`db addResult error: ${error}`)
+    }
+  },
   getSynced: async (npub: string) => {
     try {
       const result = await db.syncHistory.where('npub').equals(npub).count()
