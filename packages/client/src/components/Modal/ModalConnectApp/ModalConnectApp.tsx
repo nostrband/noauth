@@ -30,9 +30,9 @@ import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGoRounded'
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScannerRounded'
 import { ModalQrScanner } from '../ModalQrScanner/ModalQrScanner'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
-import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
 import { Input } from '@/shared/Input/Input'
 import ShareIcon from '@mui/icons-material/Share'
+import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
 const NOSTR_CONNECT = 'nostrconnect://'
 
