@@ -205,12 +205,14 @@ export class Api {
    * confirmation email if not already confirmed.
    * @param npub - user npub
    * @param email - email
+   * @param appNpub? - app
    * @returns data: { ok: true }
    */
-  public async setEmail(npub: string, email: string) {
+  public async setEmail(npub: string, email: string, appNpub?: string) {
     const body = JSON.stringify({
       npub,
       email,
+      appNpub
     })
 
     const method = 'POST'

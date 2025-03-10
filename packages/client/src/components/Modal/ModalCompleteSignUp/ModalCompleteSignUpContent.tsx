@@ -11,6 +11,7 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useUnmount } from 'usehooks-ts'
 import { FormProvider, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
+import { isWeakPassphase } from '@noauth/common'
 
 type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
@@ -35,6 +36,7 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') || ''
   const emailCode = searchParams.get('code') || ''
+  const appNpub = searchParams.get('appNpub') || ''
 
   const { hidePassword, inputProps } = usePassword()
 
@@ -47,12 +49,13 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
       setIsLoading(true)
       hidePassword()
       const { password } = values
+      if (!password) throw new Error("Enter password!");
 
       await client.confirmEmail(npub, email, emailCode, password)
       setIsLoading(false)
-      notify('Your e-mail has been successfully confirmed!', 'error')
+      notify('Your email and password are set!', 'success')
 
-      onChangeStep(MODAL_STEPS[1])
+      onChangeStep(MODAL_STEPS[2])
     } catch (error: any) {
       notify('Error ' + error.toString(), 'error')
       setIsLoading(false)
@@ -81,7 +84,7 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   }
 
   if (currentStep === 'finish') {
-    return <StepFinishSignUp onClose={onClose} />
+    return <StepFinishSignUp onClose={onClose} appNpub={appNpub} />
   }
 
   return null

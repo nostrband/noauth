@@ -25,6 +25,9 @@ export const StepSavePassword: FC<StepSavePasswordProps> = ({ onSubmit, isLoadin
 
   return (
     <Stack paddingTop={'1rem'} gap={'1rem'} component={'form'} onSubmit={handleSubmit(onSubmit)}>
+      <Typography>
+        To complete the sign-up, please choose your password:
+      </Typography>
       <Input
         label="Email address"
         fullWidth
@@ -45,7 +48,7 @@ export const StepSavePassword: FC<StepSavePasswordProps> = ({ onSubmit, isLoadin
       />
 
       <Typography noWrap variant="body2" color={'GrayText'}>
-        Save your password to login later
+        Use this email and password to login later.
       </Typography>
 
       <Stack gap={'0.5rem'}>
