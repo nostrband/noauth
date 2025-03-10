@@ -20,7 +20,7 @@ export const ModalActivitiesContent: FC<ModalActivitiesContentProps> = ({ appNpu
   }, [appNpub])
 
   return (
-    <Stack overflow={'auto'} gap={'0.5rem'}>
+    <Stack overflow={'auto'}>
       {history.map((item) => {
         return <ItemActivity {...item} key={item.id} />
       })}

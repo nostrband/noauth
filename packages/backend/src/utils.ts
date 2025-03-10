@@ -86,42 +86,6 @@ export async function sendPostAuthd({
   })
 }
 
-export class WaitableQueue<T> {
-  private queue: T[] = []
-  private promises: Promise<void>[] = []
-  private cb?: () => void
-
-  constructor() {
-    // one promise is always there unless we're done
-    this.promises.push(new Promise((ok) => (this.cb = ok)))
-  }
-
-  public async get(): Promise<T | undefined> {
-    // done
-    if (!this.promises.length) return undefined
-
-    // wait for the next value to arrive
-    await this.promises.shift()
-
-    // wtf?
-    if (!this.queue.length) throw new Error('Empty queue')
-
-    // return
-    return this.queue.shift()
-  }
-
-  public push(reply: T, done: boolean = false) {
-    // add to queue
-    this.queue.push(reply)
-
-    // resolve current promise
-    this.cb!()
-
-    // schedule next promise if we're not done yet
-    if (!done) this.promises.push(new Promise<void>((ok) => (this.cb = ok)))
-  }
-}
-
 export function isNip04(ciphertext: string) {
   const l = ciphertext.length
   if (l < 28) return false

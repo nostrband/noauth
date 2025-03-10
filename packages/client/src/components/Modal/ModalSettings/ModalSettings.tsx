@@ -8,12 +8,14 @@ import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
 import { ExportKeySetting } from './components/ExportKeySetting'
 import { PasswordSetting } from './components/PasswordSetting'
+import { Button } from '@/shared/Button/Button'
 
 type ModalSettingsProps = {
   isSynced: boolean
+  onLogout: () => void
 }
 
-export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
+export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced, onLogout }) => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const { npub = '' } = useParams<{ npub: string }>()
   const keys = useAppSelector(selectKeys)
@@ -29,11 +31,19 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced }) => {
   }
 
   return (
-    <Modal open={isModalOpened} onClose={handleCloseModal} title="Settings">
-      <Stack gap={'1rem'}>
-        <PasswordSetting isSynced={isSynced} />
-        <ExportKeySetting />
-      </Stack>
-    </Modal>
+    <>
+      <Modal open={isModalOpened} onClose={handleCloseModal} title="Settings" withCloseButton={false}>
+        <Stack gap={'1rem'}>
+          <PasswordSetting isSynced={isSynced} />
+          <ExportKeySetting />
+          <Button type="button" varianttype="secondary" onClick={onLogout}>
+            Log out
+          </Button>
+          <Button type="button" onClick={handleCloseModal}>
+            Done
+          </Button>
+        </Stack>
+      </Modal>
+    </>
   )
 }

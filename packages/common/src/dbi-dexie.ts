@@ -31,6 +31,19 @@ const dbiDexie: DbInterface = {
       console.log(`db addKey error: ${error}`)
     }
   },
+  deleteKey: async (npub: string) => {
+    try {
+      await db.keys.delete(npub)
+      await db.apps.where({ npub }).delete()
+      await db.perms.where({ npub }).delete()
+      await db.pending.where({ npub }).delete()
+      await db.history.where({ npub }).delete()
+      await db.syncHistory.where({ npub }).delete()
+      await db.connectTokens.where({ npub }).delete()
+    } catch (error) {
+      console.log(`db addKey error: ${error}`)
+    }
+  },
   getKey: async (npub: string) => {
     try {
       return await db.keys.get(npub)
@@ -214,6 +227,14 @@ const dbiDexie: DbInterface = {
     } catch (error) {
       console.log(`db addConfirmed error: ${error}`)
       return false
+    }
+  },
+  addResult: async (id: string, result: string | undefined) => {
+    try {
+      if (!result) return
+      await db.history.where({ id }).modify({ result })
+    } catch (error) {
+      console.log(`db addResult error: ${error}`)
     }
   },
   getSynced: async (npub: string) => {

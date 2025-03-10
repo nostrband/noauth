@@ -56,6 +56,7 @@ export interface DbHistory {
   method: string
   params: string
   allowed: boolean
+  result?: string
 }
 
 export interface DbSyncHistory {
@@ -72,6 +73,7 @@ export interface DbConnectToken {
 
 export interface DbInterface {
   addKey: (key: DbKey) => Promise<void>
+  deleteKey: (npub: string) => Promise<void>
   getKey: (npub: string) => Promise<DbKey | undefined>
   listKeys: () => Promise<DbKey[]>
   editName: (npub: string, name: string) => Promise<void>
@@ -95,6 +97,7 @@ export interface DbInterface {
   removePending: (id: string) => Promise<void>
   confirmPending: (id: string, allowed: boolean) => Promise<void>
   addConfirmed: (r: DbHistory) => Promise<boolean | undefined>
+  addResult: (id: string, result: string | undefined) => Promise<void>
 
   getSynced: (npub: string) => Promise<boolean>
   setSynced: (npub: string) => Promise<void>
