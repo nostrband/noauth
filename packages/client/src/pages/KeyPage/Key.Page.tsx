@@ -24,11 +24,16 @@ import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPa
 import { client } from '@/modules/client'
 import { ModalRebind } from '@/components/Modal/ModalRebind/ModalRebind'
 import { ModalConfirmLogout } from '@/components/Modal/ModalConfirmLogout/ModalConfirmLogout'
+import { EmailConfirmationWarning } from './components/EmailConfirmationWarning'
+import { useEmailConfirmation } from './hooks/useEmailConfirmation'
+import { selectKeyByNpub } from '@/store'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
-  const { keys, pending, perms } = useAppSelector((state) => state.content)
   const [searchParams] = useSearchParams()
+
+  const key = useAppSelector((state) => selectKeyByNpub(state, npub))
+  const { pending, perms } = useAppSelector((state) => state.content)
 
   const [isSynced, setIsSynced] = useState(false)
   const [isCheckingSync, setIsChecking] = useState(true)
@@ -39,8 +44,10 @@ const KeyPage = () => {
 
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
-  const key = keys.find((k) => k.npub === npub)
-  const isPasswordSet = !!key?.ncryptsec
+  const { email = '', ncryptsec } = key || {}
+  const isPasswordSet = !!ncryptsec
+
+  const { handleResendConfirmation, showWarning: showEmailWarning, isLoading } = useEmailConfirmation(key)
 
   const getUsername = useCallback(() => {
     if (!key || !key?.name) return ''
@@ -84,9 +91,13 @@ const KeyPage = () => {
   return (
     <>
       <Stack gap={'1rem'} height={'100%'}>
-        {showWarning && (
+        {!showWarning && (
           <BackgroundSigningWarning isEnabling={isEnabling} onEnableBackSigning={handleEnableBackground} />
         )}
+        {showEmailWarning && (
+          <EmailConfirmationWarning email={email} isLoading={isLoading} onResend={handleResendConfirmation} />
+        )}
+
         <UserValueSection
           title="Your login"
           value={username}

@@ -213,6 +213,10 @@ export class ClientWebSocket implements BackendClient {
     return this.call<DbConnectToken>('getConnectToken', npub, subNpub)
   }
 
+  public async checkName(name: string) {
+    return this.call<string>('checkName', name)
+  }
+
   public async editName(npub: string, newName: string) {
     return this.call('editName', npub, newName)
   }
@@ -234,7 +238,23 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public async fetchKey(npub: string, passphrase: string, name: string) {
-    return this.call<KeyInfo>('fetchKey', npub, passphrase, name)
+    return this.call<KeyInfo | undefined>('fetchKey', npub, passphrase, name)
+  }
+
+  public async fetchKeyByEmail(email: string, passphrase: string) {
+    return this.call<KeyInfo | undefined>('fetchKeyByEmail', email, passphrase)
+  }
+
+  public async checkEmailStatus(npub: string, email: string) {
+    return this.call<boolean>('checkEmailStatus', [], npub, email)
+  }
+
+  public async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
+    return this.call('confirmEmail', [], npub, email, code, passphrase)
+  }
+
+  public async setEmail(npub: string, email: string) {
+    return this.call('setEmail', [], npub, email)
   }
 
   public async nostrConnect(npub: string, nostrconnect: string, options: any) {
@@ -251,6 +271,10 @@ export class ClientWebSocket implements BackendClient {
 
   public async generateKeyConnect(params: CreateConnectParams) {
     return this.call<string>('generateKeyConnect', params)
+  }
+
+  public async generateKeyForEmail(name: string, email: string) {
+    return this.call<KeyInfo>('generateKeyForEmail', [], name, email)
   }
 
   public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {

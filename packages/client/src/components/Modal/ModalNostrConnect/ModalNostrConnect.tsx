@@ -4,12 +4,12 @@ import { Box, Stack, Typography } from '@mui/material'
 import { IconApp } from '@/shared/IconApp/IconApp'
 import { useAppSelector } from '@/store/hooks/redux'
 import { selectKeys } from '@/store'
-import { parseNostrConnectMeta } from './utils/helpers'
 import { Keys } from './components/Keys'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { client } from '@/modules/client'
 import { useState } from 'react'
 import useIframePort from '@/hooks/useIframePort'
+import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
 export const ModalNostrConnect = () => {
   const navigate = useNavigate()
@@ -22,14 +22,14 @@ export const ModalNostrConnect = () => {
 
   const keys = useAppSelector(selectKeys)
 
-  const meta = parseNostrConnectMeta('?' + searchParams.toString());
+  const meta = parseNostrConnectMeta('?' + searchParams.toString())
 
   // default
   const isPopup = true
 
   // let this modal accept the iframe port to pass it
   // down to ConfirmConnect modal later on
-  useIframePort(isPopup);
+  useIframePort(isPopup)
 
   if (!pubkey || !meta || !keys.length) {
     return <Navigate to={'/'} />
