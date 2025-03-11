@@ -6,4 +6,8 @@ npm-debug.log
 .coverage.*
 .env
 .aws
-.db
+*.tmp
+*.log
+*.sh
+*~
+*.tar
