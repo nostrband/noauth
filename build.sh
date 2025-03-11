@@ -14,6 +14,7 @@ docker \
     build \
     --no-cache \
     --frontend dockerfile.v0 \
+    --opt platform=linux/amd64 \
     --opt build-arg:SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
     --opt filename=./Dockerfile-enclave \
     --local dockerfile=. \
