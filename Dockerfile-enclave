@@ -29,10 +29,7 @@ RUN cd packages/backend; npm run build
 RUN cd packages/server; npm run build
 
 # make sure perms are the same on all platforms
-RUN chmod -R 644 *
-
-# remove files generated on MacOS
-RUN rm -Rf /root/.cache
+RUN chmod -R 644 .
 
 # # Stage 2: Client (Nginx)
 # FROM nginx:alpine AS client
@@ -51,6 +48,9 @@ WORKDIR /usr/src/app
 
 # Copy only built files and necessary dependencies
 COPY --from=build /usr/src/app ./
+
+# remove files generated on MacOS
+RUN rm -Rf /root
 
 # # Ensure Prisma migrations are applied
 # this breaks reproduceability
