@@ -8,34 +8,31 @@ WORKDIR /usr/src/app
 
 RUN echo ${SOURCE_DATE_EPOCH}
 
-# Install essential build tools
-#RUN apk add --no-cache python3 make g++
+# Copy only package-related files first
+COPY lerna.json ./
+COPY package*.json ./
+COPY packages/client/package*.json ./packages/client/
+COPY packages/common/package*.json ./packages/common/
+COPY packages/backend/package*.json ./packages/backend/
+COPY packages/server/package*.json ./packages/server/
 
-# Copy only package-related files first (to leverage Docker cache)
-COPY --chmod=644 lerna.json ./
-COPY --chmod=644 package*.json ./
-COPY --chmod=644 packages/client/package*.json ./packages/client/
-COPY --chmod=644 packages/common/package*.json ./packages/common/
-COPY --chmod=644 packages/backend/package*.json ./packages/backend/
-COPY --chmod=644 packages/server/package*.json ./packages/server/
+# Install dependencies 
+RUN npm ci
 
-# Install dependencies in a deterministic way (no scripts, exact versions)
-RUN npm ci --ignore-scripts
-#RUN rm -Rf ~/.npm/_logs
-#RUN ls -la .
-#RUN ls -la ~
-#RUN ls -la ~/.npm
 # Copy the rest of the project
-COPY --chmod=644 . .
-
-# Set timestamp for deterministic builds: Ensure all files have the same timestamp
-#RUN find /usr/src/app -exec touch -t ${SOURCE_DATE_EPOCH} {} +
+COPY . .
 
 # Build project
 RUN cd packages/common; npm run build:hosted
 RUN cd packages/backend; npm run build
 #RUN cd packages/client; npm run build:hosted
 RUN cd packages/server; npm run build
+
+# make sure perms are the same on all platforms
+RUN chmod -R 644 *
+
+# remove files generated on MacOS
+RUN rm -Rf /root/.cache
 
 # # Stage 2: Client (Nginx)
 # FROM nginx:alpine AS client
