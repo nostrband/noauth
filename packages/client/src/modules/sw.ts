@@ -1,6 +1,6 @@
 import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
-import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
 // @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
@@ -16,7 +16,7 @@ class BrowserApi extends Api {
     const method = 'POST'
     const url = `${NOAUTHD_URL}/subscribe`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,

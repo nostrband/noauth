@@ -32,11 +32,12 @@ export interface Key {
 
 export interface CreateConnectParams {
   name: string
-  password: string
+  password?: string
   appNpub: string
   perms: string
   appUrl: string
   port?: MessagePort
+  email?: string
 }
 
 export interface BackendRequest {
@@ -49,5 +50,6 @@ export interface KeyInfo {
   npub: string
   nip05?: string
   name?: string
+  email?: string
   locked: boolean
 }

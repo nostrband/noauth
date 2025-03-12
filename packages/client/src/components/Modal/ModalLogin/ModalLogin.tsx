@@ -79,6 +79,10 @@ export const ModalLogin = () => {
 
       console.log('fetch', npub, name)
       const k = await client.fetchKey(npub, passphrase, name)
+
+      // FIXME implement 2FA - email or OTP
+      if (!k) throw new Error("2FA required");
+
       notify(`Fetched ${k.npub}`, 'success')
       cleanUpStates()
       setTimeout(() => {
