@@ -57,10 +57,10 @@ export const useHandleNostrConnect = () => {
 
       const nc = pathname.slice(1) + search
       console.log('nc', nc)
-      if (checkEmail === 'is_user') {
+      if (checkEmail === 'is_user' || checkEmail.startsWith('npub')) {
         return navigate({
           pathname: '/home',
-          search: `?${MODAL_PARAMS_KEYS.EMAIL_LOGIN}=true&connect=${encodeURIComponent(nc)}`,
+          search: `?${MODAL_PARAMS_KEYS.EMAIL_LOGIN}=true&connect=${encodeURIComponent(nc)}&email=${email}`,
         })
       }
       if (checkEmail === 'is_not_user') {

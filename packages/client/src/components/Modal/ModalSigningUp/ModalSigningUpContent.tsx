@@ -38,7 +38,7 @@ export const ModalSigningUpContent: FC = memo(() => {
       const meta = parseNostrConnectMeta('?' + nostrconnectURL.search)
       if (!meta) throw new Error('Bad nostrconnect metadata')
 
-      const name = await generateNip05()
+      const name = await generateNip05(email.split('@')[0])
       const appNpub = nip19.npubEncode(appPubkey)
       // FIXME why referrer? Is it more reliable?
       // are we gonna use the URL for our welcome email
@@ -67,7 +67,7 @@ export const ModalSigningUpContent: FC = memo(() => {
       console.log('requestId', { requestId })
 
       // let people see the spinner and realize what's happening
-      await new Promise(ok => setTimeout(ok, 3000));
+      await new Promise((ok) => setTimeout(ok, 3000))
 
       // done
       notify('New key successfully created: ' + npub, 'success')
@@ -92,9 +92,7 @@ export const ModalSigningUpContent: FC = memo(() => {
 
   return (
     <Stack gap={'1rem'} height={'150px'} alignItems={'center'} justifyContent={'center'}>
-      <Typography>
-        Generating Nostr keys...
-      </Typography>
+      <Typography>Generating Nostr keys...</Typography>
       <LoadingSpinner size={40} mode="secondary" />
     </Stack>
   )

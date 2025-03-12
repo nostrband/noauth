@@ -12,11 +12,6 @@ import { client } from '@/modules/client'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
-const FORM_DEFAULT_VALUES = {
-  username: '',
-  password: '',
-}
-
 export const ModalEmailLogin = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
@@ -26,12 +21,13 @@ export const ModalEmailLogin = () => {
   const notify = useEnqueueSnackbar()
   const [searchParams] = useSearchParams()
   const nostrconnect = searchParams.get('connect') || ''
+  const email = searchParams.get('email') || ''
 
   const { hidePassword, inputProps } = usePassword()
   const [isLoading, setIsLoading] = useState(false)
 
   const methods = useForm<FormInputType>({
-    defaultValues: FORM_DEFAULT_VALUES,
+    defaultValues: { email, password: '' },
     resolver: yupResolver(schema),
     mode: 'onSubmit',
   })
@@ -53,7 +49,12 @@ export const ModalEmailLogin = () => {
       const { email, password } = values
       const nostrconnectURL = new URL(nostrconnect)
 
-      const key = await client.fetchKeyByEmail(email, password)
+      const checkEmail = await client.checkName(email)
+
+      const key = checkEmail.startsWith('npub')
+        ? await client.fetchKey(checkEmail, password, email.split('@')[0])
+        : await client.fetchKeyByEmail(email, password)
+
       if (!key) {
         setIsLoading(false)
         throw new Error('No key found!')
