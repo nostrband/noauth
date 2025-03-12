@@ -61,15 +61,15 @@ const KeyPage = () => {
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
 
-  useEffect(() => {
-    const load = async () => {
-      const synced = await client.getSynced(npub)
-      setIsSynced(synced)
-      handleStopChecking()
-    }
-    load()
-    // eslint-disable-next-line
+  const handleSetSyncedStatus = useCallback(async () => {
+    const synced = await client.getSynced(npub)
+    setIsSynced(synced)
+    handleStopChecking()
   }, [npub])
+
+  useEffect(() => {
+    handleSetSyncedStatus()
+  }, [handleSetSyncedStatus])
 
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
@@ -91,7 +91,7 @@ const KeyPage = () => {
   return (
     <>
       <Stack gap={'1rem'} height={'100%'}>
-        {!showWarning && (
+        {showWarning && (
           <BackgroundSigningWarning isEnabling={isEnabling} onEnableBackSigning={handleEnableBackground} />
         )}
         {showEmailWarning && (
@@ -143,7 +143,7 @@ const KeyPage = () => {
       <ModalConfirmConnect />
       <ModalConfirmEvent />
       <ModalEditName />
-      <ModalSetPassword isPasswordSet={isPasswordSet} />
+      <ModalSetPassword isPasswordSet={isPasswordSet} onSync={handleSetSyncedStatus} />
       <ModalRebind />
       <ModalConfirmLogout npub={npub} />
     </>

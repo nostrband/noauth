@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
@@ -15,7 +15,12 @@ import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 export const ModalEmailLogin = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EMAIL_LOGIN, {
+    onClose: (sp) => {
+      sp.delete('connect')
+      sp.delete('email')
+    },
+  })
 
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
@@ -27,10 +32,15 @@ export const ModalEmailLogin = () => {
   const [isLoading, setIsLoading] = useState(false)
 
   const methods = useForm<FormInputType>({
-    defaultValues: { email, password: '' },
+    defaultValues: { email: '', password: '' },
     resolver: yupResolver(schema),
     mode: 'onSubmit',
   })
+
+  useEffect(() => {
+    methods.setValue('email', email)
+    // eslint-disable-next-line
+  }, [email])
 
   const cleanUpStates = () => {
     hidePassword()

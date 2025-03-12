@@ -1,8 +1,6 @@
-import React, { FC, useState } from 'react'
+import { FC, useState } from 'react'
 import { Modal } from '@/shared/Modal/Modal'
 import { ModalCompleteSignUpContent } from './ModalCompleteSignUpContent'
-import { useModalSearchParams } from '@/hooks/useModalSearchParams'
-import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { getModalTitle, MODAL_STEPS, ModalStep } from './utils'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -10,26 +8,21 @@ export const ModalCompleteSignUp: FC = () => {
   const { npub = '' } = useParams<{ npub: string }>()
   const navigate = useNavigate()
 
-  const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
-  const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.CONFIRM_EMAIL)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.CONFIRM_EMAIL)
-
   const handleClose = () => {
-    handleCloseModal()
-    navigate(`/key/${npub}`)
+    navigate(`/key/${npub}`, { replace: true })
   }
 
   const [currentStep, setCurrentStep] = useState(MODAL_STEPS[0])
 
   const title = getModalTitle(currentStep)
-  console.log("complete signup", currentStep, title);
+  console.log('complete signup', currentStep, title)
 
   const handleChangeStep = (newStep: ModalStep) => {
     setCurrentStep(newStep)
   }
 
   return (
-    <Modal open={isModalOpened} title={title}>
+    <Modal open title={title} onClose={handleClose}>
       <ModalCompleteSignUpContent currentStep={currentStep} onChangeStep={handleChangeStep} onClose={handleClose} />
     </Modal>
   )
