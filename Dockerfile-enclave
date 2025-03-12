@@ -17,7 +17,7 @@ COPY packages/backend/package*.json ./packages/backend/
 COPY packages/server/package*.json ./packages/server/
 
 # Install dependencies 
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the project
 COPY . .
