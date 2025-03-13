@@ -12,6 +12,8 @@ import { client } from '@/modules/client'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
+const isPopup = true
+
 export const ModalEmailLogin = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
@@ -83,7 +85,7 @@ export const ModalEmailLogin = () => {
 
       if (!requestId) {
         notify('App connected! Closing...', 'success')
-        // if (isPopup) setTimeout(() => closePopup(), 3000)
+        if (isPopup) setTimeout(() => window.close(), 3000)
         navigate(`/key/${npub}`, { replace: true })
       } else {
         return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`)

@@ -20,7 +20,7 @@ export const EmailConfirmationWarning: FC<EmailConfirmationWarningProps> = ({ is
               Please confirm your email
             </Typography>
             <StyledHint>
-              We sent confirmation email to <b>{email}</b>
+              We sent confirmation link to <b>{email}</b>
             </StyledHint>
           </Stack>
 

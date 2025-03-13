@@ -208,11 +208,12 @@ export class Api {
    * @param appNpub? - app
    * @returns data: { ok: true }
    */
-  public async setEmail(npub: string, email: string, appNpub?: string) {
+  public async setEmail(npub: string, email: string, appNpub?: string, appUrl?: string) {
     const body = JSON.stringify({
       npub,
       email,
-      appNpub
+      appNpub,
+      appUrl
     })
 
     const method = 'POST'

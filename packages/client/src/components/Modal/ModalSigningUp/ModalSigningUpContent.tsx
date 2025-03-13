@@ -11,7 +11,7 @@ import { useUnmount } from 'usehooks-ts'
 import { CreateConnectParams } from '@noauth/backend'
 import { nip19 } from 'nostr-tools'
 
-const isPopup = false
+const isPopup = true
 
 export const ModalSigningUpContent: FC = memo(() => {
   const { createHandleClose } = useModalSearchParams()
@@ -70,10 +70,10 @@ export const ModalSigningUpContent: FC = memo(() => {
       await new Promise((ok) => setTimeout(ok, 3000))
 
       // done
-      notify('New key successfully created: ' + npub, 'success')
+      notify('New key created! Closing...', 'success')
 
       handleCloseModal()
-      if (isPopup) window.close()
+      if (isPopup) setTimeout(() => window.close(), 3000)
     } catch (error: any) {
       notify('Error: ' + error.toString(), 'error')
       handleCloseModal()

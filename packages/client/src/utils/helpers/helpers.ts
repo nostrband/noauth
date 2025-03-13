@@ -283,7 +283,7 @@ export const generateNip05 = async (prefix?: string) => {
   const MAX_NUMBER = 100
   const noun = nouns[Math.floor(Math.random() * nouns.length)]
   const adj = adjs[Math.floor(Math.random() * adjs.length)]
-  const str = prefix || `${adj}-${noun}`;
+  const str = prefix || `${adj}-${noun}`
   for (let i = 0; i < 3; i++) {
     const id = 1 + Math.floor(Math.random() * MAX_NUMBER - 1)
     const name = `${str}-${id}`
@@ -353,6 +353,13 @@ export const parseNostrConnectMeta = (search: string) => {
     perms: searchParams.get('perms'),
   }
   if (!metadata.url && !metadata.name && !metadata.icon) return undefined
+
+  let url = ''
+  try {
+    url = new URL(metadata.url!).origin
+  } catch (e) {
+    console.log('Invalid app url', metadata.url, e)
+  }
 
   return {
     appName: metadata.name || '',
