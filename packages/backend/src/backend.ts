@@ -361,7 +361,8 @@ export class NoauthBackend extends EventEmitter {
     passphrase,
     iframe,
     email,
-    appNpub
+    appNpub,
+    appUrl
   }: {
     name: string
     nsec?: string
@@ -370,6 +371,7 @@ export class NoauthBackend extends EventEmitter {
     iframe?: boolean
     email?: string
     appNpub?: string
+    appUrl?: string
   }): Promise<KeyInfo> {
     // lowercase
     name = name.trim().toLocaleLowerCase()
@@ -423,7 +425,7 @@ export class NoauthBackend extends EventEmitter {
 
       // try sending to server, will retry later if fails
       try {
-        await this.api.setEmail(npub, email, appNpub)
+        await this.api.setEmail(npub, email, appNpub, appUrl)
       } catch (e) {
         console.log('Failed to set email', e)
       }
@@ -1188,7 +1190,8 @@ export class NoauthBackend extends EventEmitter {
       name: params.name,
       passphrase: params.password,
       email: params.email,
-      appNpub: params.appNpub
+      appNpub: params.appNpub,
+      appUrl: params.appUrl
     })
 
     const { npub } = k

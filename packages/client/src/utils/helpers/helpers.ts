@@ -225,11 +225,10 @@ export const isValidUserName = (username: string) => {
   return true
 }
 
-export const generateNip05 = async () => {
+export const generateNip05 = async (prefix?: string) => {
   const nouns = [
     'lion',
     'tiger',
-    'bull',
     'bear',
     'wolf',
     'fish',
@@ -240,7 +239,6 @@ export const generateNip05 = async () => {
     'leopard',
     'jaguar',
     'deer',
-    'gorilla',
     'panda',
     'squirrel',
     'wombat',
@@ -248,7 +246,6 @@ export const generateNip05 = async () => {
     'ostrich',
     'possum',
     'koala',
-    'crocodile',
     'badger',
     'iguana',
     'falcon',
@@ -277,18 +274,25 @@ export const generateNip05 = async () => {
     'special',
     'lovely',
   ]
+
+  if (prefix) {
+    const nip05 = await fetchNip05(`${prefix}@${DOMAIN}`)
+    if (!nip05) return prefix
+  }
+
   const MAX_NUMBER = 100
   const noun = nouns[Math.floor(Math.random() * nouns.length)]
   const adj = adjs[Math.floor(Math.random() * adjs.length)]
+  const str = prefix || `${adj}-${noun}`
   for (let i = 0; i < 3; i++) {
     const id = 1 + Math.floor(Math.random() * MAX_NUMBER - 1)
-    const name = `${adj}-${noun}-${id}`
+    const name = `${str}-${id}`
     const nip05 = await fetchNip05(`${name}@${DOMAIN}`)
     if (!nip05) return name
   }
 
   const id = Math.floor(Math.random() * 100000)
-  return `${adj}-${noun}-${id}`
+  return `${str}-${id}`
 }
 
 export function isDomainOrSubdomain(domain: string, sub: string) {
@@ -349,6 +353,13 @@ export const parseNostrConnectMeta = (search: string) => {
     perms: searchParams.get('perms'),
   }
   if (!metadata.url && !metadata.name && !metadata.icon) return undefined
+
+  let url = ''
+  try {
+    url = new URL(metadata.url!).origin
+  } catch (e) {
+    console.log('Invalid app url', metadata.url, e)
+  }
 
   return {
     appName: metadata.name || '',

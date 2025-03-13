@@ -13,7 +13,14 @@ export const StepFinishSignUp: FC<StepFinishSignUpProps> = ({ onClose, appNpub }
   const currentApp = useAppSelector((state) => selectAppByAppNpub(state, appNpub))
 
   const handleContinue = () => {
-    if (currentApp) window.location.href = new URL(currentApp.url).origin + '/#signup-complete=true'
+    // FIXME the plan was to publish "user email"
+    // event for app to be able to ask for it,
+    // then app could send welcome email etc.
+    // But that's not necessary - we can add it later,
+    // for now all we need is for the app to react
+    // to our #email-signup-complete=true hash and
+    // stop showing "Confirm email" banner.
+    if (currentApp) window.location.href = new URL(currentApp.url).origin + '/#email-signup-complete=true'
     else onClose()
   }
 

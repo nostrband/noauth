@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { Modal } from '@/shared/Modal/Modal'
@@ -12,29 +12,37 @@ import { client } from '@/modules/client'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
-const FORM_DEFAULT_VALUES = {
-  username: '',
-  password: '',
-}
+const isPopup = true
 
 export const ModalEmailLogin = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
-  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EMAIL_LOGIN)
+  const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EMAIL_LOGIN, {
+    onClose: (sp) => {
+      sp.delete('connect')
+      sp.delete('email')
+    },
+  })
 
   const navigate = useNavigate()
   const notify = useEnqueueSnackbar()
   const [searchParams] = useSearchParams()
   const nostrconnect = searchParams.get('connect') || ''
+  const email = searchParams.get('email') || ''
 
   const { hidePassword, inputProps } = usePassword()
   const [isLoading, setIsLoading] = useState(false)
 
   const methods = useForm<FormInputType>({
-    defaultValues: FORM_DEFAULT_VALUES,
+    defaultValues: { email: '', password: '' },
     resolver: yupResolver(schema),
     mode: 'onSubmit',
   })
+
+  useEffect(() => {
+    methods.setValue('email', email)
+    // eslint-disable-next-line
+  }, [email])
 
   const cleanUpStates = () => {
     hidePassword()
@@ -53,7 +61,12 @@ export const ModalEmailLogin = () => {
       const { email, password } = values
       const nostrconnectURL = new URL(nostrconnect)
 
-      const key = await client.fetchKeyByEmail(email, password)
+      const checkEmail = await client.checkName(email)
+
+      const key = checkEmail.startsWith('npub')
+        ? await client.fetchKey(checkEmail, password, email.split('@')[0])
+        : await client.fetchKeyByEmail(email, password)
+
       if (!key) {
         setIsLoading(false)
         throw new Error('No key found!')
@@ -72,7 +85,7 @@ export const ModalEmailLogin = () => {
 
       if (!requestId) {
         notify('App connected! Closing...', 'success')
-        // if (isPopup) setTimeout(() => closePopup(), 3000)
+        if (isPopup) setTimeout(() => window.close(), 3000)
         navigate(`/key/${npub}`, { replace: true })
       } else {
         return navigate(`/key/${npub}?confirm-connect=true&reqId=${requestId}&popup=true`)
