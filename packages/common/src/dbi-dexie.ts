@@ -13,9 +13,9 @@ interface DbSchema extends Dexie {
 
 const db = new Dexie('noauthdb') as DbSchema
 
-db.version(12).stores({
+db.version(13).stores({
   keys: 'npub',
-  apps: 'appNpub,npub,name,timestamp',
+  apps: 'appNpub,npub,name,timestamp,[appNpub+npub]',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
@@ -76,6 +76,16 @@ const dbiDexie: DbInterface = {
       })
     } catch (error) {
       console.log(`db editName error: ${error}`)
+      return
+    }
+  },
+  editEmail: async (npub: string, email: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        email,
+      })
+    } catch (error) {
+      console.log(`db editEmail error: ${error}`)
       return
     }
   },

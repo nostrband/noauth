@@ -13,6 +13,8 @@ import { ModalExplanation } from './components/Modal/ModalExplanation/ModalExpla
 import { client } from './modules/client'
 import { LoadingSpinner } from './shared/LoadingSpinner/LoadingSpinner'
 import { Stack } from '@mui/material'
+import { ModalEmailLogin } from './components/Modal/ModalEmailLogin/ModalEmailLogin'
+import { ModalSigningUp } from './components/Modal/ModalSigningUp/ModalSigningUp'
 
 function App() {
   const [render, setRender] = useState(0)
@@ -137,6 +139,8 @@ function App() {
       <ModalImportKeys />
       <ModalSignUp />
       <ModalLogin />
+      <ModalEmailLogin />
+      <ModalSigningUp />
     </>
   )
 }
