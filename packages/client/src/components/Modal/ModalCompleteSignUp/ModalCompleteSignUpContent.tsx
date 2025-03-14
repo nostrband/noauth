@@ -11,7 +11,8 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useUnmount } from 'usehooks-ts'
 import { FormProvider, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { isWeakPassphase } from '@noauth/common'
+import { useAppSelector } from '@/store/hooks/redux'
+import { selectKeyByNpub } from '@/store'
 
 type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
@@ -42,6 +43,8 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
 
   const [isLoading, setIsLoading] = useState(false)
 
+  const key = useAppSelector((state) => selectKeyByNpub(state, npub))
+
   const handleSubmit = async (values: FormInputType) => {
     try {
       if (!email || !emailCode || isLoading) return
@@ -70,6 +73,15 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   })
 
   console.log('render', currentStep)
+
+  if (!key) {
+    // FIXME show modal with
+    // title "Key not found"
+    // text "Looks like you signed up on another device. Please open this link on that device or scan this QR code by that device."
+    // button2 "Send link" - navigator.share
+    // button1 "Copy link"
+    // link to window.location.href
+  }
 
   if (currentStep === 'password') {
     return (
