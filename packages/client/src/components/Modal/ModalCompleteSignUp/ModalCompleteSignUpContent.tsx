@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { MODAL_STEPS, ModalStep } from './utils'
 import { StepSavePassword } from './components/StepSavePassword/StepSavePassword'
 import { StepBackupKeys } from './components/StepBackupKeys/StepBackupKeys'
@@ -18,12 +18,14 @@ type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
   onChangeStep: (newStep: ModalStep) => void
   onClose: () => void
+  onOpenKeyNotFoundModal: () => void
 }
 
 export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = ({
   currentStep,
   onChangeStep,
   onClose,
+  onOpenKeyNotFoundModal,
 }) => {
   const notify = useEnqueueSnackbar()
   const methods = useForm<FormInputType>({
@@ -52,7 +54,7 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
       setIsLoading(true)
       hidePassword()
       const { password } = values
-      if (!password) throw new Error("Enter password!");
+      if (!password) throw new Error('Enter password!')
 
       await client.confirmEmail(npub, email, emailCode, password)
       setIsLoading(false)
@@ -73,15 +75,10 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   })
 
   console.log('render', currentStep)
-
-  if (!key) {
-    // FIXME show modal with
-    // title "Key not found"
-    // text "Looks like you signed up on another device. Please open this link on that device or scan this QR code by that device."
-    // button2 "Send link" - navigator.share
-    // button1 "Copy link"
-    // link to window.location.href
-  }
+  useEffect(() => {
+    if (!key) onOpenKeyNotFoundModal()
+    // eslint-disable-next-line
+  }, [])
 
   if (currentStep === 'password') {
     return (
