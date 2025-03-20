@@ -4,11 +4,20 @@ import { ModalCompleteSignUpContent } from './ModalCompleteSignUpContent'
 import { getModalTitle, MODAL_STEPS, ModalStep } from './utils'
 import { useNavigate, useParams } from 'react-router-dom'
 
-export const ModalCompleteSignUp: FC = () => {
+type ModalCompleteSignUpProps = {
+  isKeyNotFoundModalOpened: boolean
+  onOpenKeyNotFoundModal: () => void
+}
+
+export const ModalCompleteSignUp: FC<ModalCompleteSignUpProps> = ({
+  isKeyNotFoundModalOpened,
+  onOpenKeyNotFoundModal,
+}) => {
   const { npub = '' } = useParams<{ npub: string }>()
   const navigate = useNavigate()
 
   const handleClose = () => {
+    if (isKeyNotFoundModalOpened) return
     navigate(`/key/${npub}`, { replace: true })
   }
 
@@ -22,8 +31,13 @@ export const ModalCompleteSignUp: FC = () => {
   }
 
   return (
-    <Modal open title={title} onClose={handleClose}>
-      <ModalCompleteSignUpContent currentStep={currentStep} onChangeStep={handleChangeStep} onClose={handleClose} />
+    <Modal open={!isKeyNotFoundModalOpened} title={title} onClose={handleClose}>
+      <ModalCompleteSignUpContent
+        currentStep={currentStep}
+        onChangeStep={handleChangeStep}
+        onClose={handleClose}
+        onOpenKeyNotFoundModal={onOpenKeyNotFoundModal}
+      />
     </Modal>
   )
 }
