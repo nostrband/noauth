@@ -17,7 +17,7 @@ import { usePasswordValidation } from '@/hooks/usePasswordValidation'
 import { Button } from '@/shared/Button/Button'
 import { client } from '@/modules/client'
 import useIframePort from '@/hooks/useIframePort'
-import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
+import { parseNostrConnectMeta } from '@/utils/helpers/helpers'
 
 const FORM_DEFAULT_VALUES = {
   password: '',
@@ -64,7 +64,7 @@ export const ModalImportConnect: FC = () => {
   const { hidePassword: hideRePassword, inputProps: rePasswordInputProps } = usePassword()
   const { isPasswordInvalid, passwordStrength, reset: resetPasswordValidation } = usePasswordValidation(enteredPassword)
 
-  const meta = parseNostrConnectMeta('?' + searchParams.toString());
+  const meta = parseNostrConnectMeta('?' + searchParams.toString())
 
   // default
   const isPopup = true // searchParams.get('popup') === 'true'
@@ -117,7 +117,6 @@ export const ModalImportConnect: FC = () => {
     if (!nsec || !meta) return
     hidePassword()
     hideRePassword()
-    // console.log({ values, userNip05, nsec }, 'HISH')
     if (isLoading || isPasswordInvalid) return undefined
     try {
       setIsLoading(true)
