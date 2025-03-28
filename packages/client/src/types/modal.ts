@@ -19,6 +19,7 @@ export enum MODAL_PARAMS_KEYS {
   EMAIL_LOGIN = 'email-login',
   SIGNING_UP = 'signing-up',
   CONFIRM_EMAIL = 'confirm-email',
+  ENCLAVE_SETUP = 'enclave-setup',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

@@ -11,7 +11,6 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useUnmount } from 'usehooks-ts'
 import { FormProvider, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { isWeakPassphase } from '@noauth/common'
 
 type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
@@ -49,7 +48,7 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
       setIsLoading(true)
       hidePassword()
       const { password } = values
-      if (!password) throw new Error("Enter password!");
+      if (!password) throw new Error('Enter password!')
 
       await client.confirmEmail(npub, email, emailCode, password)
       setIsLoading(false)
