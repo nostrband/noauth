@@ -14,12 +14,15 @@ import { client } from './modules/client'
 import { LoadingSpinner } from './shared/LoadingSpinner/LoadingSpinner'
 import { Stack } from '@mui/material'
 import { SafeArea } from 'capacitor-plugin-safe-area'
+import { useHandleAppLink } from './hooks/useHandleAppLink'
 
 function App() {
   const [render, setRender] = useState(0)
   const dispatch = useAppDispatch()
 
   const [isLoading, setIsLoading] = useState(true)
+
+  useHandleAppLink()
 
   // eslint-disable-next-line
   const [_, setNeedReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
