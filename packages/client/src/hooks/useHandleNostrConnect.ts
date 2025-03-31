@@ -84,11 +84,8 @@ export const useHandleNostrConnect = () => {
       const isImport = searchParams.get(IMPORT_QUERY_KEY) === 'true'
 
       if (email) {
-        await handleConnectWithEmail(email, pubkey)
-        return
-      }
-
-      if (nsec) {
+        return handleConnectWithEmail(email, pubkey)
+      } else if (nsec) {
         return navigate({
           pathname: `/importconnect/${pubkey}`,
           search: search,
@@ -102,6 +99,7 @@ export const useHandleNostrConnect = () => {
           search: `?import-keys=true&connect=${encodeURIComponent(nc)}`,
         })
       } else {
+        // choose which key to connect to
         navigate({ pathname: `/nostrconnect/${pubkey}`, search })
       }
     }

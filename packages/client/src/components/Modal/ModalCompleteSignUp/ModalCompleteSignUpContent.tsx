@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { MODAL_STEPS, ModalStep } from './utils'
 import { StepSavePassword } from './components/StepSavePassword/StepSavePassword'
 import { StepBackupKeys } from './components/StepBackupKeys/StepBackupKeys'
@@ -11,18 +11,21 @@ import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { useUnmount } from 'usehooks-ts'
 import { FormProvider, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { isWeakPassphase } from '@noauth/common'
+import { useAppSelector } from '@/store/hooks/redux'
+import { selectKeyByNpub } from '@/store'
 
 type ModalCompleteSignUpContentProps = {
   currentStep: ModalStep
   onChangeStep: (newStep: ModalStep) => void
   onClose: () => void
+  onOpenKeyNotFoundModal: () => void
 }
 
 export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = ({
   currentStep,
   onChangeStep,
   onClose,
+  onOpenKeyNotFoundModal,
 }) => {
   const notify = useEnqueueSnackbar()
   const methods = useForm<FormInputType>({
@@ -42,6 +45,8 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
 
   const [isLoading, setIsLoading] = useState(false)
 
+  const key = useAppSelector((state) => selectKeyByNpub(state, npub))
+
   const handleSubmit = async (values: FormInputType) => {
     try {
       if (!email || !emailCode || isLoading) return
@@ -49,7 +54,7 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
       setIsLoading(true)
       hidePassword()
       const { password } = values
-      if (!password) throw new Error("Enter password!");
+      if (!password) throw new Error('Enter password!')
 
       await client.confirmEmail(npub, email, emailCode, password)
       setIsLoading(false)
@@ -70,6 +75,10 @@ export const ModalCompleteSignUpContent: FC<ModalCompleteSignUpContentProps> = (
   })
 
   console.log('render', currentStep)
+  useEffect(() => {
+    if (!key) onOpenKeyNotFoundModal()
+    // eslint-disable-next-line
+  }, [])
 
   if (currentStep === 'password') {
     return (
