@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom'
 import { client } from '@/modules/client'
 import { Event, nip19 } from 'nostr-tools'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { hexToBytes } from "@noble/hashes/utils"
+import { hexToBytes } from '@noble/hashes/utils'
 
 type ModalSetupEnclaveContentProps = {
   onClose: () => void
@@ -15,14 +15,14 @@ function parseEnclave(e: Event) {
   try {
     return {
       event: e,
-      prod: !!e.tags.find(t => t.length > 1 && t[0] === "t" && t[1] === "prod"),
-      debug: !hexToBytes(e.tags.find(t => t.length > 2 && t[0] === "x" && t[2] === "PCR0")![1]).find(c => c !== 0),
-      builder: e.tags.find(t => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || "",
-      launcher: e.tags.find(t => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || "",
-      version: e.tags.find(t => t.length > 1 && t[0] === "v")?.[1] || "",
+      prod: !!e.tags.find((t) => t.length > 1 && t[0] === 't' && t[1] === 'prod'),
+      debug: !hexToBytes(e.tags.find((t) => t.length > 2 && t[0] === 'x' && t[2] === 'PCR0')![1]).find((c) => c !== 0),
+      builder: e.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || '',
+      launcher: e.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || '',
+      version: e.tags.find((t) => t.length > 1 && t[0] === 'v')?.[1] || '',
     }
   } catch (err) {
-    console.log("bad enclave", e, err);
+    console.log('bad enclave', e, err)
   }
 }
 
@@ -34,7 +34,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   const notify = useEnqueueSnackbar()
 
   useEffect(() => {
-    client.listEnclaves().then((es) => setEnclaves(es.map(e => parseEnclave(e))))
+    client.listEnclaves().then((es) => setEnclaves(es.map((e) => parseEnclave(e))))
   }, [])
 
   useEffect(() => {
@@ -104,9 +104,26 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
         </>
       )}
       {!info?.enclaves?.length && (
-        <Button onClick={handleUpload} disabled={status !== ''}>
-          Upload key
-        </Button>
+        <>
+          {enclaves.map((e: any) => (
+            <div>
+              <a
+                href={'https://njump.me/' + nip19.neventEncode({ id: e.event.id, relays: ['wss://relay.nostr.band/all'] })}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {e.event.pubkey.substring(0, 10)}...
+              </a>
+            </div>
+          ))}
+          <Typography>
+            Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
+            code of enclaves listed above was reviewed and considered safe.
+          </Typography>
+          <Button onClick={handleUpload} disabled={status !== ''}>
+            Upload key
+          </Button>
+        </>
       )}
 
       {status && (
