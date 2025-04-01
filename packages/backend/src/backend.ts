@@ -40,7 +40,7 @@ import { Api } from './api'
 import { PrivateKeySigner } from './signer'
 import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
-import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
+import { APP_TAG, ENCLAVES_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
 import { validateEmail } from './utils'
 import { EnclaveClient, fetchEnclaves } from './enclave'
 
@@ -969,6 +969,7 @@ export class NoauthBackend extends EventEmitter {
     // init relay objects but dont wait until we connect
     ndk.connect()
 
+    const pubkey = getPublicKey(sk)
     const signer = new PrivateKeySigner(sk)
     const backend = new Nip46Backend(ndk, signer, this.allowPermitCallback.bind(this)) // , () => Promise.resolve(true)
     const watcher = new Watcher(ndk, signer, (id) => {
@@ -977,7 +978,7 @@ export class NoauthBackend extends EventEmitter {
       if (index >= 0) self.confirmBuffer.splice(index, 1)
       this.dbi.removePending(id).then(() => this.updateUI())
     })
-    this.keys.push({ npub, backend, signer, ndk, backoff, watcher })
+    this.keys.push({ npub, pubkey, backend, signer, ndk, backoff, watcher })
 
     // new method
     // backend.handlers['get_nip04_key'] = new Nip04KeyHandlingStrategy(sk)
@@ -1672,45 +1673,108 @@ export class NoauthBackend extends EventEmitter {
       enclaves: [] as any[],
     }
 
-    // FIXME somehow figure out if we've uploaded our
-    // key somewhere
-    const enclaves = await fetchEnclaves(this.ndk, this.global.getEnclaveLauncherPubkeys())
-    console.log('enclaves', enclaves)
-    if (!enclaves.length) return info
-
-    const { type, data: pubkey } = nip19.decode(npub)
-    if (type !== 'npub') throw new Error('Invalid npub')
-
-    const promises = enclaves.map(async (enclave) => {
-      const has = await new EnclaveClient(enclave as Event, key.signer, this.global.getNip46Relays()).hasKey()
-      return { pubkey: enclave.pubkey, has }
+    const enclaveEvent = await this.ndk.fetchEvent({
+      kinds: [KIND_DATA],
+      authors: [key.pubkey],
+      '#d': [ENCLAVES_TAG],
     })
-    const res = await Promise.allSettled(promises)
-    for (const r of res) {
-      if (r.status === 'fulfilled' && r.value.has === true) {
-        info.enclaves.push(r.value)
+    let enclaveData: any | undefined
+    if (enclaveEvent) {
+      try {
+        enclaveData = JSON.parse(
+          await key.signer.decryptNip44(new NDKUser({ pubkey: key.pubkey }), enclaveEvent.content)
+        )
+      } catch (e) {
+        console.log('Bad enclave event', e, enclaveEvent)
       }
     }
+    console.log('enclaveData', enclaveData)
+    if (!enclaveData?.enclaves?.length) return info
+
+    // load all valid enclaves
+    let enclaves = await fetchEnclaves(this.ndk, this.global)
+    if (!enclaves.length) return info
+
+    // only leave ones we've uploaded to
+    enclaves = enclaves.filter((e) => {
+      return !!enclaveData.enclaves.find((d: any) => d.pubkey === e.pubkey)
+    })
+    console.log('enclaves', enclaves)
+
+    // result
+    info.enclaves.push(
+      ...enclaves.map((e) => ({
+        pubkey: e.pubkey,
+        id: e.id,
+        debug: !hexToBytes(e.tags.find((t) => t.length > 2 && t[0] === 'x' && t[2] === 'PCR0')![1]).find(
+          (c) => c !== 0
+        ),
+        prod: !!e.tags.find((t) => t.length > 1 && t[0] === 't' && t[1] === 'prod'),
+        has: true,
+      }))
+    )
 
     return info
   }
 
-  private async uploadKeyToEnclave(npub: string) {
+  private async listEnclaves() {
+    return await fetchEnclaves(this.ndk, this.global)
+  }
+
+  private async publishEnclaveEvent(key: Key, client: EnclaveClient, enclaves: Event[]) {
+    const data = {
+      enclaves: enclaves.map((enclave) => ({
+        pubkey: enclave.pubkey,
+        pcrs: enclave.tags.filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR')),
+        builder: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1],
+        launcher: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'launcher')?.[1],
+      })),
+    }
+    const content = await key.signer.encryptNip44(new NDKUser({ pubkey: key.pubkey }), JSON.stringify(data))
+    const event = new NDKEvent(this.ndk, {
+      pubkey: key.pubkey,
+      kind: KIND_DATA,
+      content,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [['d', ENCLAVES_TAG]],
+    })
+    event.sig = await event.sign(key.signer)
+    console.log('enclave event', event.rawEvent(), 'payload', data)
+    const relays = await event.publish(NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk))
+    console.log('enclave event published', event.id, 'to', relays)
+  }
+
+  private async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Key not found')
+
+    const enclaves = await fetchEnclaves(this.ndk, this.global)
+    console.log('enclaves', enclaves)
+    const enclave = enclaves.find((e) => e.pubkey === enclavePubkey)
+    if (!enclave) throw new Error('Enclave not found')
+
+    const client = new EnclaveClient(enclave as Event, key.signer, this.global.getNip46Relays())
+    await client.deleteKey()
+
+    await this.publishEnclaveEvent(key, client, [])
+
+    client.dispose()
+  }
+
+  private async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
 
     const info = this.enckeys.find((k) => k.npub === npub)
     if (!info) throw new Error(`Key info not found`)
 
-    // FIXME only fetch enclaves by allowed pubkeys
-    const enclaves = await fetchEnclaves(this.ndk, this.global.getEnclaveLauncherPubkeys())
+    const enclaves = await fetchEnclaves(this.ndk, this.global)
     console.log('enclaves', enclaves)
     let client: EnclaveClient | undefined
     for (const enc of enclaves) {
-      try {
-        const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
-        if (!this.global.getEnclaveLauncherPubkeys().includes(buildSignature.pubkey)) continue
+      if (enclavePubkey && enc.pubkey !== enclavePubkey) continue
 
+      try {
         const c = new EnclaveClient(enc as Event, key.signer, this.global.getNip46Relays())
         try {
           console.log('pinging', enc.pubkey)
@@ -1720,8 +1784,6 @@ export class NoauthBackend extends EventEmitter {
           console.log('failed to ping', enc.pubkey, e)
           continue
         }
-
-        // FIXME verifyEnclaveInfo
         client = c
         break
       } catch (e) {
@@ -1739,7 +1801,9 @@ export class NoauthBackend extends EventEmitter {
 
     await client.importKey(sk)
 
-    // FIXME mark this enclave as 'uploaded' ?
+    await this.publishEnclaveEvent(key, client, [client.getEnclave()])
+
+    client.dispose()
   }
 
   public async onMessage(data: BackendRequest) {
@@ -1817,7 +1881,11 @@ export class NoauthBackend extends EventEmitter {
     } else if (method === 'getKeyEnclaveInfo') {
       result = await this.getKeyEnclaveInfo(args[0])
     } else if (method === 'uploadKeyToEnclave') {
-      result = await this.uploadKeyToEnclave(args[0])
+      result = await this.uploadKeyToEnclave(args[0], args[1])
+    } else if (method === 'listEnclaves') {
+      result = await this.listEnclaves()
+    } else if (method === 'deleteKeyFromEnclave') {
+      result = await this.deleteKeyFromEnclave(args[0], args[1]);
     } else if (method === 'ping') {
       result = null
     } else {

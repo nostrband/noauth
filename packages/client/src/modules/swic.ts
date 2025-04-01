@@ -5,6 +5,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken } from '@noauth/common'
 import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
+import { Event } from 'nostr-tools'
 
 export let swr: ServiceWorkerRegistration | null = null
 
@@ -256,8 +257,16 @@ class ClientServiceWorker implements BackendClient {
     return this.call<any>('getKeyEnclaveInfo', [], npub)
   }
 
-  public async uploadKeyToEnclave(npub: string) {
-    return this.call<any>('uploadKeyToEnclave', [], npub)
+  public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('uploadKeyToEnclave', [], npub, enclavePubkey)
+  }
+
+  public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('deleteKeyFromEnclave', [], npub, enclavePubkey)
+  }
+
+  public async listEnclaves() {
+    return this.call<Event[]>('listEnclaves', [])
   }
 
 

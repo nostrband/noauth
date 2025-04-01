@@ -1,6 +1,7 @@
 import {
   ADMIN_DOMAIN,
   DOMAIN,
+  ENCLAVE_DEBUG,
   ENCLAVE_LAUNCHER_PUBKEYS,
   NIP46_RELAYS,
   NOAUTHD_URL,
@@ -9,6 +10,7 @@ import {
 } from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
+import { hexToBytes } from '@noble/hashes/utils'
 // @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
@@ -69,11 +71,17 @@ export class ServiceWorkerBackend extends NoauthBackend {
       getNip46Relays() {
         return NIP46_RELAYS
       },
-      getEnclaveLauncherPubkeys() {
+      getEnclaveBuilderPubkeys() {
         return ENCLAVE_LAUNCHER_PUBKEYS.split(',')
           .map((p) => p.trim())
           .filter((p) => !!p)
       },
+      isValidEnclavePCRs(pcrs: Map<number, string>) {
+        if (!pcrs.get(0)) return false;
+        const debug = !hexToBytes(pcrs.get(0)!).find(c => c !== 0);
+        console.log("ENCLAVE_DEBUG", ENCLAVE_DEBUG);
+        return ENCLAVE_DEBUG === "true" || !debug;
+      }
     }
 
     const api = new BrowserApi(global)

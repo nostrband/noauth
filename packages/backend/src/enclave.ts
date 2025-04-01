@@ -2,6 +2,7 @@ import NDK, { NDKEvent, NDKNostrRpc, NDKRelaySet, NDKRpcResponse, NDKSigner } fr
 import { Event, getPublicKey, nip44 } from 'nostr-tools'
 import { Signer } from './signer'
 import { Nip46Client } from './nip46'
+import { GlobalContext } from './global'
 
 const KIND_ENCLAVE = 24135
 const KIND_INSTANCE = 63793
@@ -11,6 +12,7 @@ export class EnclaveClient {
   private signer: Signer
   private client: Nip46Client
   private relays: string[]
+  private enclave: Event
 
   constructor(enclave: Event, signer: Signer, relays: string[]) {
     this.relays = enclave.tags.filter((t) => t.length > 1 && t[0] === 'relay').map((t) => t[1])
@@ -20,7 +22,16 @@ export class EnclaveClient {
     })
     this.ndk.connect()
     this.signer = signer
+    this.enclave = enclave
     this.client = new Nip46Client({ ndk: this.ndk, kind: KIND_ENCLAVE, signer, signerPubkey: enclave.pubkey })
+  }
+
+  public dispose() {
+    this.client.dispose();
+  }
+
+  public getEnclave() {
+    return this.enclave;
   }
 
   public async ping() {
@@ -67,7 +78,9 @@ export class EnclaveClient {
   }
 }
 
-export async function fetchEnclaves(ndk: NDK, pubkeys: string[]) {
+export async function fetchEnclaves(ndk: NDK, global: GlobalContext, enclaveEvent?: string) {
+  const pubkeys = global.getEnclaveBuilderPubkeys()
+
   const events = await ndk.fetchEvents(
     {
       // @ts-ignore
@@ -91,5 +104,16 @@ export async function fetchEnclaves(ndk: NDK, pubkeys: string[]) {
     const o = uniq.get(e.pubkey)
     if (!o || o.created_at! < e.created_at!) uniq.set(e.pubkey, e)
   }
-  return [...uniq.values()]
+  return [...uniq.values()].map(e => e.rawEvent()).filter((enc) => {
+    const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
+    if (!global.getEnclaveBuilderPubkeys().includes(buildSignature.pubkey)) return false
+    // FIXME verify attestation
+
+    const pcrs = new Map<number, string>()
+    enc.tags
+      .filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR'))
+      .map((t) => pcrs.set(Number(t[2].substring(3)), t[1]))
+    console.log('pcrs', pcrs)
+    return global.isValidEnclavePCRs(pcrs)
+  })
 }

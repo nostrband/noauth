@@ -4,10 +4,11 @@ import NDK, {
   NDKNip46Backend,
   NDKRpcRequest,
   NDKRpcResponse,
+  NDKSubscription,
   NDKUser,
   NostrEvent,
 } from '@nostr-dev-kit/ndk'
-import { Event, getEventHash, nip19, validateEvent, verifySignature } from 'nostr-tools'
+import { Event, getEventHash, nip19, verifySignature } from 'nostr-tools'
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
@@ -339,6 +340,7 @@ export class Nip46Client {
   private kind: number
   private signerPubkey: string
   private signer: Signer
+  private sub?: NDKSubscription
   private pending = new Map<
     string,
     {
@@ -406,7 +408,7 @@ export class Nip46Client {
   }
 
   private async subscribe() {
-    const sub = this.ndk.subscribe(
+    this.sub = this.ndk.subscribe(
       {
         kinds: [this.kind as number],
         authors: [this.signerPubkey!],
@@ -418,6 +420,11 @@ export class Nip46Client {
         closeOnEose: false,
       }
     )
-    sub.on('event', this.onReplyEvent.bind(this))
+    this.sub.on('event', this.onReplyEvent.bind(this))
+  }
+
+  public dispose() {
+    this.sub?.removeAllListeners();
+    this.sub?.stop();
   }
 }

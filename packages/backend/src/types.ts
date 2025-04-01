@@ -23,6 +23,7 @@ export interface IAllowCallbackParams {
 
 export interface Key {
   npub: string
+  pubkey: string
   ndk: NDK
   backoff: number
   signer: Signer
