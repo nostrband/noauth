@@ -332,6 +332,14 @@ export class ClientWebSocket implements BackendClient {
   public async ping() {
     // noop
   }
+
+  public async getKeyEnclaveInfo(npub: string) {
+    throw new Error("getKeyEnclaveInfo not implemented");
+  }
+
+  public async uploadKeyToEnclave(npub: string) {
+    throw new Error("uploadKeyToEnclave not implemented");
+  }
 }
 
 export const startClientWebSocket = () => new ClientWebSocket(`ws://${document.location.hostname}:8080`)

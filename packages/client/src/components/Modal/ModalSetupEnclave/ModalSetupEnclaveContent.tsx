@@ -1,33 +1,42 @@
 import React, { FC, useState } from 'react'
 import { Stack, Typography } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
+import { useParams } from 'react-router-dom'
+import { client } from '@/modules/client'
 
 type ModalSetupEnclaveContentProps = {
   onClose: () => void
 }
 
 export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ onClose }) => {
-  const [uploadStatus, setUploadStatus] = useState<string>('Loading')
+  const { npub = '' } = useParams<{ npub: string }>()
+  const [uploadStatus, setUploadStatus] = useState<string>('')
 
   const handleUpload = async () => {
     try {
       setUploadStatus('Loading...')
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await client.uploadKeyToEnclave(npub)
       setUploadStatus('Successfully uploaded!')
-      onClose()
+      // onClose()
     } catch (error) {
-      setUploadStatus('Upload Error.')
+      setUploadStatus('Upload Error: ' + error)
     }
   }
 
   return (
     <Stack gap={'0.75rem'}>
+      <Typography>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
       <Typography>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim, temporibus? Sunt, deserunt fugiat? Est,
-        necessitatibus minus quisquam fuga, doloribus consequuntur, velit reprehenderit voluptate similique a ratione
-        dolorum odit. Quisquam, adipisci.
+        To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
+        Enclave. Learn more{' '}
+        <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
+          here
+        </a>
+        .
       </Typography>
-      <Button onClick={handleUpload}>Upload</Button>
+      <Button onClick={handleUpload} disabled={uploadStatus !== ''}>
+        Upload key
+      </Button>
 
       {uploadStatus && (
         <Typography fontWeight={500} textAlign={'center'} variant="body1" color={'GrayText'}>

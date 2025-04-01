@@ -252,6 +252,15 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('ping', [])
   }
 
+  public async getKeyEnclaveInfo(npub: string) {
+    return this.call<any>('getKeyEnclaveInfo', [], npub)
+  }
+
+  public async uploadKeyToEnclave(npub: string) {
+    return this.call<any>('uploadKeyToEnclave', [], npub)
+  }
+
+
   public getListKeys() {
     return dbi.listKeys()
   }

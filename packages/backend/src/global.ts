@@ -10,4 +10,5 @@ export interface GlobalContext {
   getDomain: () => string
   getNsecAppNpub: () => string
   getNip46Relays: () => string[]
+  getEnclaveLauncherPubkeys: () => string[]
 }

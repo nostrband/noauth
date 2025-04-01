@@ -363,7 +363,7 @@ export const parseNostrConnectMeta = (search: string) => {
 
   return {
     appName: metadata.name || '',
-    appUrl: metadata.url || '',
+    appUrl: url || '',
     appDomain: getDomainPort(metadata.url || ''),
     appIcon: metadata.icon || '',
     perms: metadata.perms || '',

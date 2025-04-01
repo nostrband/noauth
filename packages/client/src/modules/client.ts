@@ -115,6 +115,10 @@ export interface BackendClient {
   waitKey: (npub: string) => Promise<void>
 
   deleteKey: (npub: string) => Promise<void>
+
+  getKeyEnclaveInfo: (npub: string) => Promise<any>
+
+  uploadKeyToEnclave: (npub: string) => Promise<void>
 }
 
 const defineClient = (): BackendClient => {

@@ -1,4 +1,12 @@
-import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
+import {
+  ADMIN_DOMAIN,
+  DOMAIN,
+  ENCLAVE_LAUNCHER_PUBKEYS,
+  NIP46_RELAYS,
+  NOAUTHD_URL,
+  NSEC_APP_NPUB,
+  WEB_PUSH_PUBKEY,
+} from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
 import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
 // @ts-ignore
@@ -60,6 +68,11 @@ export class ServiceWorkerBackend extends NoauthBackend {
       },
       getNip46Relays() {
         return NIP46_RELAYS
+      },
+      getEnclaveLauncherPubkeys() {
+        return ENCLAVE_LAUNCHER_PUBKEYS.split(',')
+          .map((p) => p.trim())
+          .filter((p) => !!p)
       },
     }
 

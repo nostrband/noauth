@@ -10,7 +10,7 @@ export const ModalSetupEnclave = () => {
   const handleClose = createHandleCloseBack(MODAL_PARAMS_KEYS.ENCLAVE_SETUP, MODAL_PARAMS_KEYS.SETTINGS)
 
   return (
-    <Modal open={isModalOpened} title="Setup enclave" onClose={handleClose}>
+    <Modal open={isModalOpened} title="Setup secure enclave" onClose={handleClose}>
       <ModalSetupEnclaveContent onClose={handleClose} />
     </Modal>
   )

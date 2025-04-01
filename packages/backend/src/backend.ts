@@ -42,6 +42,7 @@ import { randomBytes } from 'crypto'
 import { GlobalContext } from './global'
 import { APP_TAG, ERROR_NO_KEY, TOKEN_SIZE, TOKEN_TTL } from './const'
 import { validateEmail } from './utils'
+import { EnclaveClient, fetchEnclaves } from './enclave'
 
 interface Pending {
   req: DbPending
@@ -362,7 +363,7 @@ export class NoauthBackend extends EventEmitter {
     iframe,
     email,
     appNpub,
-    appUrl
+    appUrl,
   }: {
     name: string
     nsec?: string
@@ -1191,7 +1192,7 @@ export class NoauthBackend extends EventEmitter {
       passphrase: params.password,
       email: params.email,
       appNpub: params.appNpub,
-      appUrl: params.appUrl
+      appUrl: params.appUrl,
     })
 
     const { npub } = k
@@ -1662,6 +1663,85 @@ export class NoauthBackend extends EventEmitter {
     })
   }
 
+  private async getKeyEnclaveInfo(npub: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('No key')
+
+    const info = {
+      npub,
+      enclaves: [] as any[],
+    }
+
+    // FIXME somehow figure out if we've uploaded our
+    // key somewhere
+    const enclaves = await fetchEnclaves(this.ndk, this.global.getEnclaveLauncherPubkeys())
+    console.log('enclaves', enclaves)
+    if (!enclaves.length) return info
+
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error('Invalid npub')
+
+    const promises = enclaves.map(async (enclave) => {
+      const has = await new EnclaveClient(enclave as Event, key.signer, this.global.getNip46Relays()).hasKey()
+      return { pubkey: enclave.pubkey, has }
+    })
+    const res = await Promise.allSettled(promises)
+    for (const r of res) {
+      if (r.status === 'fulfilled' && r.value.has === true) {
+        info.enclaves.push(r.value)
+      }
+    }
+
+    return info
+  }
+
+  private async uploadKeyToEnclave(npub: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('Key not found')
+
+    const info = this.enckeys.find((k) => k.npub === npub)
+    if (!info) throw new Error(`Key info not found`)
+
+    // FIXME only fetch enclaves by allowed pubkeys
+    const enclaves = await fetchEnclaves(this.ndk, this.global.getEnclaveLauncherPubkeys())
+    console.log('enclaves', enclaves)
+    let client: EnclaveClient | undefined
+    for (const enc of enclaves) {
+      try {
+        const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
+        if (!this.global.getEnclaveLauncherPubkeys().includes(buildSignature.pubkey)) continue
+
+        const c = new EnclaveClient(enc as Event, key.signer, this.global.getNip46Relays())
+        try {
+          console.log('pinging', enc.pubkey)
+          await Promise.race([c.ping(), new Promise((_, err) => setTimeout(err, 1000))])
+          console.log('pinged', enc.pubkey)
+        } catch (e) {
+          console.log('failed to ping', enc.pubkey, e)
+          continue
+        }
+
+        // FIXME verifyEnclaveInfo
+        client = c
+        break
+      } catch (e) {
+        console.log('Invalid enclave', e, enc)
+      }
+    }
+
+    if (!client) throw new Error('Valid active enclave not found')
+
+    const sk = await this.keysModule.decryptKeyLocal({
+      enckey: info.enckey,
+      // @ts-ignore
+      localKey: info.localKey,
+    })
+
+    await client.importKey(sk)
+
+    // FIXME mark this enclave as 'uploaded' ?
+  }
+
   public async onMessage(data: BackendRequest) {
     const { method, args } = data
 
@@ -1734,6 +1814,10 @@ export class NoauthBackend extends EventEmitter {
       result = await this.confirmEmail(args[0], args[1], args[2], args[3])
     } else if (method === 'setEmail') {
       result = await this.setEmail(args[0], args[1])
+    } else if (method === 'getKeyEnclaveInfo') {
+      result = await this.getKeyEnclaveInfo(args[0])
+    } else if (method === 'uploadKeyToEnclave') {
+      result = await this.uploadKeyToEnclave(args[0])
     } else if (method === 'ping') {
       result = null
     } else {
