@@ -1,4 +1,4 @@
-import NDK, { NDKEvent, NDKNostrRpc, NDKRelaySet, NDKRpcResponse, NDKSigner } from '@nostr-dev-kit/ndk'
+import NDK, { NDKEvent, NDKNostrRpc, NDKRelaySet, NDKRpcResponse, NDKSigner, NostrEvent } from '@nostr-dev-kit/ndk'
 import { Event, getPublicKey, nip44 } from 'nostr-tools'
 import { Signer } from './signer'
 import { Nip46Client } from './nip46'
@@ -11,34 +11,25 @@ export class EnclaveClient {
   private ndk: NDK
   private signer: Signer
   private client: Nip46Client
-  private relays: string[]
-  private enclave: Event
 
-  constructor(enclave: Event, signer: Signer, relays: string[]) {
-    this.relays = enclave.tags.filter((t) => t.length > 1 && t[0] === 'relay').map((t) => t[1])
-    if (!this.relays.length) throw new Error('No enclave relays')
+  constructor(enclavePubkey: string, enclaveRelays: string[], signer: Signer) {
     this.ndk = new NDK({
-      explicitRelayUrls: relays,
+      explicitRelayUrls: enclaveRelays,
     })
     this.ndk.connect()
     this.signer = signer
-    this.enclave = enclave
-    this.client = new Nip46Client({ ndk: this.ndk, kind: KIND_ENCLAVE, signer, signerPubkey: enclave.pubkey })
+    this.client = new Nip46Client({ ndk: this.ndk, kind: KIND_ENCLAVE, signer, signerPubkey: enclavePubkey })
   }
 
   public dispose() {
-    this.client.dispose();
+    this.client.dispose()
   }
 
-  public getEnclave() {
-    return this.enclave;
-  }
-
-  public async ping() {
+  public async ping(timeout = 1000) {
     const pong = await this.client.send({
       method: 'ping',
       params: [],
-      timeout: 1000,
+      timeout,
     })
     if (pong !== 'pong') throw new Error('Bad pong')
   }
@@ -54,12 +45,12 @@ export class EnclaveClient {
     )
   }
 
-  public async importKey(privkey: string) {
+  public async importKey(privkey: string, relays: string[]) {
     const pubkey = (await this.signer.user()).pubkey
     if (getPublicKey(privkey) !== pubkey) throw new Error('Invalid privkey')
     const ok = await this.client.send({
       method: 'import_key',
-      params: [privkey, this.relays.join(',')],
+      params: [privkey, relays.join(',')],
       timeout: 10000,
     })
     if (ok === 'ok') return
@@ -70,7 +61,7 @@ export class EnclaveClient {
     const pubkey = (await this.signer.user()).pubkey
     const ok = await this.client.send({
       method: 'delete_key',
-      params: [pubkey, this.relays.join(',')],
+      params: [pubkey],
       timeout: 10000,
     })
     if (ok === 'ok') return
@@ -104,16 +95,18 @@ export async function fetchEnclaves(ndk: NDK, global: GlobalContext, enclaveEven
     const o = uniq.get(e.pubkey)
     if (!o || o.created_at! < e.created_at!) uniq.set(e.pubkey, e)
   }
-  return [...uniq.values()].map(e => e.rawEvent()).filter((enc) => {
-    const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
-    if (!global.getEnclaveBuilderPubkeys().includes(buildSignature.pubkey)) return false
-    // FIXME verify attestation
+  return [...uniq.values()]
+    .map((e) => e.rawEvent())
+    .filter((enc) => {
+      const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
+      if (!global.getEnclaveBuilderPubkeys().includes(buildSignature.pubkey)) return false
+      // FIXME verify attestation
 
-    const pcrs = new Map<number, string>()
-    enc.tags
-      .filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR'))
-      .map((t) => pcrs.set(Number(t[2].substring(3)), t[1]))
-    console.log('pcrs', pcrs)
-    return global.isValidEnclavePCRs(pcrs)
-  })
+      const pcrs = new Map<number, string>()
+      enc.tags
+        .filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR'))
+        .map((t) => pcrs.set(Number(t[2].substring(3)), t[1]))
+      console.log('pcrs', pcrs)
+      return global.isValidEnclavePCRs(pcrs)
+    })
 }

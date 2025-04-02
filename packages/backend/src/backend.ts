@@ -19,6 +19,7 @@ import {
   SEED_RELAYS,
   DbInterface,
   getShortenNpub,
+  getTagValue,
 } from '@noauth/common'
 import NDK, {
   NDKEvent,
@@ -34,7 +35,16 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { sha256 } from '@noble/hashes/sha256'
 import { EventEmitter } from 'tseep'
 import { Watcher } from './watcher'
-import { BackendRequest, CreateConnectParams, DECISION, IAllowCallbackParams, Key, KeyInfo } from './types'
+import {
+  BackendRequest,
+  CreateConnectParams,
+  DECISION,
+  EnclaveData,
+  IAllowCallbackParams,
+  Key,
+  KeyEnclaveData,
+  KeyInfo,
+} from './types'
 import { Nip46Backend } from './nip46'
 import { Api } from './api'
 import { PrivateKeySigner } from './signer'
@@ -138,6 +148,9 @@ export class NoauthBackend extends EventEmitter {
       // ensure we're subscribed on the server, re-create the
       // subscription endpoint if we have permissions granted
       await this.subscribeAllKeys()
+
+      // ensure enclaves have our keys
+      await this.enclaveAllKeys()
     }, 5000)
 
     this.emit(`start`)
@@ -443,8 +456,8 @@ export class NoauthBackend extends EventEmitter {
 
     // seed new key with profile, relays etc
     if (!nsec) {
-      this.publishNewKeyInfo(npub)
-      console.log('published profile', npub)
+      console.log('publishing profile', npub)
+      this.publishNewKeyInfo(npub, email, appUrl)
     }
 
     console.log('emit add key done event', npub)
@@ -453,7 +466,7 @@ export class NoauthBackend extends EventEmitter {
     return this.keyInfo(dbKey)
   }
 
-  private async publishNewKeyInfo(npub: string) {
+  private async publishNewKeyInfo(npub: string, email?: string, appUrl?: string) {
     const { type, data: pubkey } = nip19.decode(npub)
     if (type !== 'npub') throw new Error('Bad npub')
 
@@ -471,9 +484,15 @@ export class NoauthBackend extends EventEmitter {
         name,
         nip05,
       }),
-      tags: [],
+      tags: [['created', '' + Math.floor(Date.now() / 1000)]],
       created_at: Math.floor(Date.now() / 1000),
     })
+    if (email && appUrl) {
+      try {
+        profile.tags.push(['r', new URL(appUrl).origin])
+      } catch {}
+    }
+
     profile.sig = await profile.sign(signer)
 
     // contact list
@@ -685,6 +704,185 @@ export class NoauthBackend extends EventEmitter {
     port.close()
   }
 
+  private createOnAllow({
+    id,
+    npub,
+    req,
+    connected,
+    method,
+    params,
+    backend,
+    ok,
+    subNpub,
+    reqOptions,
+  }: {
+    id: string
+    npub: string
+    req: DbPending
+    connected: boolean
+    method: string
+    params: any
+    reqOptions: any
+    backend: NDKNip46Backend
+    ok: (value: [DECISION, (result: string | undefined) => Promise<void>]) => void
+    subNpub?: string
+  }) {
+    const self = this
+    return async (
+      manual: boolean,
+      decision: DECISION,
+      remember: boolean,
+      confirmOptions?: any,
+      resultCb?: (result: string | undefined) => void
+    ) => {
+      // NOTE: `reqOptions` is passed to request,
+      // but here `options` is passed to `confirm` call by UI.
+
+      // confirm
+      console.log(Date.now(), decision, npub, method, confirmOptions, params)
+
+      // consume the token
+      if (method === 'connect') {
+        const token = params && params.length >= 2 ? params[1] : ''
+
+        // consume the token even if app not allowed, reload
+        console.log('consume connect token', token)
+        if (token) {
+          await this.dbi.removeConnectToken(token)
+          self.connectTokens = await this.dbi.listConnectTokens()
+        }
+      }
+
+      // decision enum handling for TS checks,
+      // only ALLOW/DISALLOW fall through
+      switch (decision) {
+        case DECISION.ASK:
+          throw new Error('Make a decision!')
+        case DECISION.IGNORE:
+          // don't store this any longer!
+          if (manual) await this.dbi.removePending(id)
+          return // noop
+        case DECISION.ALLOW:
+        case DECISION.DISALLOW:
+        // fall through
+      }
+
+      // runtime check that stuff
+      if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
+
+      const allow = decision === DECISION.ALLOW
+
+      let exportToIframe = false
+      if (manual) {
+        await this.dbi.confirmPending(id, allow)
+
+        // add app on 'allow connect'
+        if (method === 'connect' && allow) {
+          // save connect token that was used
+          const token = params && params.length >= 2 ? params[1] : ''
+
+          // add app if it's allowed
+          await this.dbi.addApp({
+            appNpub: req.appNpub,
+            npub: req.npub,
+            timestamp: Date.now(),
+            name: '',
+            icon: '',
+            url: confirmOptions?.appUrl || '',
+            updateTimestamp: Date.now(),
+            permUpdateTimestamp: Date.now(),
+            userAgent: globalThis?.navigator?.userAgent || '',
+            token: token || '',
+            subNpub,
+          })
+
+          // reload
+          self.apps = await this.dbi.listApps()
+
+          // notify iframe
+          exportToIframe = true
+        }
+      } else {
+        // just send to db w/o waiting for it
+        await this.dbi.addConfirmed({
+          ...req,
+          allowed: allow,
+        })
+      }
+
+      // for notifications
+      self.accessBuffer.push(req)
+
+      // clear from pending
+      const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
+      if (index >= 0) self.confirmBuffer.splice(index, 1)
+
+      if (remember) {
+        let newPerms = [getReqPerm(req)]
+        if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
+
+        // write new perms confirmed by user
+        for (const p of newPerms) {
+          await this.dbi.addPerm({
+            id: `${req.id}-${p}`,
+            npub: req.npub,
+            appNpub: req.appNpub,
+            perm: p,
+            value: allow ? '1' : '0',
+            timestamp: Date.now(),
+          })
+        }
+
+        // reload
+        this.perms = await this.dbi.listPerms()
+
+        // publish updated apps if app is added
+        if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
+          await this.updateAppPermTimestamp(req.appNpub, req.npub)
+
+          // if remembering - publish
+          this.publishAppPerms({
+            npub: req.npub,
+            appNpub: req.appNpub,
+          }).finally(() => {
+            // after the app perms are published we can
+            // tell the iframe to import this nsec, it will
+            // be able to read the perms from the network now
+            if (exportToIframe && confirmOptions?.port)
+              this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
+          })
+        }
+      }
+
+      // release this promise to send reply
+      // to this req
+      const saveResult = async (result: string | undefined) => {
+        await this.dbi.addResult(id, result)
+        resultCb && resultCb(result)
+      }
+      ok([decision, saveResult])
+
+      // notify UI that it was confirmed
+      // if (!PERF_TEST)
+      this.updateUI()
+
+      // after replying to this req check pending
+      // reqs maybe they can be replied right away
+      if (remember) {
+        // confirm pending requests that might now have
+        // the proper perms
+        const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
+        console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
+        for (const r of otherReqs) {
+          const dec = this.getDecision(backend, r.req)
+          if (dec !== DECISION.ASK) {
+            r.cb(dec, false)
+          }
+        }
+      }
+    }
+  }
+
   private async allowPermitCallback({
     backend,
     npub,
@@ -740,160 +938,172 @@ export class NoauthBackend extends EventEmitter {
 
     const self = this
     return new Promise(async (ok) => {
+      const onAllow = this.createOnAllow({
+        id,
+        npub,
+        backend,
+        connected,
+        method,
+        ok,
+        params,
+        reqOptions,
+        req,
+        subNpub,
+      })
       // called when it's decided whether to allow this or not
-      const onAllow = async (
-        manual: boolean,
-        decision: DECISION,
-        remember: boolean,
-        confirmOptions?: any,
-        resultCb?: (result: string | undefined) => void
-      ) => {
-        // NOTE: `reqOptions` is passed to request,
-        // but here `options` is passed to `confirm` call by UI.
+      // const onAllow = async (
+      //   manual: boolean,
+      //   decision: DECISION,
+      //   remember: boolean,
+      //   confirmOptions?: any,
+      //   resultCb?: (result: string | undefined) => void
+      // ) => {
+      //   // NOTE: `reqOptions` is passed to request,
+      //   // but here `options` is passed to `confirm` call by UI.
 
-        // confirm
-        console.log(Date.now(), decision, npub, method, confirmOptions, params)
+      //   // confirm
+      //   console.log(Date.now(), decision, npub, method, confirmOptions, params)
 
-        // consume the token
-        if (method === 'connect') {
-          const token = params && params.length >= 2 ? params[1] : ''
+      //   // consume the token
+      //   if (method === 'connect') {
+      //     const token = params && params.length >= 2 ? params[1] : ''
 
-          // consume the token even if app not allowed, reload
-          console.log('consume connect token', token)
-          if (token) {
-            await this.dbi.removeConnectToken(token)
-            self.connectTokens = await this.dbi.listConnectTokens()
-          }
-        }
+      //     // consume the token even if app not allowed, reload
+      //     console.log('consume connect token', token)
+      //     if (token) {
+      //       await this.dbi.removeConnectToken(token)
+      //       self.connectTokens = await this.dbi.listConnectTokens()
+      //     }
+      //   }
 
-        // decision enum handling for TS checks,
-        // only ALLOW/DISALLOW fall through
-        switch (decision) {
-          case DECISION.ASK:
-            throw new Error('Make a decision!')
-          case DECISION.IGNORE:
-            // don't store this any longer!
-            if (manual) await this.dbi.removePending(id)
-            return // noop
-          case DECISION.ALLOW:
-          case DECISION.DISALLOW:
-          // fall through
-        }
+      //   // decision enum handling for TS checks,
+      //   // only ALLOW/DISALLOW fall through
+      //   switch (decision) {
+      //     case DECISION.ASK:
+      //       throw new Error('Make a decision!')
+      //     case DECISION.IGNORE:
+      //       // don't store this any longer!
+      //       if (manual) await this.dbi.removePending(id)
+      //       return // noop
+      //     case DECISION.ALLOW:
+      //     case DECISION.DISALLOW:
+      //     // fall through
+      //   }
 
-        // runtime check that stuff
-        if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
+      //   // runtime check that stuff
+      //   if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
 
-        const allow = decision === DECISION.ALLOW
+      //   const allow = decision === DECISION.ALLOW
 
-        let exportToIframe = false
-        if (manual) {
-          await this.dbi.confirmPending(id, allow)
+      //   let exportToIframe = false
+      //   if (manual) {
+      //     await this.dbi.confirmPending(id, allow)
 
-          // add app on 'allow connect'
-          if (method === 'connect' && allow) {
-            // save connect token that was used
-            const token = params && params.length >= 2 ? params[1] : ''
+      //     // add app on 'allow connect'
+      //     if (method === 'connect' && allow) {
+      //       // save connect token that was used
+      //       const token = params && params.length >= 2 ? params[1] : ''
 
-            // add app if it's allowed
-            await this.dbi.addApp({
-              appNpub: req.appNpub,
-              npub: req.npub,
-              timestamp: Date.now(),
-              name: '',
-              icon: '',
-              url: confirmOptions?.appUrl || '',
-              updateTimestamp: Date.now(),
-              permUpdateTimestamp: Date.now(),
-              userAgent: globalThis?.navigator?.userAgent || '',
-              token: token || '',
-              subNpub,
-            })
+      //       // add app if it's allowed
+      //       await this.dbi.addApp({
+      //         appNpub: req.appNpub,
+      //         npub: req.npub,
+      //         timestamp: Date.now(),
+      //         name: '',
+      //         icon: '',
+      //         url: confirmOptions?.appUrl || '',
+      //         updateTimestamp: Date.now(),
+      //         permUpdateTimestamp: Date.now(),
+      //         userAgent: globalThis?.navigator?.userAgent || '',
+      //         token: token || '',
+      //         subNpub,
+      //       })
 
-            // reload
-            self.apps = await this.dbi.listApps()
+      //       // reload
+      //       self.apps = await this.dbi.listApps()
 
-            // notify iframe
-            exportToIframe = true
-          }
-        } else {
-          // just send to db w/o waiting for it
-          await this.dbi.addConfirmed({
-            ...req,
-            allowed: allow,
-          })
-        }
+      //       // notify iframe
+      //       exportToIframe = true
+      //     }
+      //   } else {
+      //     // just send to db w/o waiting for it
+      //     await this.dbi.addConfirmed({
+      //       ...req,
+      //       allowed: allow,
+      //     })
+      //   }
 
-        // for notifications
-        self.accessBuffer.push(req)
+      //   // for notifications
+      //   self.accessBuffer.push(req)
 
-        // clear from pending
-        const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
-        if (index >= 0) self.confirmBuffer.splice(index, 1)
+      //   // clear from pending
+      //   const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
+      //   if (index >= 0) self.confirmBuffer.splice(index, 1)
 
-        if (remember) {
-          let newPerms = [getReqPerm(req)]
-          if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
+      //   if (remember) {
+      //     let newPerms = [getReqPerm(req)]
+      //     if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
 
-          // write new perms confirmed by user
-          for (const p of newPerms) {
-            await this.dbi.addPerm({
-              id: `${req.id}-${p}`,
-              npub: req.npub,
-              appNpub: req.appNpub,
-              perm: p,
-              value: allow ? '1' : '0',
-              timestamp: Date.now(),
-            })
-          }
+      //     // write new perms confirmed by user
+      //     for (const p of newPerms) {
+      //       await this.dbi.addPerm({
+      //         id: `${req.id}-${p}`,
+      //         npub: req.npub,
+      //         appNpub: req.appNpub,
+      //         perm: p,
+      //         value: allow ? '1' : '0',
+      //         timestamp: Date.now(),
+      //       })
+      //     }
 
-          // reload
-          this.perms = await this.dbi.listPerms()
+      //     // reload
+      //     this.perms = await this.dbi.listPerms()
 
-          // publish updated apps if app is added
-          if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
-            await this.updateAppPermTimestamp(req.appNpub, req.npub)
+      //     // publish updated apps if app is added
+      //     if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
+      //       await this.updateAppPermTimestamp(req.appNpub, req.npub)
 
-            // if remembering - publish
-            this.publishAppPerms({
-              npub: req.npub,
-              appNpub: req.appNpub,
-            }).finally(() => {
-              // after the app perms are published we can
-              // tell the iframe to import this nsec, it will
-              // be able to read the perms from the network now
-              if (exportToIframe && confirmOptions?.port)
-                this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
-            })
-          }
-        }
+      //       // if remembering - publish
+      //       this.publishAppPerms({
+      //         npub: req.npub,
+      //         appNpub: req.appNpub,
+      //       }).finally(() => {
+      //         // after the app perms are published we can
+      //         // tell the iframe to import this nsec, it will
+      //         // be able to read the perms from the network now
+      //         if (exportToIframe && confirmOptions?.port)
+      //           this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
+      //       })
+      //     }
+      //   }
 
-        // release this promise to send reply
-        // to this req
-        const saveResult = async (result: string | undefined) => {
-          await this.dbi.addResult(id, result)
-          resultCb && resultCb(result)
-        }
-        ok([decision, saveResult])
+      //   // release this promise to send reply
+      //   // to this req
+      //   const saveResult = async (result: string | undefined) => {
+      //     await this.dbi.addResult(id, result)
+      //     resultCb && resultCb(result)
+      //   }
+      //   ok([decision, saveResult])
 
-        // notify UI that it was confirmed
-        // if (!PERF_TEST)
-        this.updateUI()
+      //   // notify UI that it was confirmed
+      //   // if (!PERF_TEST)
+      //   this.updateUI()
 
-        // after replying to this req check pending
-        // reqs maybe they can be replied right away
-        if (remember) {
-          // confirm pending requests that might now have
-          // the proper perms
-          const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
-          console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
-          for (const r of otherReqs) {
-            const dec = this.getDecision(backend, r.req)
-            if (dec !== DECISION.ASK) {
-              r.cb(dec, false)
-            }
-          }
-        }
-      }
+      //   // after replying to this req check pending
+      //   // reqs maybe they can be replied right away
+      //   if (remember) {
+      //     // confirm pending requests that might now have
+      //     // the proper perms
+      //     const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
+      //     console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
+      //     for (const r of otherReqs) {
+      //       const dec = this.getDecision(backend, r.req)
+      //       if (dec !== DECISION.ASK) {
+      //         r.cb(dec, false)
+      //       }
+      //     }
+      //   }
+      // }
 
       // check perms
       const dec = this.getDecision(backend, req)
@@ -1215,6 +1425,37 @@ export class NoauthBackend extends EventEmitter {
     return npub
   }
 
+  private async publishConfirmEmail(npub: string) {
+    const { type, data: pubkey } = nip19.decode(npub)
+    if (type !== 'npub') throw new Error('Bad npub')
+
+    const signer = this.keys.find((k) => k.npub === npub)?.signer
+    const key = this.enckeys.find((k) => k.npub === npub)
+    if (!key || !signer) throw new Error('Key not found')
+
+    // label
+    const label = new NDKEvent(this.ndk, {
+      pubkey,
+      kind: 1985,
+      content: '',
+      tags: [
+        ['L', 'app.nsec'],
+        ['l', 'complete', 'app.nsec'],
+      ],
+      created_at: Math.floor(Date.now() / 1000),
+    })
+
+    label.sig = await label.sign(signer)
+
+    // publish in background
+    const relayset = NDKRelaySet.fromRelayUrls([...BROADCAST_RELAYS], this.ndk)
+    try {
+      await label.publish(relayset, 1000)
+    } catch (e) {
+      console.log('failed to publish label', e)
+    }
+  }
+
   private async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
     const key = this.enckeys.find((k) => k.npub === npub)
     if (!key) throw new Error('Npub not found')
@@ -1234,6 +1475,9 @@ export class NoauthBackend extends EventEmitter {
 
     // re-set password to make sure it's set for this email
     await this.setPassword(npub, passphrase, passphrase)
+
+    // mark ourselves as "completed signup"
+    await this.publishConfirmEmail(npub)
   }
 
   private async redeemToken(npub: string, token: string) {
@@ -1664,21 +1908,13 @@ export class NoauthBackend extends EventEmitter {
     })
   }
 
-  private async getKeyEnclaveInfo(npub: string) {
-    const key = this.keys.find((k) => k.npub === npub)
-    if (!key) throw new Error('No key')
-
-    const info = {
-      npub,
-      enclaves: [] as any[],
-    }
-
+  private async fetchEnclaveInfo(key: Key) {
     const enclaveEvent = await this.ndk.fetchEvent({
       kinds: [KIND_DATA],
       authors: [key.pubkey],
       '#d': [ENCLAVES_TAG],
     })
-    let enclaveData: any | undefined
+    let enclaveData: KeyEnclaveData | undefined
     if (enclaveEvent) {
       try {
         enclaveData = JSON.parse(
@@ -1689,6 +1925,102 @@ export class NoauthBackend extends EventEmitter {
       }
     }
     console.log('enclaveData', enclaveData)
+    return enclaveData as KeyEnclaveData
+  }
+
+  private async enclaveAllKeys() {
+    const enclaves = await fetchEnclaves(this.ndk, this.global)
+
+    const pcr = (i: EnclaveData, index: number) => {
+      return i.pcrs.find((t) => t.length > 2 && t[0] === 'x' && t[2] === `PCR${index}`)?.[1]
+    }
+
+    for (const key of this.keys) {
+      const enclaveData = await this.fetchEnclaveInfo(key)
+      if (!enclaveData.enclaves.length) continue
+
+      console.log('checking enclave for', key.npub, enclaveData)
+
+      const failEnclaves: EnclaveData[] = []
+
+      // check recorded enclaves
+      const successEnclaves: EnclaveData[] = []
+      for (const ed of enclaveData.enclaves) {
+        const client = new EnclaveClient(ed.pubkey, ed.relays, key.signer)
+        let has = false;
+        try {
+          has = await client.hasKey()
+        } catch {}
+        console.log('checked enclave', ed.pubkey, 'key', key.npub, 'has', has)
+        if (has) successEnclaves.push(ed)
+        else failEnclaves.push(ed)
+      }
+
+      // for failed enclaves, find ones with same PCRs
+      const newEnclaves: EnclaveData[] = []
+      for (const ed of failEnclaves) {
+        // find another enclave instance with same PCR values
+        const enc = enclaves.find((e) => {
+          const i = this.parseEnclave(e)
+          let samePcrs = true
+          for (const index of [0, 1, 2, 4, 8]) {
+            samePcrs = samePcrs && pcr(i, index) === pcr(ed, index)
+          }
+          return samePcrs
+        })
+
+        // for matching new enclave?
+        if (enc) {
+          console.log('new enclave in place of', ed.pubkey, enc)
+          newEnclaves.push(this.parseEnclave(enc))
+        } else {
+          // put old unavailable enclave back to the list
+          // so that we record it in our enclaves info to
+          // retry searching for it next time
+          successEnclaves.push(ed)
+        }
+      }
+
+      if (!newEnclaves.length) continue
+
+      // decrypt key for new enclaves
+      const keyInfo = this.enckeys.find((k) => k.npub === key.npub)!
+      const sk = await this.keysModule.decryptKeyLocal({
+        enckey: keyInfo.enckey,
+        // @ts-ignore
+        localKey: keyInfo.localKey,
+      })
+
+      // reupload the new enclaves
+      for (const ed of newEnclaves) {
+        console.log('importing key', key.npub, 'to', ed.pubkey)
+        const client = new EnclaveClient(ed.pubkey, ed.relays, key.signer)
+        try {
+          await client.importKey(sk, this.global.getNip46Relays())
+        } catch {}
+        client.dispose()
+
+        // put it back even if upload failed,
+        // we still need to remember it to retry later
+        successEnclaves.push(ed)
+      }
+
+      // update our enclave list
+      console.log("updated enclave list", key.npub, successEnclaves);
+      await this.publishEnclaveEvent(key, successEnclaves)
+    }
+  }
+
+  private async getKeyEnclaveInfo(npub: string) {
+    const key = this.keys.find((k) => k.npub === npub)
+    if (!key) throw new Error('No key')
+
+    const info = {
+      npub,
+      enclaves: [] as any[],
+    }
+
+    const enclaveData = await this.fetchEnclaveInfo(key)
     if (!enclaveData?.enclaves?.length) return info
 
     // load all valid enclaves
@@ -1721,14 +2053,21 @@ export class NoauthBackend extends EventEmitter {
     return await fetchEnclaves(this.ndk, this.global)
   }
 
-  private async publishEnclaveEvent(key: Key, client: EnclaveClient, enclaves: Event[]) {
-    const data = {
-      enclaves: enclaves.map((enclave) => ({
-        pubkey: enclave.pubkey,
-        pcrs: enclave.tags.filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR')),
-        builder: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1],
-        launcher: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'launcher')?.[1],
-      })),
+  private parseEnclave(enclave: Event | NostrEvent): EnclaveData {
+    const info = {
+      pubkey: enclave.pubkey,
+      relays: enclave.tags.filter((t) => t.length > 1 && t[0] === 'relay').map((t) => t[1]),
+      pcrs: enclave.tags.filter((t) => t.length > 2 && t[0] === 'x' && t[2].startsWith('PCR')),
+      builder: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1],
+      launcher: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'launcher')?.[1],
+    }
+    if (!info.relays.length) info.relays = [...this.global.getNip46Relays()];
+    return info;
+  }
+
+  private async publishEnclaveEvent(key: Key, enclaves: EnclaveData[]) {
+    const data: KeyEnclaveData = {
+      enclaves,
     }
     const content = await key.signer.encryptNip44(new NDKUser({ pubkey: key.pubkey }), JSON.stringify(data))
     const event = new NDKEvent(this.ndk, {
@@ -1744,6 +2083,11 @@ export class NoauthBackend extends EventEmitter {
     console.log('enclave event published', event.id, 'to', relays)
   }
 
+  private createEnclaveClient(enclave: Event | NostrEvent, key: Key) {
+    const relays = enclave.tags.filter((t) => t.length > 1 && t[0] === 'relay').map((t) => t[1])
+    return new EnclaveClient(enclave.pubkey, relays, key.signer)
+  }
+
   private async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('Key not found')
@@ -1753,12 +2097,11 @@ export class NoauthBackend extends EventEmitter {
     const enclave = enclaves.find((e) => e.pubkey === enclavePubkey)
     if (!enclave) throw new Error('Enclave not found')
 
-    const client = new EnclaveClient(enclave as Event, key.signer, this.global.getNip46Relays())
+    const client = this.createEnclaveClient(enclave, key)
     await client.deleteKey()
-
-    await this.publishEnclaveEvent(key, client, [])
-
     client.dispose()
+
+    await this.publishEnclaveEvent(key, [])
   }
 
   private async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
@@ -1770,28 +2113,18 @@ export class NoauthBackend extends EventEmitter {
 
     const enclaves = await fetchEnclaves(this.ndk, this.global)
     console.log('enclaves', enclaves)
-    let client: EnclaveClient | undefined
-    for (const enc of enclaves) {
-      if (enclavePubkey && enc.pubkey !== enclavePubkey) continue
+    const enclave = enclaves.find((e) => e.pubkey === enclavePubkey)
+    if (!enclave) throw new Error('Enclave not found')
 
-      try {
-        const c = new EnclaveClient(enc as Event, key.signer, this.global.getNip46Relays())
-        try {
-          console.log('pinging', enc.pubkey)
-          await Promise.race([c.ping(), new Promise((_, err) => setTimeout(err, 1000))])
-          console.log('pinged', enc.pubkey)
-        } catch (e) {
-          console.log('failed to ping', enc.pubkey, e)
-          continue
-        }
-        client = c
-        break
-      } catch (e) {
-        console.log('Invalid enclave', e, enc)
-      }
+    const client = this.createEnclaveClient(enclave, key)
+    try {
+      console.log('pinging', enclave.pubkey)
+      await client.ping(1000)
+      console.log('pinged', enclave.pubkey)
+    } catch (e) {
+      console.log('failed to ping', enclave.pubkey, e)
+      throw new Error('Enclave not responding')
     }
-
-    if (!client) throw new Error('Valid active enclave not found')
 
     const sk = await this.keysModule.decryptKeyLocal({
       enckey: info.enckey,
@@ -1799,9 +2132,9 @@ export class NoauthBackend extends EventEmitter {
       localKey: info.localKey,
     })
 
-    await client.importKey(sk)
+    await client.importKey(sk, this.global.getNip46Relays())
 
-    await this.publishEnclaveEvent(key, client, [client.getEnclave()])
+    await this.publishEnclaveEvent(key, [this.parseEnclave(enclave)])
 
     client.dispose()
   }
@@ -1885,7 +2218,7 @@ export class NoauthBackend extends EventEmitter {
     } else if (method === 'listEnclaves') {
       result = await this.listEnclaves()
     } else if (method === 'deleteKeyFromEnclave') {
-      result = await this.deleteKeyFromEnclave(args[0], args[1]);
+      result = await this.deleteKeyFromEnclave(args[0], args[1])
     } else if (method === 'ping') {
       result = null
     } else {

@@ -54,3 +54,15 @@ export interface KeyInfo {
   email?: string
   locked: boolean
 }
+
+export interface EnclaveData {
+  pubkey: string
+  relays: string[]
+  pcrs: string[][]
+  builder?: string
+  launcher?: string
+}
+
+export interface KeyEnclaveData {
+  enclaves: EnclaveData[]
+}
