@@ -21,7 +21,7 @@ export const useEmailConfirmation = (key: DbKey | undefined): useEmailConfirmati
     try {
       const { npub, email = '' } = key || {}
       const status = await client.checkEmailStatus(npub, email)
-      if (!status) setShowWarning(true)
+      if (!status && email) setShowWarning(true)
       else setShowWarning(false)
     } catch (error) {
       console.log('Error checkEmailStatus:', error)

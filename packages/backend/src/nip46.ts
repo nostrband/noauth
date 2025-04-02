@@ -1,10 +1,20 @@
-import NDK, { NDKEvent, NDKKind, NDKNip46Backend, NDKRpcRequest, NDKRpcResponse, NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, getEventHash, nip19, validateEvent, verifySignature } from 'nostr-tools'
+import NDK, {
+  NDKEvent,
+  NDKKind,
+  NDKNip46Backend,
+  NDKRpcRequest,
+  NDKRpcResponse,
+  NDKSubscription,
+  NDKUser,
+  NostrEvent,
+} from '@nostr-dev-kit/ndk'
+import { Event, getEventHash, nip19, verifySignature } from 'nostr-tools'
 import { DECISION, IAllowCallbackParams } from './types'
 import { Signer } from './signer'
 import { Nip44DecryptHandlingStrategy, Nip44EncryptHandlingStrategy } from './nip44'
-import { KIND_RPC } from '@noauth/common'
+import { KIND_DATA, KIND_RPC } from '@noauth/common'
 import { isNip04 } from './utils'
+import { APP_TAG } from './const'
 
 export interface IEventHandlingStrategyOptioned {
   handle(
@@ -43,6 +53,11 @@ class SignEventHandlingStrategy implements IEventHandlingStrategyOptioned {
     const [eventString] = params
 
     const event = JSON.parse(eventString) as Event
+
+    // make sure apps can't force us to modify our own
+    // permission events
+    if (event.kind === KIND_DATA && event.tags.find((t) => t.length > 1 && t[0] === 't' && t.includes(APP_TAG)))
+      throw new Error('Forbidden')
 
     event.pubkey = (await backend.signer.user()).pubkey
     event.id = getEventHash(event)
@@ -315,7 +330,101 @@ export class Nip46Backend extends NDKNip46Backend {
   }
 
   public async sendAuthUrlResponse(id: string, remotePubkey: string, authUrl: string) {
-    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl);
-    await event.publish();
+    const event = await this.prepareAuthUrlResponse(id, remotePubkey, authUrl)
+    await event.publish()
+  }
+}
+
+export class Nip46Client {
+  private ndk: NDK
+  private kind: number
+  private signerPubkey: string
+  private signer: Signer
+  private sub?: NDKSubscription
+  private pending = new Map<
+    string,
+    {
+      ok: (result: string) => void
+      err: (e: any) => void
+    }
+  >()
+
+  constructor({ ndk, kind, signerPubkey, signer }: { ndk: NDK; kind: number; signerPubkey: string; signer: Signer }) {
+    this.ndk = ndk
+    this.kind = kind
+    this.signerPubkey = signerPubkey
+    this.signer = signer
+    this.subscribe();
+  }
+
+  public async send({ method, params, timeout = 30000 }: { method: string; params: string[]; timeout?: number }) {
+    if (!this.signerPubkey) throw new Error('Not started')
+
+    const req = {
+      id: '' + Math.random(),
+      method,
+      params,
+    }
+
+    const event = new NDKEvent(this.ndk, {
+      created_at: Math.floor(Date.now() / 1000),
+      pubkey: (await this.signer.user()).pubkey,
+      kind: this.kind,
+      content: await this.signer.encryptNip44(new NDKUser({ hexpubkey: this.signerPubkey }), JSON.stringify(req)),
+      tags: [['p', this.signerPubkey]],
+    })
+    event.sig = await event.sign(this.signer)
+    console.log('sending', event)
+    await event.publish()
+
+    return new Promise<string>((ok, err) => {
+      this.pending.set(req.id, { ok, err })
+      setTimeout(() => {
+        const cbs = this.pending.get(req.id)
+        if (cbs) {
+          this.pending.delete(req.id)
+          cbs.err('Request timeout')
+        }
+      }, timeout)
+    })
+  }
+
+  private async onReplyEvent(e: Event) {
+    const { id, result, error } = JSON.parse(
+      await this.signer.decryptNip44(new NDKUser({ hexpubkey: this.signerPubkey }), e.content)
+    )
+    console.log('reply', { id, result, error })
+    // if (result === "auth_url") {
+    //   console.log("Open auth url: ", error);
+    //   return;
+    // }
+
+    const cbs = this.pending.get(id)
+    if (!cbs) return
+    this.pending.delete(id)
+
+    if (error) cbs.err(error)
+    else cbs.ok(result)
+  }
+
+  private async subscribe() {
+    this.sub = this.ndk.subscribe(
+      {
+        kinds: [this.kind as number],
+        authors: [this.signerPubkey!],
+        '#p': [(await this.signer.user()).pubkey],
+        since: Math.floor(Date.now() / 1000) - 10,
+      },
+      {
+        groupable: false,
+        closeOnEose: false,
+      }
+    )
+    this.sub.on('event', this.onReplyEvent.bind(this))
+  }
+
+  public dispose() {
+    this.sub?.removeAllListeners();
+    this.sub?.stop();
   }
 }

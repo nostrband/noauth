@@ -2,6 +2,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
+import { Event } from 'nostr-tools'
 
 export interface BackendReply {
   id: number
@@ -115,6 +116,14 @@ export interface BackendClient {
   waitKey: (npub: string) => Promise<void>
 
   deleteKey: (npub: string) => Promise<void>
+
+  listEnclaves: () => Promise<Event[]>
+
+  getKeyEnclaveInfo: (npub: string) => Promise<any>
+
+  uploadKeyToEnclave: (npub: string, enclavePubkey: string) => Promise<void>
+
+  deleteKeyFromEnclave: (npub: string, enclavePubkey: string) => Promise<void>
 }
 
 const defineClient = (): BackendClient => {

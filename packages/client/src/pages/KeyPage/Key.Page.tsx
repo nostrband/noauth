@@ -27,6 +27,7 @@ import { ModalConfirmLogout } from '@/components/Modal/ModalConfirmLogout/ModalC
 import { EmailConfirmationWarning } from './components/EmailConfirmationWarning'
 import { useEmailConfirmation } from './hooks/useEmailConfirmation'
 import { selectKeyByNpub } from '@/store'
+import { ModalSetupEnclave } from '@/components/Modal/ModalSetupEnclave/ModalSetupEnclave'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -146,6 +147,7 @@ const KeyPage = () => {
       <ModalSetPassword isPasswordSet={isPasswordSet} onSync={handleSetSyncedStatus} />
       <ModalRebind />
       <ModalConfirmLogout npub={npub} />
+      <ModalSetupEnclave />
     </>
   )
 }

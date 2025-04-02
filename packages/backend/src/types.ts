@@ -23,6 +23,7 @@ export interface IAllowCallbackParams {
 
 export interface Key {
   npub: string
+  pubkey: string
   ndk: NDK
   backoff: number
   signer: Signer
@@ -52,4 +53,16 @@ export interface KeyInfo {
   name?: string
   email?: string
   locked: boolean
+}
+
+export interface EnclaveData {
+  pubkey: string
+  relays: string[]
+  pcrs: string[][]
+  builder?: string
+  launcher?: string
+}
+
+export interface KeyEnclaveData {
+  enclaves: EnclaveData[]
 }

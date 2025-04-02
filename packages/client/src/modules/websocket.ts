@@ -1,6 +1,7 @@
 import { AllowType, BackendClient, BackendReply } from './client'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
+import { Event as NostrEvent } from 'nostr-tools'
 
 const DB_METHODS = [
   'listKeys',
@@ -332,6 +333,23 @@ export class ClientWebSocket implements BackendClient {
   public async ping() {
     // noop
   }
+
+  public async getKeyEnclaveInfo(npub: string) {
+    throw new Error("getKeyEnclaveInfo not implemented");
+  }
+
+  public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
+    throw new Error("uploadKeyToEnclave not implemented");
+  }
+
+  public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
+    throw new Error("deleteKeyFromEnclave not implemented");
+  }
+
+  public async listEnclaves(): Promise<NostrEvent[]> {
+    throw new Error("listEnclaves not implemented");
+  }
+
 }
 
 export const startClientWebSocket = () => new ClientWebSocket(`ws://${document.location.hostname}:8080`)

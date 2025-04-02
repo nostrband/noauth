@@ -1,0 +1,139 @@
+<html>
+
+<body>
+  <textarea id="att"></textarea>
+  <button id="btn">decode</button>
+
+  <!-- <script type="module" src="../cbor2/lib/index.js"></script> -->
+  <script src="https://unpkg.com/@peculiar/x509"></script>
+  <script type="module">
+    import { decode, encode } from "./cbor2/lib/index.js";
+    document.querySelector("#btn").onclick = async () => {
+      const text = document.querySelector("#att").value.trim();
+      console.log("text", text)
+
+      // validation logic from
+      // https://aws.amazon.com/blogs/compute/validating-attestation-documents-produced-by-aws-nitro-enclaves/
+
+      const binString = atob(text);
+      const arr = Uint8Array.from(binString, (m) => m.codePointAt(0));
+      const COSE_Sign1 = decode(arr);
+      console.log(COSE_Sign1);
+
+      // COSE_Sign1 object is an array of size 4 (protected headers, un protected headers, payload, and signature)
+      if (!Array.isArray(COSE_Sign1) || COSE_Sign1.length !== 4) throw new Error("Bad attestation");
+
+      // header size
+      if (COSE_Sign1[0].length !== 4) throw new Error("Bad attestation");
+      const ad_pheader = COSE_Sign1[0];
+      const header = decode(ad_pheader);
+      console.log("header", header)
+
+      // should be negative 35 as it maps to the P-384 curve that Nitro Enclaves use
+      if (header.get(1) !== -35) throw new Error("Bad header");
+
+      const unheader = COSE_Sign1[1];
+      // AWS Nitro Enclaves do not use unprotected headers. Therefore, the expected is a Type 5 (map) with zero items
+      if (typeof unheader !== "object" || Object.keys(unheader).length) throw new Error("Bad unprotected header");
+
+      const signature = COSE_Sign1[3];
+      console.log("signature", signature);
+      // The signature has to be a Type 2 (raw bytes) of exactly 96 bytes
+      if (signature.length !== 96) throw new Error("Bad signature");
+
+      const ad_signed = COSE_Sign1[2];
+      const payload = decode(ad_signed);
+      console.log("payload", payload);
+
+      // now check that cert presented by our enclave is valid
+      const cert = new x509.X509Certificate(payload.certificate);
+      console.log("cert", cert);
+
+      // download from https://aws-nitro-enclaves.amazonaws.com/AWS_NitroEnclaves_Root-G1.zip
+      const rootBase64 = "MIICETCCAZagAwIBAgIRAPkxdWgbkK/hHUbMtOTn+FYwCgYIKoZIzj0EAwMwSTELMAkGA1UEBhMCVVMxDzANBgNVBAoMBkFtYXpvbjEMMAoGA1UECwwDQVdTMRswGQYDVQQDDBJhd3Mubml0cm8tZW5jbGF2ZXMwHhcNMTkxMDI4MTMyODA1WhcNNDkxMDI4MTQyODA1WjBJMQswCQYDVQQGEwJVUzEPMA0GA1UECgwGQW1hem9uMQwwCgYDVQQLDANBV1MxGzAZBgNVBAMMEmF3cy5uaXRyby1lbmNsYXZlczB2MBAGByqGSM49AgEGBSuBBAAiA2IABPwCVOumCMHzaHDimtqQvkY4MpJzbolL//Zy2YlES1BR5TSksfbb48C8WBoyt7F2Bw7eEtaaP+ohG2bnUs990d0JX28TcPQXCEPZ3BABIeTPYwEoCWZEh8l5YoQwTcU/9KNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUkCW1DdkFR+eWw5b6cp3PmanfS5YwDgYDVR0PAQH/BAQDAgGGMAoGCCqGSM49BAMDA2kAMGYCMQCjfy+Rocm9Xue4YnwWmNJVA44fA0P5W2OpYow9OYCVRaEevL8uO1XYru5xtMPWrfMCMQCi85sWBbJwKKXdS6BptQFuZbT73o/gBh1qUxl/nNr12UO8Yfwr6wPLb+6NIwLz3/Y=";
+      const root = new x509.X509Certificate(rootBase64);
+      console.log("root", root);
+
+      // take root from external known good file
+      const certificates = [root];
+      // Skip the first one [0] as that is the Root CA and we want to read it from an external source
+      for (let i = 1; i < payload.cabundle.length; i++) {
+        certificates.push(new x509.X509Certificate(payload.cabundle[i]));
+      }
+      console.log("cabundle", certificates);
+
+      // build a verified chain of certificates starting 
+      // with our attestation cert and ending on the known root
+      const builder = new x509.X509ChainBuilder({
+        certificates,
+      });
+      const chain = await builder.build(cert)
+      console.log("chain", chain);
+      if (chain[0].serialNumber !== cert.serialNumber) throw new Error("Invalid cert chain");
+      if (chain[chain.length - 1].serialNumber !== root.serialNumber) throw new Error("Invalid cert chain root");
+
+      // verify timestamps
+      const now = new Date();
+      console.log("FIXME enable timestamp verification!");
+      const signatureOnly = true;
+      for (const c of chain) {
+        if (!c.verify({ signatureOnly })) throw new Error("Cert expired or invalid");
+      }
+
+      // now check that attestation was signed by the public key
+      // of the certificate
+      const algorithm = { ...cert.publicKey.algorithm, ...cert.signatureAlgorithm };
+      const publicKey = await cert.publicKey.export(algorithm, ["verify"], crypto);
+      console.log("publicKey", publicKey, algorithm);
+
+      // Recreate COSE_Sign1 structure, and serilise it into a buffer
+      // cbor_item_t * cose_sig_arr = cbor_new_definite_array(4);
+      const cose_sig_arr = [];
+      // cbor_item_t * cose_sig_arr_0_sig1 = cbor_build_string("Signature1"); 
+      const sig_header = "Signature1";
+      // cbor_item_t * cose_sig_arr_2_empty = cbor_build_bytestring(NULL, 0);
+      const empty_array = new Uint8Array();
+
+      // assert(cbor_array_push(cose_sig_arr, cose_sig_arr_0_sig1));
+      cose_sig_arr.push(sig_header);
+      // assert(cbor_array_push(cose_sig_arr, ad_pheader));
+      cose_sig_arr.push(ad_pheader);
+      // assert(cbor_array_push(cose_sig_arr, cose_sig_arr_2_empty));
+      cose_sig_arr.push(empty_array);
+      // assert(cbor_array_push(cose_sig_arr, ad_signed));
+      cose_sig_arr.push(ad_signed);
+      console.log("cose_sig_arr", cose_sig_arr);
+
+      // unsigned char sig_struct_buffer[SIG_STRUCTURE_BUFFER_S];
+      // size_t sig_struct_buffer_len = cbor_serialize(cose_sig_arr, sig_struct_buffer, SIG_STRUCTURE_BUFFER_S);
+      const sig_struct_buffer = encode(cose_sig_arr);
+      console.log("sig_struct_buffer", sig_struct_buffer);
+
+      // verify signature
+      const ok = await crypto.subtle.verify(cert.signatureAlgorithm, publicKey, signature, sig_struct_buffer);
+      console.log("signature ok", ok);
+      if (!ok) throw new Error("Invalid attestation signature");
+
+      // hm... all ok?
+
+      const hex = (array) => {
+        return Array.from(array, (byte) => {
+          return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }).join('')
+      }
+
+      // noauth admin key to import the nsec to this server
+      const public_key = payload.public_key;
+      console.log("public_key", hex(public_key));
+
+      for (const [i, b] of payload.pcrs.entries()) {
+        console.log("pcr", i, hex(b));
+      }
+
+      // this is basically the result we were looking for
+    };
+  </script>
+
+</body>
+
+</html>

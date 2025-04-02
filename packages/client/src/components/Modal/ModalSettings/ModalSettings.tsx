@@ -9,6 +9,7 @@ import { selectKeys } from '@/store'
 import { ExportKeySetting } from './components/ExportKeySetting'
 import { PasswordSetting } from './components/PasswordSetting'
 import { Button } from '@/shared/Button/Button'
+import { SecureEnclaveSetting } from './components/SecureEnclaveSetting'
 
 type ModalSettingsProps = {
   isSynced: boolean
@@ -36,6 +37,7 @@ export const ModalSettings: FC<ModalSettingsProps> = ({ isSynced, onLogout }) =>
         <Stack gap={'1rem'}>
           <PasswordSetting isSynced={isSynced} />
           <ExportKeySetting />
+          <SecureEnclaveSetting />
           <Button type="button" varianttype="secondary" onClick={onLogout}>
             Log out
           </Button>
