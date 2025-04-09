@@ -1,52 +1,53 @@
-import React, { FC, useEffect, useState } from 'react'
+import { FC, Fragment, useEffect, useState } from 'react'
 import { Stack, Typography } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
 import { useParams } from 'react-router-dom'
 import { client } from '@/modules/client'
-import { Event, nip19 } from 'nostr-tools'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { hexToBytes } from '@noble/hashes/utils'
+import { EnclaveEnvironment, getEnvironmentStatus, notEmpty, parseEnclave } from './helpers'
+import { IEnclave } from './types'
+import { SelectEnclaves } from './components/SelectEnclaves/SelectEnclaves'
+import { EnclaveCard } from './components/EnclaveCard/EnclaveCard'
+import { useToggleConfirm } from '@/hooks/useToggleConfirm'
+import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
 
 type ModalSetupEnclaveContentProps = {
   onClose: () => void
 }
 
-function parseEnclave(e: Event) {
-  try {
-    return {
-      event: e,
-      prod: !!e.tags.find((t) => t.length > 1 && t[0] === 't' && t[1] === 'prod'),
-      debug: !hexToBytes(e.tags.find((t) => t.length > 2 && t[0] === 'x' && t[2] === 'PCR0')![1]).find((c) => c !== 0),
-      builder: e.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || '',
-      launcher: e.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1] || '',
-      version: e.tags.find((t) => t.length > 1 && t[0] === 'v')?.[1] || '',
-    }
-  } catch (err) {
-    console.log('bad enclave', e, err)
-  }
+const getConfirmDescription = (env: EnclaveEnvironment) => {
+  if (env === 'dev') return 'This is development instance, are you sure?'
+  if (env === 'debug') return 'This is debug instance, your key will not be safe, are you sure?'
+  return ''
 }
 
 export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ onClose }) => {
+  const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
+
   const [status, setStatus] = useState<string>('')
   const [info, setInfo] = useState<any | undefined>()
-  const [enclaves, setEnclaves] = useState<any[]>([])
-  const notify = useEnqueueSnackbar()
+  const [enclaves, setEnclaves] = useState<IEnclave[]>([])
+
+  const [selectedEnclave, setSelectedEnclave] = useState<IEnclave | null>(null)
+
+  const { open, handleClose, handleShow } = useToggleConfirm()
 
   useEffect(() => {
-    client.listEnclaves().then((es) => setEnclaves(es.map((e) => parseEnclave(e))))
+    client.listEnclaves().then((es) => {
+      const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
+      setEnclaves(enclaves)
+    })
   }, [])
 
   useEffect(() => {
     client.getKeyEnclaveInfo(npub).then((i) => setInfo(i))
   }, [npub])
 
-  const handleUpload = async () => {
+  const handleUploadRequest = async (enclave: IEnclave) => {
     try {
-      if (!enclaves.length) throw new Error('No active enclaves')
-
       setStatus('Loading...')
-      await client.uploadKeyToEnclave(npub, enclaves[0].event.pubkey)
+      await client.uploadKeyToEnclave(npub, enclave.event.pubkey)
       notify('Successfully uploaded!', 'success')
       await new Promise((ok) => setTimeout(ok, 1000))
       onClose()
@@ -56,10 +57,22 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     }
   }
 
+  const handleUpload = () => {
+    if (!selectedEnclave) throw new Error('No active enclave')
+    const env = getEnvironmentStatus(selectedEnclave.prod, selectedEnclave.debug)
+    if (env === 'debug' || env === 'dev') return handleShow()
+    handleUploadRequest(selectedEnclave)
+  }
+
+  const handleConfirm = async () => {
+    if (!selectedEnclave) return
+    handleUploadRequest(selectedEnclave)
+    handleClose()
+  }
+
   const handleDelete = async () => {
     try {
       if (!info.enclaves.length) throw new Error('No active enclave')
-
       setStatus('Deleting...')
       await client.deleteKeyFromEnclave(npub, enclaves[0].event.pubkey)
       notify('Successfully deleted!', 'success')
@@ -71,66 +84,87 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     }
   }
 
-  // console.log("enclaves", enclaves);
-  return (
-    <Stack gap={'0.75rem'}>
-      <Typography>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
-      <Typography>
-        To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
-        Enclave. Learn more{' '}
-        <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
-          here
-        </a>
-        .
-      </Typography>
-      {info?.enclaves?.length > 0 && (
-        <>
-          <Typography>
-            Uploaded to enclave{' '}
-            <a
-              href={
-                'https://njump.me/' +
-                nip19.neventEncode({ id: info.enclaves[0].id, relays: ['wss://relay.nostr.band/all'] })
-              }
-              target="_blank"
-              rel="noreferrer"
-            >
-              {info.enclaves[0].pubkey.substring(0, 10)}...
-            </a>
-          </Typography>
-          <Button onClick={handleDelete} disabled={status !== ''}>
-            Delete from enclave
-          </Button>
-        </>
-      )}
-      {!info?.enclaves?.length && (
-        <>
-          {enclaves.map((e: any) => (
-            <div>
-              <a
-                href={'https://njump.me/' + nip19.neventEncode({ id: e.event.id, relays: ['wss://relay.nostr.band/all'] })}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {e.event.pubkey.substring(0, 10)}...
-              </a>
-            </div>
-          ))}
-          <Typography>
-            Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
-            code of enclaves listed above was reviewed and considered safe.
-          </Typography>
-          <Button onClick={handleUpload} disabled={status !== ''}>
-            Upload key
-          </Button>
-        </>
-      )}
+  console.log('enclaves', enclaves)
+  console.log('info', info)
 
-      {status && (
-        <Typography fontWeight={500} textAlign={'center'} variant="body1" color={'GrayText'}>
-          {status}
+  const hasEnclaves = info?.enclaves?.length > 0
+
+  const handleSelectEnclave = (id: string) => {
+    const enclave = enclaves.find((e) => e.event.id === id)
+    if (enclave) setSelectedEnclave(enclave)
+  }
+
+  const handleResetSelectedEnclave = () => {
+    setSelectedEnclave(null)
+  }
+
+  return (
+    <>
+      <Stack gap={'0.75rem'}>
+        <Typography textAlign={'center'}>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
+
+        <Typography>
+          To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
+          Enclave. Learn more{' '}
+          <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
+            here.
+          </a>
         </Typography>
+
+        {hasEnclaves && (
+          <Fragment>
+            <Typography>
+              <span>Uploaded to enclave</span>
+              <EnclaveCard fullWidth withBorder {...info.enclaves[0]} />
+            </Typography>
+            <Button onClick={handleDelete} disabled={status !== ''}>
+              Delete from enclave
+            </Button>
+          </Fragment>
+        )}
+
+        {!hasEnclaves && (
+          <Fragment>
+            {!selectedEnclave && enclaves.length > 0 && (
+              <SelectEnclaves enclaves={enclaves} defaultValue={enclaves[0]} onChange={handleSelectEnclave} />
+            )}
+
+            {selectedEnclave && (
+              <Stack gap={'0.5rem'} alignItems={'center'}>
+                <EnclaveCard fullWidth withBorder {...selectedEnclave} />
+                <Button varianttype="secondary" onClick={handleResetSelectedEnclave}>
+                  Change enclave
+                </Button>
+              </Stack>
+            )}
+
+            <Typography>
+              Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
+              code of enclaves listed above was reviewed and considered safe.
+            </Typography>
+            <Button onClick={handleUpload} disabled={status !== ''}>
+              Upload key
+            </Button>
+          </Fragment>
+        )}
+
+        {status && (
+          <Typography fontWeight={500} textAlign={'center'} variant="body1" color={'GrayText'}>
+            {status}
+          </Typography>
+        )}
+      </Stack>
+
+      {selectedEnclave && (
+        <ConfirmModal
+          open={open}
+          headingText="Upload enclave"
+          description={getConfirmDescription(getEnvironmentStatus(selectedEnclave.prod, selectedEnclave.debug))}
+          onCancel={handleClose}
+          onConfirm={handleConfirm}
+          onClose={handleClose}
+        />
       )}
-    </Stack>
+    </>
   )
 }

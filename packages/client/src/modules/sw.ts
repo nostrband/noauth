@@ -77,11 +77,11 @@ export class ServiceWorkerBackend extends NoauthBackend {
           .filter((p) => !!p)
       },
       isValidEnclavePCRs(pcrs: Map<number, string>) {
-        if (!pcrs.get(0)) return false;
-        const debug = !hexToBytes(pcrs.get(0)!).find(c => c !== 0);
-        console.log("ENCLAVE_DEBUG", ENCLAVE_DEBUG);
-        return ENCLAVE_DEBUG === "true" || !debug;
-      }
+        if (!pcrs.get(0)) return false
+        const debug = !hexToBytes(pcrs.get(0)!).find((c) => c !== 0)
+        console.log('ENCLAVE_DEBUG', ENCLAVE_DEBUG)
+        return ENCLAVE_DEBUG === 'true' || !debug
+      },
     }
 
     const api = new BrowserApi(global)
