@@ -30,30 +30,16 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   const [enclaves, setEnclaves] = useState<IEnclave[]>([])
   const [selectedEnclave, setSelectedEnclave] = useState<IEnclave | null>(null)
   const [status, setStatus] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const { open, handleClose, handleShow } = useToggleConfirm()
 
-  const loadListEnclaves = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       setIsLoading(true)
       const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
-      setIsLoading(false)
-    } catch (error) {
-      console.log(error)
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadListEnclaves()
-  }, [loadListEnclaves])
-
-  const loadKeyEnclaveInfo = useCallback(async () => {
-    try {
-      setIsLoading(true)
       const info = await client.getKeyEnclaveInfo(npub)
       setInfo(info)
       setIsLoading(false)
@@ -64,8 +50,8 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   }, [npub])
 
   useEffect(() => {
-    loadKeyEnclaveInfo()
-  }, [loadKeyEnclaveInfo])
+    load()
+  }, [load])
 
   const handleUploadRequest = async (enclave: IEnclave) => {
     try {
@@ -135,8 +121,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
         <Typography textAlign={'center'}>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
 
         <Typography>
-          To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
-          Enclave. Learn more{' '}
+          To enable secure reliable always-online signing, you can upload your key to a signer running inside{' '}
+          <a href="https://aws.amazon.com/ec2/nitro/nitro-enclaves/" target="_blank" rel="noreferrer">
+            AWS Nitro Enclave
+          </a>
+          . Enclave operators cannot access the code or data inside the enclave. Learn more{' '}
           <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
             here
           </a>
@@ -164,8 +153,9 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
             {selectedEnclave && <EnclaveCard fullWidth withBorder {...selectedEnclave} />}
 
             <Typography>
-              Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
-              code of enclaves listed above was reviewed and considered safe.
+              Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
+              attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
+              enclaves listed above was reviewed and considered safe.
             </Typography>
             <Button onClick={handleUpload} disabled={status !== ''}>
               Upload key
