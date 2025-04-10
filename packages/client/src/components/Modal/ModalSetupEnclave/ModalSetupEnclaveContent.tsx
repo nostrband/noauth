@@ -30,46 +30,28 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   const [enclaves, setEnclaves] = useState<IEnclave[]>([])
   const [selectedEnclave, setSelectedEnclave] = useState<IEnclave | null>(null)
   const [status, setStatus] = useState<string>('')
-  const [isLoading, setIsLoading] = useState({
-    list: false,
-    info: false,
-  })
+  const [isLoading, setIsLoading] = useState(true)
 
   const { open, handleClose, handleShow } = useToggleConfirm()
 
-  const loadListEnclaves = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      setIsLoading((prev) => ({ ...prev, list: true }))
+      setIsLoading(true)
       const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
-      setSelectedEnclave(enclaves[0] || null)
-      setIsLoading((prev) => ({ ...prev, list: false }))
-    } catch (error) {
-      console.log(error)
-      setIsLoading((prev) => ({ ...prev, list: false }))
-    }
-  }, [])
-
-  useEffect(() => {
-    loadListEnclaves()
-  }, [loadListEnclaves])
-
-  const loadKeyEnclaveInfo = useCallback(async () => {
-    try {
-      setIsLoading((prev) => ({ ...prev, info: true }))
       const info = await client.getKeyEnclaveInfo(npub)
       setInfo(info)
-      setIsLoading((prev) => ({ ...prev, info: false }))
+      setIsLoading(false)
     } catch (error) {
       console.log(error)
-      setIsLoading((prev) => ({ ...prev, info: false }))
+      setIsLoading(false)
     }
   }, [npub])
 
   useEffect(() => {
-    loadKeyEnclaveInfo()
-  }, [loadKeyEnclaveInfo])
+    load()
+  }, [load])
 
   const handleUploadRequest = async (enclave: IEnclave) => {
     try {
@@ -125,7 +107,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     if (enclave) setSelectedEnclave(enclave)
   }
 
-  if (isLoading.info || isLoading.list) {
+  if (isLoading) {
     return (
       <Box minHeight={'10rem'} display={'grid'} sx={{ placeItems: 'center' }}>
         <LoadingSpinner mode="secondary" size={'2rem'} />
@@ -139,8 +121,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
         <Typography textAlign={'center'}>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
 
         <Typography>
-          To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
-          Enclave. Learn more{' '}
+          To enable secure reliable always-online signing, you can upload your key to a signer running inside{' '}
+          <a href="https://aws.amazon.com/ec2/nitro/nitro-enclaves/" target="_blank" rel="noreferrer">
+            AWS Nitro Enclave
+          </a>
+          . Enclave operators cannot access the code or data inside the enclave. Learn more{' '}
           <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
             here
           </a>
@@ -161,7 +146,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
 
         {!hasEnclaves && (
           <Fragment>
-            {!isLoading.list && enclaves.length > 0 && (
+            {enclaves.length > 0 && (
               <SelectEnclaves
                 enclaves={enclaves}
                 value={selectedEnclave || enclaves[0]}
@@ -169,8 +154,9 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
               />
             )}
             <Typography>
-              Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
-              code of enclaves listed above was reviewed and considered safe.
+              Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
+              attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
+              enclaves listed above was reviewed and considered safe.
             </Typography>
             <Button onClick={handleUpload} disabled={status !== ''}>
               Upload key
