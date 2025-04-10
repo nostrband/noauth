@@ -1,13 +1,15 @@
 import { FC } from 'react'
 import { IEnclave } from '../../types'
-import { Chip, Divider, Stack, Typography } from '@mui/material'
+import { Chip, Divider, Link, Stack, Typography } from '@mui/material'
 
 import { EnclaveProfile } from '../EnclaveProfile/EnclaveProfile'
 import { getEnvironmentStatus, tv } from '../../helpers'
+import { nip19 } from 'nostr-tools'
 
 type EnclaveCardProps = IEnclave & {
   withBorder?: boolean
   fullWidth?: boolean
+  noLinkToExplorer?: boolean
 }
 
 export const EnclaveCard: FC<EnclaveCardProps> = ({
@@ -19,6 +21,7 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
   version,
   withBorder = false,
   fullWidth = false,
+  noLinkToExplorer = false,
 }) => {
   console.log('enclave card', event)
   const name = tv(event, 'name') || ''
@@ -33,9 +36,21 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
       borderRadius={'8px'}
     >
       <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'} flexWrap={'wrap'} justifyContent={'space-between'}>
-        <Typography fontSize={18} fontWeight={500}>
-          {name}
-        </Typography>
+        {!noLinkToExplorer ? (
+          <Link
+            target="_blank"
+            rel="noreferrer"
+            href={`https://enclaved.org/instance/${nip19.npubEncode(event.pubkey)}`}
+          >
+            <Typography fontSize={18} fontWeight={500}>
+              {name}
+            </Typography>
+          </Link>
+        ) : (
+          <Typography fontSize={18} fontWeight={500}>
+            {name}
+          </Typography>
+        )}
         <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
           <Chip variant="outlined" size="small" label={`v.${version}`} />
           <Chip variant="outlined" size="small" label={env} />
