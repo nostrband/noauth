@@ -3,6 +3,7 @@ import { Event, getPublicKey, nip44 } from 'nostr-tools'
 import { Signer } from './signer'
 import { Nip46Client } from './nip46'
 import { GlobalContext } from './global'
+import { validateInstance } from 'nostr-enclaves'
 
 const KIND_ENCLAVE = 24135
 const KIND_INSTANCE = 63793
@@ -100,7 +101,14 @@ export async function fetchEnclaves(ndk: NDK, global: GlobalContext, enclaveEven
     .filter((enc) => {
       const buildSignature = JSON.parse(enc.tags.find((t) => t.length > 1 && t[0] === 'build')?.[1] || '')
       if (!global.getEnclaveBuilderPubkeys().includes(buildSignature.pubkey)) return false
-      // FIXME verify attestation
+
+      // verify attestation
+      try {
+        validateInstance(enc as Event)
+      } catch (e) {
+        console.log('Invalid enclave', enc, e)
+        return false
+      }
 
       const pcrs = new Map<number, string>()
       enc.tags

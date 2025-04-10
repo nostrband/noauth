@@ -1937,7 +1937,7 @@ export class NoauthBackend extends EventEmitter {
 
     for (const key of this.keys) {
       const enclaveData = await this.fetchEnclaveInfo(key)
-      if (!enclaveData.enclaves.length) continue
+      if (!enclaveData?.enclaves.length) continue
 
       console.log('checking enclave for', key.npub, enclaveData)
 
