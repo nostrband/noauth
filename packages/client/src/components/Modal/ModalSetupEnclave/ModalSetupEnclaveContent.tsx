@@ -30,20 +30,24 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   const [enclaves, setEnclaves] = useState<IEnclave[]>([])
   const [selectedEnclave, setSelectedEnclave] = useState<IEnclave | null>(null)
   const [status, setStatus] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState({
+    list: false,
+    info: false,
+  })
 
   const { open, handleClose, handleShow } = useToggleConfirm()
 
   const loadListEnclaves = useCallback(async () => {
     try {
-      setIsLoading(true)
+      setIsLoading((prev) => ({ ...prev, list: true }))
       const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
-      setIsLoading(false)
+      setSelectedEnclave(enclaves[0] || null)
+      setIsLoading((prev) => ({ ...prev, list: false }))
     } catch (error) {
       console.log(error)
-      setIsLoading(false)
+      setIsLoading((prev) => ({ ...prev, list: false }))
     }
   }, [])
 
@@ -53,13 +57,13 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
 
   const loadKeyEnclaveInfo = useCallback(async () => {
     try {
-      setIsLoading(true)
+      setIsLoading((prev) => ({ ...prev, info: true }))
       const info = await client.getKeyEnclaveInfo(npub)
       setInfo(info)
-      setIsLoading(false)
+      setIsLoading((prev) => ({ ...prev, info: false }))
     } catch (error) {
       console.log(error)
-      setIsLoading(false)
+      setIsLoading((prev) => ({ ...prev, info: false }))
     }
   }, [npub])
 
@@ -121,7 +125,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     if (enclave) setSelectedEnclave(enclave)
   }
 
-  if (isLoading) {
+  if (isLoading.info || isLoading.list) {
     return (
       <Box minHeight={'10rem'} display={'grid'} sx={{ placeItems: 'center' }}>
         <LoadingSpinner mode="secondary" size={'2rem'} />
@@ -144,25 +148,26 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
         </Typography>
 
         {currentEnclave && (
-          <Fragment>
-            <Typography>
-              <span>Uploaded to enclave:</span>
+          <Stack gap={'0.75rem'}>
+            <Stack gap={'0.5rem'}>
+              <Typography textAlign={'center'}>Uploaded to enclave:</Typography>
               <EnclaveCard fullWidth withBorder {...currentEnclave} />
-            </Typography>
+            </Stack>
             <Button onClick={handleDelete} disabled={status !== ''}>
               Delete from enclave
             </Button>
-          </Fragment>
+          </Stack>
         )}
 
         {!hasEnclaves && (
           <Fragment>
-            {!selectedEnclave && enclaves.length > 0 && (
-              <SelectEnclaves enclaves={enclaves} defaultValue={enclaves[0]} onChange={handleSelectEnclave} />
+            {!isLoading.list && enclaves.length > 0 && (
+              <SelectEnclaves
+                enclaves={enclaves}
+                value={selectedEnclave || enclaves[0]}
+                onChange={handleSelectEnclave}
+              />
             )}
-
-            {selectedEnclave && <EnclaveCard fullWidth withBorder {...selectedEnclave} />}
-
             <Typography>
               Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
               code of enclaves listed above was reviewed and considered safe.

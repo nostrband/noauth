@@ -7,11 +7,11 @@ import { useResizeObserver } from 'usehooks-ts'
 
 type SelectEnclavesProps = {
   onChange: (id: string) => void
+  value: IEnclave
   enclaves: IEnclave[]
-  defaultValue?: IEnclave
 }
 
-export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, defaultValue }) => {
+export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, value }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
   const ref = useRef<HTMLDivElement>(null)
@@ -33,8 +33,8 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, de
     handleClose()
   }
 
-  console.log("defaultValue", defaultValue);
-  console.log("enclaves", enclaves);
+  console.log('defaultValue', value)
+  console.log('enclaves', enclaves)
   return (
     <>
       <Stack
@@ -46,7 +46,7 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, de
         alignItems={'center'}
         ref={ref}
       >
-        {defaultValue && <EnclaveCard fullWidth {...defaultValue} />}
+        <EnclaveCard fullWidth {...value} />
         <IconButton>
           <ExpandMoreOutlinedIcon fontSize="large" />
         </IconButton>
@@ -66,7 +66,12 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, de
         }}
       >
         {enclaves.map((option) => (
-          <MenuItem sx={{ width: width }} key={option.event.id} onClick={(event) => handleChange(option)}>
+          <MenuItem
+            selected={value.event.id === option.event.id}
+            sx={{ width: width }}
+            key={option.event.id}
+            onClick={() => handleChange(option)}
+          >
             <Stack width={'100%'}>
               <EnclaveCard fullWidth {...option} />
               <Divider />
