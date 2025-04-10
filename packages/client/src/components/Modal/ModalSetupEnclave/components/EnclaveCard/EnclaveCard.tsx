@@ -20,7 +20,7 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
   withBorder = false,
   fullWidth = false,
 }) => {
-  console.log("enclave card", event);
+  console.log('enclave card', event)
   const name = tv(event, 'name') || ''
   const env = getEnvironmentStatus(prod, debug)
 
@@ -42,16 +42,16 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
         </Stack>
       </Stack>
 
-      <Stack gap={'0.5rem 0.75rem'} direction={'row'} flexWrap={'wrap'}>
-        <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'} flexWrap={'wrap'}>
-          <Typography>Build by:</Typography>
+      <Stack gap={'0.5rem 0.75rem'} direction={'row'}>
+        <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
+          <Typography variant="body2">Build by:</Typography>
           <EnclaveProfile pubkey={builder} />
         </Stack>
 
         <Divider orientation="vertical" sx={{ height: 'inherit', width: 2 }} />
 
-        <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'} flexWrap={'wrap'}>
-          <Typography>Launched by:</Typography>
+        <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
+          <Typography variant="body2">Launched by:</Typography>
           <EnclaveProfile pubkey={launcher} />
         </Stack>
       </Stack>

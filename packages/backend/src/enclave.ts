@@ -104,10 +104,10 @@ export async function fetchEnclaves(ndk: NDK, global: GlobalContext, enclaveEven
 
       // verify attestation
       try {
-        validateInstance(enc as Event);
+        validateInstance(enc as Event)
       } catch (e) {
-        console.log("Invalid enclave", enc, e);
-        return false;
+        console.log('Invalid enclave', enc, e)
+        return false
       }
 
       const pcrs = new Map<number, string>()

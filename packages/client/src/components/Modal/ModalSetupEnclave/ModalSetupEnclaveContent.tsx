@@ -1,5 +1,5 @@
-import { FC, Fragment, useEffect, useState } from 'react'
-import { Stack, Typography } from '@mui/material'
+import { FC, Fragment, useCallback, useEffect, useState } from 'react'
+import { Box, Stack, Typography } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
 import { useParams } from 'react-router-dom'
 import { client } from '@/modules/client'
@@ -10,6 +10,7 @@ import { SelectEnclaves } from './components/SelectEnclaves/SelectEnclaves'
 import { EnclaveCard } from './components/EnclaveCard/EnclaveCard'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
+import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 
 type ModalSetupEnclaveContentProps = {
   onClose: () => void
@@ -25,24 +26,46 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
 
-  const [status, setStatus] = useState<string>('')
   const [info, setInfo] = useState<any | undefined>()
   const [enclaves, setEnclaves] = useState<IEnclave[]>([])
-
   const [selectedEnclave, setSelectedEnclave] = useState<IEnclave | null>(null)
+  const [status, setStatus] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const { open, handleClose, handleShow } = useToggleConfirm()
 
-  useEffect(() => {
-    client.listEnclaves().then((es) => {
+  const loadListEnclaves = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
-    })
+      setIsLoading(false)
+    } catch (error) {
+      console.log(error)
+      setIsLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    client.getKeyEnclaveInfo(npub).then((i) => setInfo(i))
+    loadListEnclaves()
+  }, [loadListEnclaves])
+
+  const loadKeyEnclaveInfo = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const info = await client.getKeyEnclaveInfo(npub)
+      setInfo(info)
+      setIsLoading(false)
+    } catch (error) {
+      console.log(error)
+      setIsLoading(false)
+    }
   }, [npub])
+
+  useEffect(() => {
+    loadKeyEnclaveInfo()
+  }, [loadKeyEnclaveInfo])
 
   const handleUploadRequest = async (enclave: IEnclave) => {
     try {
@@ -98,8 +121,12 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     if (enclave) setSelectedEnclave(enclave)
   }
 
-  const handleResetSelectedEnclave = () => {
-    setSelectedEnclave(null)
+  if (isLoading) {
+    return (
+      <Box minHeight={'10rem'} display={'grid'} sx={{ placeItems: 'center' }}>
+        <LoadingSpinner mode="secondary" size={'2rem'} />
+      </Box>
+    )
   }
 
   return (
@@ -134,14 +161,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
               <SelectEnclaves enclaves={enclaves} defaultValue={enclaves[0]} onChange={handleSelectEnclave} />
             )}
 
-            {selectedEnclave && (
-              <Stack gap={'0.5rem'} alignItems={'center'}>
-                <EnclaveCard fullWidth withBorder {...selectedEnclave} />
-                <Button varianttype="secondary" onClick={handleResetSelectedEnclave}>
-                  Change enclave
-                </Button>
-              </Stack>
-            )}
+            {selectedEnclave && <EnclaveCard fullWidth withBorder {...selectedEnclave} />}
 
             <Typography>
               Enclaves provide cryptographic attestation for the exact version of the reproducible server-side code. The
