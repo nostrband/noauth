@@ -74,8 +74,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     try {
       if (!info.enclaves.length) throw new Error('No active enclave')
       setStatus('Deleting...')
-      await client.deleteKeyFromEnclave(npub, enclaves[0].event.pubkey)
+      for (const e of info.enclaves) {
+        await client.deleteKeyFromEnclave(npub, e.pubkey)
+      }
       notify('Successfully deleted!', 'success')
+      // let user notice changes
       await new Promise((ok) => setTimeout(ok, 1000))
       onClose()
     } catch (error) {
@@ -88,6 +91,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   console.log('info', info)
 
   const hasEnclaves = info?.enclaves?.length > 0
+  const currentEnclave = hasEnclaves ? enclaves?.find((e) => e.event.pubkey === info?.enclaves[0].pubkey) : undefined
 
   const handleSelectEnclave = (id: string) => {
     const enclave = enclaves.find((e) => e.event.id === id)
@@ -107,15 +111,16 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
           To enable secure always-online reliable signing, you can upload your key to our signer running on AWS Nitro
           Enclave. Learn more{' '}
           <a href="https://github.com/nostrband/noauth-enclaved/" target="_blank" rel="noreferrer">
-            here.
+            here
           </a>
+          .
         </Typography>
 
-        {hasEnclaves && (
+        {currentEnclave && (
           <Fragment>
             <Typography>
-              <span>Uploaded to enclave</span>
-              <EnclaveCard fullWidth withBorder {...info.enclaves[0]} />
+              <span>Uploaded to enclave:</span>
+              <EnclaveCard fullWidth withBorder {...currentEnclave} />
             </Typography>
             <Button onClick={handleDelete} disabled={status !== ''}>
               Delete from enclave
@@ -158,7 +163,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
       {selectedEnclave && (
         <ConfirmModal
           open={open}
-          headingText="Upload enclave"
+          headingText="Upload key to enclave"
           description={getConfirmDescription(getEnvironmentStatus(selectedEnclave.prod, selectedEnclave.debug))}
           onCancel={handleClose}
           onConfirm={handleConfirm}

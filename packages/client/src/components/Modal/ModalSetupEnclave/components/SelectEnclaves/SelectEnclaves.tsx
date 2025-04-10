@@ -33,6 +33,8 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, de
     handleClose()
   }
 
+  console.log("defaultValue", defaultValue);
+  console.log("enclaves", enclaves);
   return (
     <>
       <Stack

@@ -20,6 +20,7 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
   withBorder = false,
   fullWidth = false,
 }) => {
+  console.log("enclave card", event);
   const name = tv(event, 'name') || ''
   const env = getEnvironmentStatus(prod, debug)
 
