@@ -40,6 +40,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
       const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
+      setSelectedEnclave(enclaves[0] || null)
       const info = await client.getKeyEnclaveInfo(npub)
       setInfo(info)
       setIsLoading(false)
@@ -133,25 +134,26 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
         </Typography>
 
         {currentEnclave && (
-          <Fragment>
-            <Typography>
-              <span>Uploaded to enclave:</span>
+          <Stack gap={'0.75rem'}>
+            <Stack gap={'0.5rem'}>
+              <Typography textAlign={'center'}>Uploaded to enclave:</Typography>
               <EnclaveCard fullWidth withBorder {...currentEnclave} />
-            </Typography>
+            </Stack>
             <Button onClick={handleDelete} disabled={status !== ''}>
               Delete from enclave
             </Button>
-          </Fragment>
+          </Stack>
         )}
 
         {!hasEnclaves && (
           <Fragment>
-            {!selectedEnclave && enclaves.length > 0 && (
-              <SelectEnclaves enclaves={enclaves} defaultValue={enclaves[0]} onChange={handleSelectEnclave} />
+            {enclaves.length > 0 && (
+              <SelectEnclaves
+                enclaves={enclaves}
+                value={selectedEnclave || enclaves[0]}
+                onChange={handleSelectEnclave}
+              />
             )}
-
-            {selectedEnclave && <EnclaveCard fullWidth withBorder {...selectedEnclave} />}
-
             <Typography>
               Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
               attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
