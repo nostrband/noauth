@@ -73,7 +73,7 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, va
             onClick={() => handleChange(option)}
           >
             <Stack width={'100%'}>
-              <EnclaveCard fullWidth noLinkToExplorer={true} {...option} />
+              <EnclaveCard fullWidth noPing={true} noLinkToExplorer={true} {...option} />
               <Divider />
             </Stack>
           </MenuItem>

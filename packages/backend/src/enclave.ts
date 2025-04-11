@@ -1,5 +1,5 @@
-import NDK, { NDKEvent, NDKNostrRpc, NDKRelaySet, NDKRpcResponse, NDKSigner, NostrEvent } from '@nostr-dev-kit/ndk'
-import { Event, getPublicKey, nip44 } from 'nostr-tools'
+import NDK, { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk'
+import { Event, getPublicKey } from 'nostr-tools'
 import { Signer } from './signer'
 import { Nip46Client } from './nip46'
 import { GlobalContext } from './global'
@@ -27,12 +27,14 @@ export class EnclaveClient {
   }
 
   public async ping(timeout = 1000) {
+    const start = Date.now();
     const pong = await this.client.send({
       method: 'ping',
       params: [],
       timeout,
     })
     if (pong !== 'pong') throw new Error('Bad pong')
+    return Date.now() - start;
   }
 
   public async hasKey() {
