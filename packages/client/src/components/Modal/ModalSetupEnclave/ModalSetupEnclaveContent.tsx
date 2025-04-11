@@ -40,6 +40,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
       const es = await client.listEnclaves()
       const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
       setEnclaves(enclaves)
+      setSelectedEnclave(enclaves[0] || null)
       const info = await client.getKeyEnclaveInfo(npub)
       setInfo(info)
       setIsLoading(false)
