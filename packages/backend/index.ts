@@ -1,4 +1,5 @@
 export * from './src/backend'
+export * from './src/enclave'
 export * from './src/types'
 export * from './src/const'
 export * from './src/global'
