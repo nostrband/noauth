@@ -47,6 +47,7 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
       .ping()
       .then((p) => setPing(p))
       .catch(() => setPing(-1))
+      .finally(() => client.dispose())
   }, [event, noPing])
 
   return (
