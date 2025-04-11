@@ -7,6 +7,9 @@ export const ADMIN_DOMAIN = process.env.REACT_APP_ADMIN_DOMAIN
 export const RELAY = process.env.REACT_APP_RELAY || 'wss://relay.nsec.app'
 export const NIP46_RELAYS = [RELAY]
 export const NSEC_APP_NPUB = process.env.REACT_APP_NSEC_APP_NPUB
+export const ENCLAVE_LAUNCHER_PUBKEYS =
+  process.env.REACT_APP_ENCLAVE_LAUNCHER_PUBKEYS || '3356de61b39647931ce8b2140b2bab837e0810c0ef515bbe92de0248040b8bdd'
+export const ENCLAVE_DEBUG = process.env.REACT_APP_ENCLAVE_DEBUG || ""
 
 export const RELOAD_STORAGE_KEY = 'reload'
 

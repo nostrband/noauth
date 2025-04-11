@@ -1,4 +1,4 @@
-import { NDKEvent, NostrEvent } from '@nostr-dev-kit/ndk'
+import { NDKEvent } from '@nostr-dev-kit/ndk'
 import { nip19 } from 'nostr-tools'
 import { Key } from './types'
 import { NostrPowEvent, minePow } from './pow'
@@ -6,7 +6,7 @@ import { GlobalContext } from './global'
 import { sha256 } from '@noble/hashes/sha256'
 import { bytesToHex } from '@noble/hashes/utils'
 
-export async function sendPost({
+export async function fetchJson({
   url,
   method,
   headers,
@@ -17,14 +17,16 @@ export async function sendPost({
   headers: any
   body: string
 }) {
-  const r = await fetch(url, {
+  const options: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
       ...headers,
     },
-    body,
-  })
+  }
+  if (body) options.body = body
+
+  const r = await fetch(url, options)
   if (r.status !== 200 && r.status !== 201) {
     console.log('Fetch error', url, method, r.status)
     const body = await r.json()
@@ -34,7 +36,7 @@ export async function sendPost({
   return await r.json()
 }
 
-export async function sendPostAuthd({
+export async function sendAuthd({
   global,
   key,
   url,
@@ -45,8 +47,8 @@ export async function sendPostAuthd({
   global: GlobalContext
   key: Key
   url: string
-  method: string
-  body: string
+  method?: string
+  body?: string
   pow?: number
 }) {
   const { data: pubkey } = nip19.decode(key.npub)
@@ -76,7 +78,7 @@ export async function sendPostAuthd({
 
   const auth = await global.btoa(JSON.stringify(authEvent.rawEvent()))
 
-  return await sendPost({
+  return await fetchJson({
     url,
     method,
     headers: {
@@ -91,5 +93,12 @@ export function isNip04(ciphertext: string) {
   if (l < 28) return false
   return (
     ciphertext[l - 28] === '?' && ciphertext[l - 27] === 'i' && ciphertext[l - 26] === 'v' && ciphertext[l - 25] === '='
+  )
+}
+
+// https://stackoverflow.com/a/46181
+export function validateEmail(email: string) {
+  return email.match(
+    /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   )
 }

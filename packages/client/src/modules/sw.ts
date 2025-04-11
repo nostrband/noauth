@@ -1,6 +1,16 @@
-import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
+import {
+  ADMIN_DOMAIN,
+  DOMAIN,
+  ENCLAVE_DEBUG,
+  ENCLAVE_LAUNCHER_PUBKEYS,
+  NIP46_RELAYS,
+  NOAUTHD_URL,
+  NSEC_APP_NPUB,
+  WEB_PUSH_PUBKEY,
+} from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
-import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
+import { hexToBytes } from '@noble/hashes/utils'
 // @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
@@ -16,7 +26,7 @@ class BrowserApi extends Api {
     const method = 'POST'
     const url = `${NOAUTHD_URL}/subscribe`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -60,6 +70,28 @@ export class ServiceWorkerBackend extends NoauthBackend {
       },
       getNip46Relays() {
         return NIP46_RELAYS
+      },
+      getEnclaveBuilderPubkeys() {
+        return ENCLAVE_LAUNCHER_PUBKEYS.split(',')
+          .map((p) => p.trim())
+          .filter((p) => !!p)
+      },
+      isValidEnclavePCRs(pcrs: Map<number, string>) {
+        if (!pcrs.get(0)) return false
+        const debug = !hexToBytes(pcrs.get(0)!).find((c) => c !== 0)
+        console.log('ENCLAVE_DEBUG', ENCLAVE_DEBUG)
+        if (ENCLAVE_DEBUG === 'true') return true
+        if (debug) return false
+
+        // current dev release of noauth-enclaved
+        return (
+          pcrs.get(0) ===
+            '2adc99990f8c26accf04e319fd7024381f1d4b460d4b4c2309c96a3260969994011484eb8038e04993ed95e7c9c75918' &&
+          pcrs.get(1) ===
+            '4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493' &&
+          pcrs.get(2) ===
+            '0044b92a9dcb2762d14cd51e63ac0e8f122ef1b3c9fdf67774e614315abe210b260dee01ac665e0a93953ebacd3ed21e'
+        )
       },
     }
 

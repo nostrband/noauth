@@ -16,6 +16,11 @@ export enum MODAL_PARAMS_KEYS {
   IMPORT_CONNECT = 'import-connect',
   REBIND = 'rebind',
   CONFIRM_LOGOUT = 'confirm-logout',
+  EMAIL_LOGIN = 'email-login',
+  SIGNING_UP = 'signing-up',
+  CONFIRM_EMAIL = 'confirm-email',
+  ENCLAVE_SETUP = 'enclave-setup',
+  KEY_NOT_FOUND = 'key-not-found',
 }
 
 export enum EXPLANATION_MODAL_KEYS {

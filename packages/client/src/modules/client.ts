@@ -2,6 +2,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
+import { Event } from 'nostr-tools'
 
 export interface BackendReply {
   id: number
@@ -56,6 +57,8 @@ export interface BackendClient {
 
   getConnectToken: (npub: string, subNpub?: string) => Promise<DbConnectToken>
 
+  checkName: (name: string) => Promise<string>
+
   editName: (npub: string, newName: string) => Promise<void>
 
   transferName: (npub: string, name: string, receiverNpub: string) => Promise<void>
@@ -66,13 +69,23 @@ export interface BackendClient {
 
   importKeyIframe: (nsec: string, appNpub: string) => Promise<KeyInfo>
 
-  fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo>
+  fetchKey: (npub: string, passphrase: string, name: string) => Promise<KeyInfo | undefined>
+
+  fetchKeyByEmail: (email: string, passphrase: string) => Promise<KeyInfo | undefined>
+
+  checkEmailStatus: (npub: string, email: string) => Promise<boolean>
+
+  confirmEmail: (npub: string, email: string, code: string, passphrase: string) => Promise<void>
+
+  setEmail: (npub: string, email: string) => Promise<void>
 
   exportKey: (npub: string) => Promise<string>
 
   nostrConnect: (npub: string, nostrconnect: string, options: any) => Promise<string>
 
   generateKey: (name: string, passphrase: string) => Promise<KeyInfo>
+
+  generateKeyForEmail: (name: string, email: string) => Promise<KeyInfo>
 
   generateKeyConnect: (params: CreateConnectParams) => Promise<string>
 
@@ -103,6 +116,14 @@ export interface BackendClient {
   waitKey: (npub: string) => Promise<void>
 
   deleteKey: (npub: string) => Promise<void>
+
+  listEnclaves: () => Promise<Event[]>
+
+  getKeyEnclaveInfo: (npub: string) => Promise<any>
+
+  uploadKeyToEnclave: (npub: string, enclavePubkey: string) => Promise<void>
+
+  deleteKeyFromEnclave: (npub: string, enclavePubkey: string) => Promise<void>
 }
 
 const defineClient = (): BackendClient => {
