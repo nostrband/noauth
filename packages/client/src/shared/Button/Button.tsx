@@ -22,6 +22,14 @@ const StyledButton = styled(
     '@media screen and (max-width: 320px)': {
       padding: '0.25rem 0.75rem',
     },
+    '& .MuiButton-icon.MuiButton-startIcon': {
+      marginLeft: 0,
+      marginRight: 6,
+    },
+    '& .MuiButton-icon.MuiButton-endIcon': {
+      marginRight: 0,
+      marginLeft: 6,
+    },
   }
   if (varianttype === 'secondary') {
     return {

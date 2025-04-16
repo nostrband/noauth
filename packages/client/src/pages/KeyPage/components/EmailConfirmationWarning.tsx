@@ -3,6 +3,7 @@ import { Warning } from '@/components/Warning/Warning'
 import { CircularProgress, Stack, styled, Typography, TypographyProps } from '@mui/material'
 import AlternateEmailOutlinedIcon from '@mui/icons-material/AlternateEmailOutlined'
 import { Button } from '@/shared/Button/Button'
+import ForwardToInboxOutlinedIcon from '@mui/icons-material/ForwardToInboxOutlined'
 
 type EmailConfirmationWarningProps = {
   isLoading: boolean
@@ -24,7 +25,7 @@ export const EmailConfirmationWarning: FC<EmailConfirmationWarningProps> = ({ is
             </StyledHint>
           </Stack>
 
-          <Button onClick={onResend} disabled={isLoading}>
+          <Button endIcon={<ForwardToInboxOutlinedIcon />} onClick={onResend} disabled={isLoading}>
             Resend
           </Button>
         </Stack>

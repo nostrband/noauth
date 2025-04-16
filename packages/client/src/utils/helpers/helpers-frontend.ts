@@ -40,3 +40,7 @@ export async function getReqDetails(req: DbPending | DbHistory) {
     return 'Error: Failed to parse request parameters'
   }
 }
+
+export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
+  return value !== null && value !== undefined
+}
