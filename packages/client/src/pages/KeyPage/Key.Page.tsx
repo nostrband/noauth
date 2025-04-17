@@ -78,6 +78,7 @@ const KeyPage = () => {
 
   const handleSetEnclaveUploaded = useCallback(async () => {
     const info = await client.getKeyEnclaveInfo(npub)
+    console.log("getKeyEnclaveInfo", info);
     const notUploaded = !info.enclaves.length
     const shownBefore = info.badgeHidden
     if (shownBefore) setShowSetupEnclaveWarning(false)

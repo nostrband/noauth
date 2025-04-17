@@ -51,7 +51,10 @@ export const UploadEnclaveWarning: FC<UploadEnclaveWarningProps> = ({ npub, onBa
           </Stack>
 
           <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-            <Button endIcon={<SettingsApplicationsOutlinedIcon />} onClick={handleSetupClick}>
+            <Button
+              // endIcon={<SettingsApplicationsOutlinedIcon />}
+              onClick={handleSetupClick}
+            >
               Set up
             </Button>
             <IconButton onClick={handleCloseWarning} disabled={isPending}>
