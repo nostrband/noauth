@@ -22,6 +22,8 @@ import { InputsContainer } from './styled'
 import { getNameHelperTextProps } from './utils'
 import { fetchNip05 } from '@noauth/common'
 import { client } from '@/modules/client'
+import { getEnvironmentStatus, parseEnclave } from '../ModalSetupEnclave/helpers'
+import { notEmpty } from '@/utils/helpers/helpers-frontend'
 
 const steps = ['Username field', 'Password fields']
 
@@ -87,6 +89,16 @@ export const ModalSignUp = () => {
     checkIsUsernameAvailable()
   }, [checkIsUsernameAvailable])
 
+  const loadEnclaves = useCallback(async () => {
+    try {
+      const es = await client.listEnclaves()
+      const enclaves = es.map((e) => parseEnclave(e)).filter(notEmpty)
+      return enclaves
+    } catch {
+      return []
+    }
+  }, [])
+
   const submitHandler = async (values: FormInputType) => {
     hidePassword()
     hideConfirmPassword()
@@ -96,6 +108,10 @@ export const ModalSignUp = () => {
     try {
       setIsLoading(true)
       const k = await client.generateKey(username.trim(), password.trim())
+      const enclaves = await loadEnclaves()
+      const filteredEnclaves = enclaves.filter((e) => getEnvironmentStatus(e.prod, e.debug) === 'prod')
+      if (filteredEnclaves.length > 0) await client.uploadKeyToEnclave(k.npub, enclaves[0].event.pubkey)
+
       if (k.name) {
         notify(`Account created for "${k.name}"`, 'success')
         reset()

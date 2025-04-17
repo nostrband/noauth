@@ -28,6 +28,8 @@ import { EmailConfirmationWarning } from './components/EmailConfirmationWarning'
 import { useEmailConfirmation } from './hooks/useEmailConfirmation'
 import { selectKeyByNpub } from '@/store'
 import { ModalSetupEnclave } from '@/components/Modal/ModalSetupEnclave/ModalSetupEnclave'
+import { UploadEnclaveWarning } from './components/UploadEnclaveWarning'
+import { useEventListener } from 'usehooks-ts'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -38,6 +40,8 @@ const KeyPage = () => {
 
   const [isSynced, setIsSynced] = useState(false)
   const [isCheckingSync, setIsChecking] = useState(true)
+  const [showSetupEnclaveWarning, setShowSetupEnclaveWarning] = useState(false)
+
   const handleStopChecking = () => setIsChecking(false)
 
   const { handleOpen, createHandleCloseReplace } = useModalSearchParams()
@@ -72,6 +76,23 @@ const KeyPage = () => {
     handleSetSyncedStatus()
   }, [handleSetSyncedStatus])
 
+  const handleSetEnclaveUploaded = useCallback(async () => {
+    const info = await client.getKeyEnclaveInfo(npub)
+    console.log("getKeyEnclaveInfo", info);
+    const notUploaded = !info.enclaves.length
+    const shownBefore = info.badgeHidden
+    if (shownBefore) setShowSetupEnclaveWarning(false)
+    else setShowSetupEnclaveWarning(notUploaded)
+  }, [npub])
+
+  useEventListener('hide-badge' as keyof WindowEventMap, () => {
+    handleSetEnclaveUploaded()
+  })
+
+  useEffect(() => {
+    handleSetEnclaveUploaded()
+  }, [handleSetEnclaveUploaded])
+
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
     searchParams.set('npub', npub)
@@ -92,7 +113,8 @@ const KeyPage = () => {
   return (
     <>
       <Stack gap={'1rem'} height={'100%'}>
-        {showWarning && (
+        {showSetupEnclaveWarning && <UploadEnclaveWarning npub={npub} onBadgeClose={handleSetEnclaveUploaded} />}
+        {showWarning && !showSetupEnclaveWarning && (
           <BackgroundSigningWarning isEnabling={isEnabling} onEnableBackSigning={handleEnableBackground} />
         )}
         {showEmailWarning && (

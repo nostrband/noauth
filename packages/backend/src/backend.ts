@@ -404,8 +404,7 @@ export class NoauthBackend extends EventEmitter {
     const localKey = await this.keysModule.generateLocalKey()
     const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
 
-    // @ts-ignore
-    const dbKey: DbKey = { npub, name, enckey, localKey }
+    const dbKey: DbKey = { npub, name, enckey, localKey: localKey as CryptoKey }
 
     // nip49
     if (passphrase) dbKey.ncryptsec = encryptNip49(hexToBytes(sk), passphrase, 16, nsec ? 0x01 : 0x00)
@@ -1947,7 +1946,7 @@ export class NoauthBackend extends EventEmitter {
       const successEnclaves: EnclaveData[] = []
       for (const ed of enclaveData.enclaves) {
         const client = new EnclaveClient(ed.pubkey, ed.relays, key.signer)
-        let has = false;
+        let has = false
         try {
           has = await client.hasKey()
         } catch {}
@@ -2006,7 +2005,7 @@ export class NoauthBackend extends EventEmitter {
       }
 
       // update our enclave list
-      console.log("updated enclave list", key.npub, successEnclaves);
+      console.log('updated enclave list', key.npub, successEnclaves)
       await this.publishEnclaveEvent(key, successEnclaves)
     }
   }
@@ -2015,9 +2014,12 @@ export class NoauthBackend extends EventEmitter {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('No key')
 
+    const badgeHidden = await this.dbi.getEnclaveBadgeHidden(key.npub)
+
     const info = {
       npub,
       enclaves: [] as any[],
+      badgeHidden,
     }
 
     const enclaveData = await this.fetchEnclaveInfo(key)
@@ -2061,8 +2063,8 @@ export class NoauthBackend extends EventEmitter {
       builder: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1],
       launcher: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'launcher')?.[1],
     }
-    if (!info.relays.length) info.relays = [...this.global.getNip46Relays()];
-    return info;
+    if (!info.relays.length) info.relays = [...this.global.getNip46Relays()]
+    return info
   }
 
   private async publishEnclaveEvent(key: Key, enclaves: EnclaveData[]) {
