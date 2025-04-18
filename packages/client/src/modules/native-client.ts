@@ -3,6 +3,7 @@ import { AllowType, BackendClient, BackendReply } from './client'
 import { NativeBackend } from './native-backend'
 import { DbApp, DbConnectToken } from '@noauth/common'
 import { CreateConnectParams, KeyInfo } from '@noauth/backend'
+import { Event } from 'nostr-tools'
 
 class NativeClient implements BackendClient {
   private backend: NativeBackend
@@ -229,8 +230,53 @@ class NativeClient implements BackendClient {
   public getAppLastActiveRecord(app: DbApp) {
     return dbi.getAppLastActiveRecord(app)
   }
+
   public async getSynced(npub: string) {
     return await dbi.getSynced(npub)
+  }
+
+  public async checkEmailStatus(npub: string, email: string) {
+    return this.call<boolean>('checkEmailStatus', [], npub, email)
+  }
+
+  public async checkName(name: string) {
+    return this.call<string>('checkName', [], name)
+  }
+
+  public async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
+    return this.call('confirmEmail', [], npub, email, code, passphrase)
+  }
+
+  public async deleteKey(npub: string) {
+    return this.call<void>('deleteKey', [], npub)
+  }
+
+  public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('deleteKeyFromEnclave', [], npub, enclavePubkey)
+  }
+
+  public async fetchKeyByEmail(email: string, passphrase: string) {
+    return this.call<KeyInfo | undefined>('fetchKeyByEmail', [], email, passphrase)
+  }
+
+  public async generateKeyForEmail(name: string, email: string) {
+    return this.call<KeyInfo>('generateKeyForEmail', [], name, email)
+  }
+
+  public async getKeyEnclaveInfo(npub: string) {
+    return this.call<any>('getKeyEnclaveInfo', [], npub)
+  }
+
+  public async listEnclaves() {
+    return this.call<Event[]>('listEnclaves', [])
+  }
+
+  public async setEmail(npub: string, email: string) {
+    return this.call('setEmail', [], npub, email)
+  }
+
+  public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('uploadKeyToEnclave', [], npub, enclavePubkey)
   }
 }
 

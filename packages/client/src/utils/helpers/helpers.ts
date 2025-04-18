@@ -2,8 +2,6 @@ import { nip19 } from 'nostr-tools'
 import { ACTIONS, DOMAIN, EVENT_KINDS, NOAUTHD_URL, RANGED_EVENT_KINDS } from '../consts'
 import { DbHistory, DbPending, DbPerm } from '@noauth/common'
 import { fetchNip05, getSignReqKind } from '@noauth/common'
-import { PushNotifications } from '@capacitor/push-notifications'
-import { NativeSettings, IOSSettings } from 'capacitor-native-settings'
 import { Metadata } from '@/types/general'
 
 export function getNotificationPermission() {
@@ -34,23 +32,7 @@ export async function askNotificationPermission() {
 }
 
 export async function askNativeNotificationPermission() {
-  try {
-    const permStatus = await PushNotifications.requestPermissions()
-    if (permStatus.receive === 'granted') {
-      return true
-    }
-    if (permStatus.receive === 'denied') {
-      NativeSettings.openIOS({
-        option: IOSSettings.App,
-      })
-      return false
-    } else {
-      return false
-    }
-  } catch (error) {
-    console.log('failed to request permission', error)
-    return false
-  }
+  return false
 }
 
 export function permListToPerms(perms: string): string[] {

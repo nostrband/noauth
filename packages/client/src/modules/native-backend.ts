@@ -1,7 +1,6 @@
 import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB } from '@/utils/consts'
-import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
 import { dbi } from '@noauth/common/dist/dbi-client'
-import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications'
 import { BackendReply } from './client'
 
 class BrowserApi extends Api {
@@ -16,7 +15,7 @@ class BrowserApi extends Api {
     const method = 'POST'
     const url = `${NOAUTHD_URL}/subscribe`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -31,7 +30,6 @@ export class NativeBackend extends NoauthBackend {
   // private notifCallback: (() => void) | null = null
   // private lastPushTime = 0
   private onUIUpdate: () => void = () => undefined
-  private pushToken?: Token
 
   constructor() {
     let self: NativeBackend
@@ -61,6 +59,12 @@ export class NativeBackend extends NoauthBackend {
       getNip46Relays() {
         return NIP46_RELAYS
       },
+      getEnclaveBuilderPubkeys: function (): string[] {
+        throw new Error('Function not implemented.')
+      },
+      isValidEnclavePCRs: function (pcrs: Map<number, string>): boolean {
+        throw new Error('Function not implemented.')
+      },
     }
 
     const api = new BrowserApi(global)
@@ -70,63 +74,6 @@ export class NativeBackend extends NoauthBackend {
     this.browserApi = api
 
     this.reloadUI()
-
-    console.log('register push')
-    PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-      console.log('got push', notification)
-      // self.setNotifCallback(ok)
-      this.onPush({
-        data: {
-          json: () => {
-            return notification.data
-          },
-        },
-      })
-    })
-
-    PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
-      console.log('got push action', action)
-      // FIXME now what?
-    })
-
-    //     swg.addEventListener(
-    //       'notificationclick',
-    //       (event) => {
-    //         event.notification.close()
-    //         if (event.action.startsWith('allow:')) {
-    //           self.confirm(event.action.split(':')[1], true, false)
-    //         } else if (event.action.startsWith('allow-remember:')) {
-    //           self.confirm(event.action.split(':')[1], true, true)
-    //         } else if (event.action.startsWith('disallow:')) {
-    //           self.confirm(event.action.split(':')[1], false, false)
-    //         } else {
-    //           event.waitUntil(
-    //             self.swg.clients.matchAll({ type: 'window' }).then((clientList) => {
-    //               console.log('clients', clientList.length)
-    //               // FIXME find a client that has our
-    //               // key page
-    //               for (const client of clientList) {
-    //                 console.log('client', client.url)
-    //                 if (new URL(client.url).pathname === '/' && 'focus' in client) {
-    //                   client.focus()
-    //                   return
-    //                 }
-    //               }
-
-    //               // confirm screen url
-    //               if (!event.notification.data) return
-    //               const npub = event.notification.data.req ? event.notification.data.req.npub : event.notification.data.npub
-
-    //               if (npub) {
-    //                 const url = `${self.swg.location.origin}/key/${npub}`
-    //                 self.swg.clients.openWindow(url)
-    //               }
-    //             })
-    //           )
-    //         }
-    //       },
-    //       false // ???
-    //     )
   }
 
   public async onMessageEvent(data: any, onReply: (data: BackendReply) => void) {
@@ -157,73 +104,12 @@ export class NativeBackend extends NoauthBackend {
     this.onUIUpdate = onUIUpdate
   }
 
-  private async reloadUI() {
-    // const clients = await this.swg.clients.matchAll({
-    //   includeUncontrolled: true,
-    // })
-    // console.log('reloadUI clients', clients.length)
-    // for (const client of clients) {
-    //   client.postMessage({ result: 'reload' })
-    // }
-  }
+  private async reloadUI() {}
 
   // https://web.dev/articles/push-notifications-common-notification-patterns#the_exception_to_the_rule
-  protected isClientFocused() {
-    // return this.swg.clients
-    //   .matchAll({
-    //     type: 'window',
-    //     includeUncontrolled: true,
-    //   })
-    //   .then((windowClients) => {
-    //     let clientIsFocused = false
-    //     for (let i = 0; i < windowClients.length; i++) {
-    //       const windowClient = windowClients[i]
-    //       if (windowClient.focused) {
-    //         clientIsFocused = true
-    //         break
-    //       }
-    //     }
-    //     return clientIsFocused
-    //   })
-  }
+  protected isClientFocused() {}
 
-  protected async notifyNpub(npub: string) {
-    // if (await this.isClientFocused()) return
-    // // annoying when several pushes show up too fast
-    // const minInterval = 1000
-    // const interval = Date.now() - this.lastPushTime
-    // if (interval < minInterval) await new Promise((ok) => setTimeout(ok, minInterval - interval))
-    // // remember
-    // this.lastPushTime = Date.now()
-    // const tag = npub
-    // try {
-    //   let show = true
-    //   if (!this.isSafari()) {
-    //     const notifs = await this.swg.registration.getNotifications({
-    //       tag,
-    //     })
-    //     show = !notifs.length
-    //   }
-    //   if (show) {
-    //     const icon = '/favicon-32x32.png'
-    //     const title = this.getNpubName(npub)
-    //     const body = `Processed request.`
-    //     await this.swg.registration.showNotification(title, {
-    //       body,
-    //       tag,
-    //       silent: true,
-    //       icon,
-    //       data: { npub },
-    //     })
-    //   }
-    // } catch (e) {
-    //   console.log('failed to show notification', e)
-    // }
-    // // unlock the onPush to let browser know we're done,
-    // // FIXME what if it shuts us down immediately?
-    // if (this.notifCallback) this.notifCallback()
-    // this.notifCallback = null
-  }
+  protected async notifyNpub(npub: string) {}
 
   protected async updateUI() {
     this.onUIUpdate()
@@ -247,41 +133,13 @@ export class NativeBackend extends NoauthBackend {
   }
 
   private async getPushToken() {
-    if (this.pushToken) return Promise.resolve(this.pushToken)
-
-    return await new Promise<{ value: string } | undefined>(async (ok) => {
-      PushNotifications.addListener('registration', (token: { value: string }) => {
-        this.pushToken = token
-        ok(token)
-      })
-      PushNotifications.addListener('registrationError', (error: any) => {
-        console.log('error in PushNotifications.register', error)
-        ok(undefined)
-      })
-      await PushNotifications.register()
-    })
+    return { value: '' }
   }
 
   protected async subscribeAllKeys(): Promise<void> {
     await new Promise((ok) => setTimeout(ok, 10000))
-
     console.log('push subscribeAllKeys')
-
-    // returns token if perms are granted and registration is successful
-    const token = await this.getPushToken()
-    console.log('push token', token)
-    if (token) {
-      await PushNotifications.removeAllDeliveredNotifications()
-
-      // subscribe in the background to avoid blocking
-      // the request processing
-      for (const npub of this.getUnlockedNpubs()) this.browserApi.sendSubscriptionToServer(npub, token.value)
-    }
   }
 
-  protected async subscribeNpub(npub: string) {
-    const token = await this.getPushToken()
-    if (token) await this.browserApi.sendSubscriptionToServer(npub, token.value)
-    console.log('subscribed', npub)
-  }
+  protected async subscribeNpub(npub: string) {}
 }

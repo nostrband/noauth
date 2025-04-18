@@ -4,7 +4,6 @@ import { client } from '@/modules/client'
 import { askNativeNotificationPermission, askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
 import { Capacitor } from '@capacitor/core'
-import { PushNotifications } from '@capacitor/push-notifications'
 
 const isIOSPlatform = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
 
@@ -19,8 +18,7 @@ export const useBackgroundSigning = () => {
       const isBackgroundEnable = await swr.pushManager?.getSubscription()
       setShowWarning(!isBackgroundEnable)
     } else {
-      const permissionsStatus = await PushNotifications.checkPermissions()
-      setShowWarning(permissionsStatus.receive !== 'granted')
+      //
     }
   }, [])
 
