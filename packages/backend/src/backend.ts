@@ -1947,7 +1947,7 @@ export class NoauthBackend extends EventEmitter {
       const successEnclaves: EnclaveData[] = []
       for (const ed of enclaveData.enclaves) {
         const client = new EnclaveClient(ed.pubkey, ed.relays, key.signer)
-        let has = false;
+        let has = false
         try {
           has = await client.hasKey()
         } catch {}
@@ -2006,7 +2006,7 @@ export class NoauthBackend extends EventEmitter {
       }
 
       // update our enclave list
-      console.log("updated enclave list", key.npub, successEnclaves);
+      console.log('updated enclave list', key.npub, successEnclaves)
       await this.publishEnclaveEvent(key, successEnclaves)
     }
   }
@@ -2061,8 +2061,8 @@ export class NoauthBackend extends EventEmitter {
       builder: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'builder')?.[1],
       launcher: enclave.tags.find((t) => t.length > 2 && t[0] === 'p' && t[2] === 'launcher')?.[1],
     }
-    if (!info.relays.length) info.relays = [...this.global.getNip46Relays()];
-    return info;
+    if (!info.relays.length) info.relays = [...this.global.getNip46Relays()]
+    return info
   }
 
   private async publishEnclaveEvent(key: Key, enclaves: EnclaveData[]) {

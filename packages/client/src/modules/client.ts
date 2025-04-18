@@ -2,6 +2,7 @@ import { KeyInfo, CreateConnectParams } from '@noauth/backend'
 import { DbApp, DbConnectToken, DbHistory, DbKey, DbPending, DbPerm } from '@noauth/common'
 import { startClientWebSocket } from './websocket'
 import { clientServiceWorker } from './swic'
+import { nativeClient } from './native-client'
 import { Event } from 'nostr-tools'
 
 export interface BackendReply {
@@ -127,7 +128,8 @@ export interface BackendClient {
 }
 
 const defineClient = (): BackendClient => {
-  if (process.env.REACT_APP_HOSTED === 'true') return startClientWebSocket()
+  if (process.env.REACT_APP_BUILD_TARGET === 'NATIVE') return nativeClient
+  if (process.env.REACT_APP_BUILD_TARGET === 'HOST') return startClientWebSocket()
   return clientServiceWorker
 }
 

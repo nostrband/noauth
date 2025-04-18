@@ -1,8 +1,11 @@
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { swr } from '@/modules/swic'
 import { client } from '@/modules/client'
-import { askNotificationPermission } from '@/utils/helpers/helpers'
+import { askNativeNotificationPermission, askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
+import { Capacitor } from '@capacitor/core'
+
+const isIOSPlatform = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
 
 export const useBackgroundSigning = () => {
   const [showWarning, setShowWarning] = useState(false)
@@ -10,18 +13,26 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (!swr) return undefined
-    const isBackgroundEnable = await swr.pushManager?.getSubscription()
-    setShowWarning(!isBackgroundEnable)
+    if (!isIOSPlatform()) {
+      if (!swr) return
+      const isBackgroundEnable = await swr.pushManager?.getSubscription()
+      setShowWarning(!isBackgroundEnable)
+    } else {
+      //
+    }
   }, [])
 
   const handleEnableBackground = useCallback(async () => {
     setIsLoading(true)
+
     try {
+      const askPermission = isIOSPlatform() ? askNativeNotificationPermission : askNotificationPermission
       console.log('asking...')
-      await askNotificationPermission()
+      await askPermission()
       console.log('asked')
+
       const result = await client.enablePush()
+
       if (!result) throw new Error('Failed to activate the push subscription')
       notify('Background service enabled!', 'success')
       setShowWarning(false)

@@ -1,68 +1,50 @@
-// service-worker client interface,
-// works on the frontend, not sw
-import * as serviceWorkerRegistration from '../serviceWorkerRegistration'
-import { KeyInfo, CreateConnectParams } from '@noauth/backend'
-import { DbApp, DbConnectToken } from '@noauth/common'
 import { dbi } from '@noauth/common/dist/dbi-client'
 import { AllowType, BackendClient, BackendReply } from './client'
+import { NativeBackend } from './native-backend'
+import { DbApp, DbConnectToken } from '@noauth/common'
+import { CreateConnectParams, KeyInfo } from '@noauth/backend'
 import { Event } from 'nostr-tools'
 
-export let swr: ServiceWorkerRegistration | null = null
-
-// eslint-disable-next-line
-class ClientServiceWorker implements BackendClient {
+class NativeClient implements BackendClient {
+  private backend: NativeBackend
   private reqs = new Map<number, { ok: (r: any) => void; rej: (r: any) => void }>()
   private nextReqId = 1
   private onRender: (() => void) | null = null
   private onReload: (() => void) | null = null
   private onClose: (() => void) | null = null
-  private queue: (() => Promise<void> | void)[] = []
+  // private queue: (() => Promise<void> | void)[] = []
   private checkpointQueue: (() => Promise<void> | void)[] = []
+
+  constructor() {
+    this.backend = new NativeBackend()
+    this.backend.setOnUIUpdate(() => this.onMessage({} as BackendReply))
+    this.backend.start()
+  }
 
   public async connect(): Promise<boolean> {
     return true
   }
 
-  public async onStarted() {
-    console.log('sw ready, queue', this.queue.length)
-    while (this.queue.length) await this.queue.shift()!()
-  }
-
-  private callWhenStarted(cb: () => void) {
-    if (swr && swr.active) cb()
-    else this.queue.push(cb)
-  }
-
-  private async waitStarted() {
-    return new Promise<void>((ok) => this.callWhenStarted(ok))
-  }
-
   // send an RPC to the backend
   private async call<T = void>(method: string, transfer: any[], ...args: any[]): Promise<T> {
-    await this.waitStarted()
-
     const id = this.nextReqId
     this.nextReqId++
 
     return new Promise((ok, rej) => {
       const call = async () => {
-        if (!swr || !swr.active) {
-          rej(new Error('No active service worker'))
-          return
-        }
-
-        this.reqs.set(id, { ok, rej })
         const msg = {
           id,
           method,
           args: [...args],
         }
+
+        this.reqs.set(id, { ok, rej })
+
         // don't print this one
         if (method !== 'importKeyIframe') console.log('sending to SW', msg)
-        swr.active.postMessage(msg, transfer)
+        await this.backend.onMessageEvent(msg, this.onMessage.bind(this))
       }
-
-      this.callWhenStarted(call)
+      call()
     })
   }
 
@@ -86,7 +68,7 @@ class ClientServiceWorker implements BackendClient {
 
   public onMessage(data: BackendReply) {
     const { id, result, error } = data
-    console.log('SW message', id, result, error)
+    console.log('BACKEND message', id, result, error)
 
     if (!id) {
       if (result === 'reload') {
@@ -158,10 +140,6 @@ class ClientServiceWorker implements BackendClient {
     return this.call<DbConnectToken>('getConnectToken', [], npub, subNpub)
   }
 
-  public async checkName(name: string) {
-    return this.call<string>('checkName', [], name)
-  }
-
   public async editName(npub: string, newName: string) {
     return this.call('editName', [], npub, newName)
   }
@@ -183,23 +161,7 @@ class ClientServiceWorker implements BackendClient {
   }
 
   public async fetchKey(npub: string, passphrase: string, name: string) {
-    return this.call<KeyInfo | undefined>('fetchKey', [], npub, passphrase, name)
-  }
-
-  public async fetchKeyByEmail(email: string, passphrase: string) {
-    return this.call<KeyInfo | undefined>('fetchKeyByEmail', [], email, passphrase)
-  }
-
-  public async checkEmailStatus(npub: string, email: string) {
-    return this.call<boolean>('checkEmailStatus', [], npub, email)
-  }
-
-  public async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
-    return this.call('confirmEmail', [], npub, email, code, passphrase)
-  }
-
-  public async setEmail(npub: string, email: string) {
-    return this.call('setEmail', [], npub, email)
+    return this.call<KeyInfo>('fetchKey', [], npub, passphrase, name)
   }
 
   public async exportKey(npub: string) {
@@ -217,10 +179,6 @@ class ClientServiceWorker implements BackendClient {
   public async generateKeyConnect(params: CreateConnectParams) {
     const transfer = params.port ? [params.port] : []
     return this.call<string>('generateKeyConnect', transfer, params)
-  }
-
-  public async generateKeyForEmail(name: string, email: string) {
-    return this.call<KeyInfo>('generateKeyForEmail', [], name, email)
   }
 
   public async nip04Decrypt(npub: string, peerPubkey: string, ciphertext: string) {
@@ -245,30 +203,9 @@ class ClientServiceWorker implements BackendClient {
     return this.call<void>('waitKey', [], npub)
   }
 
-  public async deleteKey(npub: string) {
-    return this.call<void>('deleteKey', [], npub)
-  }
-
   public async ping() {
     return this.call<void>('ping', [])
   }
-
-  public async getKeyEnclaveInfo(npub: string) {
-    return this.call<any>('getKeyEnclaveInfo', [], npub)
-  }
-
-  public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
-    return this.call<any>('uploadKeyToEnclave', [], npub, enclavePubkey)
-  }
-
-  public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
-    return this.call<any>('deleteKeyFromEnclave', [], npub, enclavePubkey)
-  }
-
-  public async listEnclaves() {
-    return this.call<Event[]>('listEnclaves', [])
-  }
-
 
   public getListKeys() {
     return dbi.listKeys()
@@ -293,37 +230,54 @@ class ClientServiceWorker implements BackendClient {
   public getAppLastActiveRecord(app: DbApp) {
     return dbi.getAppLastActiveRecord(app)
   }
+
   public async getSynced(npub: string) {
     return await dbi.getSynced(npub)
   }
-}
 
-export const clientServiceWorker = new ClientServiceWorker()
-
-export async function swicRegister() {
-  serviceWorkerRegistration.register({
-    onSuccess(registration) {
-      console.log('sw registered')
-      swr = registration
-    },
-    onError(e) {
-      console.log('sw error', e)
-    },
-    onUpdate() {
-      // tell new SW that it should activate immediately
-      swr?.waiting?.postMessage({ type: 'SKIP_WAITING' })
-    },
-  })
-}
-navigator.serviceWorker.ready.then(async (r) => {
-  swr = r
-  if (navigator.serviceWorker.controller) {
-    console.log(`This page is currently controlled by: ${navigator.serviceWorker.controller}`)
-  } else {
-    console.log('This page is not currently controlled by a service worker.')
+  public async checkEmailStatus(npub: string, email: string) {
+    return this.call<boolean>('checkEmailStatus', [], npub, email)
   }
-  clientServiceWorker.onStarted()
-})
-navigator.serviceWorker.addEventListener('message', (event) => {
-  clientServiceWorker.onMessage((event as MessageEvent).data)
-})
+
+  public async checkName(name: string) {
+    return this.call<string>('checkName', [], name)
+  }
+
+  public async confirmEmail(npub: string, email: string, code: string, passphrase: string) {
+    return this.call('confirmEmail', [], npub, email, code, passphrase)
+  }
+
+  public async deleteKey(npub: string) {
+    return this.call<void>('deleteKey', [], npub)
+  }
+
+  public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('deleteKeyFromEnclave', [], npub, enclavePubkey)
+  }
+
+  public async fetchKeyByEmail(email: string, passphrase: string) {
+    return this.call<KeyInfo | undefined>('fetchKeyByEmail', [], email, passphrase)
+  }
+
+  public async generateKeyForEmail(name: string, email: string) {
+    return this.call<KeyInfo>('generateKeyForEmail', [], name, email)
+  }
+
+  public async getKeyEnclaveInfo(npub: string) {
+    return this.call<any>('getKeyEnclaveInfo', [], npub)
+  }
+
+  public async listEnclaves() {
+    return this.call<Event[]>('listEnclaves', [])
+  }
+
+  public async setEmail(npub: string, email: string) {
+    return this.call('setEmail', [], npub, email)
+  }
+
+  public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
+    return this.call<any>('uploadKeyToEnclave', [], npub, enclavePubkey)
+  }
+}
+
+export const nativeClient = new NativeClient()

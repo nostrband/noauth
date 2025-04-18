@@ -354,7 +354,7 @@ export class Nip46Client {
     this.kind = kind
     this.signerPubkey = signerPubkey
     this.signer = signer
-    this.subscribe();
+    this.subscribe()
   }
 
   public async send({ method, params, timeout = 30000 }: { method: string; params: string[]; timeout?: number }) {
@@ -424,7 +424,7 @@ export class Nip46Client {
   }
 
   public dispose() {
-    this.sub?.removeAllListeners();
-    this.sub?.stop();
+    this.sub?.removeAllListeners()
+    this.sub?.stop()
   }
 }
