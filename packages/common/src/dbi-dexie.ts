@@ -13,9 +13,9 @@ interface DbSchema extends Dexie {
 
 const db = new Dexie('noauthdb') as DbSchema
 
-db.version(12).stores({
+db.version(13).stores({
   keys: 'npub',
-  apps: 'appNpub,npub,name,timestamp',
+  apps: 'appNpub,npub,name,timestamp,[appNpub+npub]',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
@@ -27,6 +27,19 @@ const dbiDexie: DbInterface = {
   addKey: async (key: DbKey) => {
     try {
       await db.keys.add(key)
+    } catch (error) {
+      console.log(`db addKey error: ${error}`)
+    }
+  },
+  deleteKey: async (npub: string) => {
+    try {
+      await db.keys.delete(npub)
+      await db.apps.where({ npub }).delete()
+      await db.perms.where({ npub }).delete()
+      await db.pending.where({ npub }).delete()
+      await db.history.where({ npub }).delete()
+      await db.syncHistory.where({ npub }).delete()
+      await db.connectTokens.where({ npub }).delete()
     } catch (error) {
       console.log(`db addKey error: ${error}`)
     }
@@ -63,6 +76,16 @@ const dbiDexie: DbInterface = {
       })
     } catch (error) {
       console.log(`db editName error: ${error}`)
+      return
+    }
+  },
+  editEmail: async (npub: string, email: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        email,
+      })
+    } catch (error) {
+      console.log(`db editEmail error: ${error}`)
       return
     }
   },
@@ -214,6 +237,14 @@ const dbiDexie: DbInterface = {
     } catch (error) {
       console.log(`db addConfirmed error: ${error}`)
       return false
+    }
+  },
+  addResult: async (id: string, result: string | undefined) => {
+    try {
+      if (!result) return
+      await db.history.where({ id }).modify({ result })
+    } catch (error) {
+      console.log(`db addResult error: ${error}`)
     }
   },
   getSynced: async (npub: string) => {

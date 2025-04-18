@@ -12,7 +12,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import { usePassword } from '@/hooks/usePassword'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDebounce } from 'use-debounce'
-import { isValidUserName } from '@/utils/helpers/helpers'
+import { isValidUserName, parseNostrConnectMeta } from '@/utils/helpers/helpers'
 import { DOMAIN } from '@/utils/consts'
 import { getPublicKey, nip19 } from 'nostr-tools'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
@@ -23,7 +23,6 @@ import useStepper from '@/hooks/useStepper'
 import { getNameHelperTextProps, getNsecHelperTextProps } from './utils'
 import { fetchNip05 } from '@noauth/common'
 import { client } from '@/modules/client'
-import { parseNostrConnectMeta } from '../ModalNostrConnect/utils/helpers'
 
 const FORM_DEFAULT_VALUES = {
   username: '',

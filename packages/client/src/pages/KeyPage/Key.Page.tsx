@@ -23,21 +23,32 @@ import { ModalEditName } from '@/components/Modal/ModalEditName/ModalEditName'
 import { ModalSetPassword } from '@/components/Modal/ModalSetPassword/ModalSetPassword'
 import { client } from '@/modules/client'
 import { ModalRebind } from '@/components/Modal/ModalRebind/ModalRebind'
+import { ModalConfirmLogout } from '@/components/Modal/ModalConfirmLogout/ModalConfirmLogout'
+import { EmailConfirmationWarning } from './components/EmailConfirmationWarning'
+import { useEmailConfirmation } from './hooks/useEmailConfirmation'
+import { selectKeyByNpub } from '@/store'
+import { ModalSetupEnclave } from '@/components/Modal/ModalSetupEnclave/ModalSetupEnclave'
 
 const KeyPage = () => {
   const { npub = '' } = useParams<{ npub: string }>()
-  const { keys, pending, perms } = useAppSelector((state) => state.content)
   const [searchParams] = useSearchParams()
+
+  const key = useAppSelector((state) => selectKeyByNpub(state, npub))
+  const { pending, perms } = useAppSelector((state) => state.content)
 
   const [isSynced, setIsSynced] = useState(false)
   const [isCheckingSync, setIsChecking] = useState(true)
   const handleStopChecking = () => setIsChecking(false)
 
-  const { handleOpen } = useModalSearchParams()
+  const { handleOpen, createHandleCloseReplace } = useModalSearchParams()
+  const handleCloseSettingsModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.SETTINGS)
+
   const { handleEnableBackground, showWarning, isEnabling } = useBackgroundSigning()
 
-  const key = keys.find((k) => k.npub === npub)
-  const isPasswordSet = !!key?.ncryptsec
+  const { email = '', ncryptsec } = key || {}
+  const isPasswordSet = !!ncryptsec
+
+  const { handleResendConfirmation, showWarning: showEmailWarning, isLoading } = useEmailConfirmation(key)
 
   const getUsername = useCallback(() => {
     if (!key || !key?.name) return ''
@@ -51,15 +62,15 @@ const KeyPage = () => {
   const isKeyExists = npub.trim().length && key
   const isPopup = searchParams.get('popup') === 'true'
 
-  useEffect(() => {
-    const load = async () => {
-      const synced = await client.getSynced(npub)
-      setIsSynced(synced)
-      handleStopChecking()
-    }
-    load()
-    // eslint-disable-next-line
+  const handleSetSyncedStatus = useCallback(async () => {
+    const synced = await client.getSynced(npub)
+    setIsSynced(synced)
+    handleStopChecking()
   }, [npub])
+
+  useEffect(() => {
+    handleSetSyncedStatus()
+  }, [handleSetSyncedStatus])
 
   if (isPopup && !isKeyExists) {
     searchParams.set('login', 'true')
@@ -73,6 +84,10 @@ const KeyPage = () => {
   const handleOpenConnectAppModal = () => handleOpen(MODAL_PARAMS_KEYS.CONNECT_APP)
   const handleOpenSettingsModal = () => handleOpen(MODAL_PARAMS_KEYS.SETTINGS)
   const handleOpenEditNameModal = () => handleOpen(MODAL_PARAMS_KEYS.EDIT_NAME)
+  const handleLogout = () => {
+    handleCloseSettingsModal()
+    handleOpen(MODAL_PARAMS_KEYS.CONFIRM_LOGOUT)
+  }
 
   return (
     <>
@@ -80,6 +95,10 @@ const KeyPage = () => {
         {showWarning && (
           <BackgroundSigningWarning isEnabling={isEnabling} onEnableBackSigning={handleEnableBackground} />
         )}
+        {showEmailWarning && (
+          <EmailConfirmationWarning email={email} isLoading={isLoading} onResend={handleResendConfirmation} />
+        )}
+
         <UserValueSection
           title="Your login"
           value={username}
@@ -120,13 +139,15 @@ const KeyPage = () => {
       </Stack>
 
       <ModalConnectApp />
-      <ModalSettings isSynced={isSynced} />
+      <ModalSettings isSynced={isSynced} onLogout={handleLogout} />
       <ModalExplanation />
       <ModalConfirmConnect />
       <ModalConfirmEvent />
       <ModalEditName />
-      <ModalSetPassword isPasswordSet={isPasswordSet} />
+      <ModalSetPassword isPasswordSet={isPasswordSet} onSync={handleSetSyncedStatus} />
       <ModalRebind />
+      <ModalConfirmLogout npub={npub} />
+      <ModalSetupEnclave />
     </>
   )
 }

@@ -1,6 +1,17 @@
-import { ADMIN_DOMAIN, DOMAIN, NIP46_RELAYS, NOAUTHD_URL, NSEC_APP_NPUB, WEB_PUSH_PUBKEY } from '@/utils/consts'
+import {
+  ADMIN_DOMAIN,
+  DOMAIN,
+  ENCLAVE_DEBUG,
+  ENCLAVE_LAUNCHER_PUBKEYS,
+  NIP46_RELAYS,
+  NOAUTHD_URL,
+  NSEC_APP_NPUB,
+  WEB_PUSH_PUBKEY,
+} from '@/utils/consts'
 import { getShortenNpub } from '@noauth/common'
-import { NoauthBackend, Api, Key, GlobalContext, sendPostAuthd } from '@noauth/backend'
+import { NoauthBackend, Api, Key, GlobalContext, sendAuthd } from '@noauth/backend'
+import { hexToBytes } from '@noble/hashes/utils'
+// @ts-ignore
 import { dbi } from '@noauth/common/dist/dbi-client'
 
 class BrowserApi extends Api {
@@ -15,7 +26,7 @@ class BrowserApi extends Api {
     const method = 'POST'
     const url = `${NOAUTHD_URL}/subscribe`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -59,6 +70,28 @@ export class ServiceWorkerBackend extends NoauthBackend {
       },
       getNip46Relays() {
         return NIP46_RELAYS
+      },
+      getEnclaveBuilderPubkeys() {
+        return ENCLAVE_LAUNCHER_PUBKEYS.split(',')
+          .map((p) => p.trim())
+          .filter((p) => !!p)
+      },
+      isValidEnclavePCRs(pcrs: Map<number, string>) {
+        if (!pcrs.get(0)) return false
+        const debug = !hexToBytes(pcrs.get(0)!).find((c) => c !== 0)
+        console.log('ENCLAVE_DEBUG', ENCLAVE_DEBUG)
+        if (ENCLAVE_DEBUG === 'true') return true
+        if (debug) return false
+
+        // current dev release of noauth-enclaved
+        return (
+          pcrs.get(0) ===
+            '2adc99990f8c26accf04e319fd7024381f1d4b460d4b4c2309c96a3260969994011484eb8038e04993ed95e7c9c75918' &&
+          pcrs.get(1) ===
+            '4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493' &&
+          pcrs.get(2) ===
+            '0044b92a9dcb2762d14cd51e63ac0e8f122ef1b3c9fdf67774e614315abe210b260dee01ac665e0a93953ebacd3ed21e'
+        )
       },
     }
 
@@ -198,6 +231,18 @@ export class ServiceWorkerBackend extends NoauthBackend {
   }
 
   protected async notifyNpub(npub: string) {
+    // clear existing notifications to avoid generating a pile of them
+    const tag = npub
+    try {
+      const notifs = await this.swg.registration.getNotifications({
+        tag,
+      })
+      for (const n of notifs) n.close()
+    } catch (e) {
+      console.log('failed to clean notifications', e)
+    }
+
+    // no need to show if we're already launched
     if (await this.isClientFocused()) return
 
     // annoying when several pushes show up too fast
@@ -208,37 +253,28 @@ export class ServiceWorkerBackend extends NoauthBackend {
     // remember
     this.lastPushTime = Date.now()
 
-    const tag = npub
-
     try {
-      let show = true
-      if (!this.isSafari()) {
-        const notifs = await this.swg.registration.getNotifications({
-          tag,
-        })
-        show = !notifs.length
-      }
-
-      if (show) {
-        const icon = '/favicon-32x32.png'
-        const title = this.getNpubName(npub)
-        const body = `Processed request.`
-        await this.swg.registration.showNotification(title, {
-          body,
-          tag,
-          silent: true,
-          icon,
-          data: { npub },
-        })
-      }
+      const icon = '/favicon-32x32.png'
+      const title = this.getNpubName(npub)
+      const body = `Processed request`
+      await this.swg.registration.showNotification(title, {
+        body,
+        tag,
+        silent: true,
+        icon,
+        data: { npub },
+      })
     } catch (e) {
       console.log('failed to show notification', e)
     }
 
     // unlock the onPush to let browser know we're done,
-    // FIXME what if it shuts us down immediately?
-    if (this.notifCallback) this.notifCallback()
-    this.notifCallback = null
+    // give sw 5 sec to process the requests without
+    // being shut down
+    setTimeout(() => {
+      if (this.notifCallback) this.notifCallback()
+      this.notifCallback = null
+    }, 5000)
   }
 
   protected notifyConfirmTODO() {

@@ -10,6 +10,7 @@ export type IExtraOptions = {
   search?: SearchParamsType
   replace?: boolean
   append?: boolean
+  pathname?: string
 }
 
 export type IExtraCloseOptions = {
@@ -66,7 +67,7 @@ export const useModalSearchParams = () => {
 
       navigate(
         {
-          pathname: location.pathname,
+          pathname: extraOptions?.pathname || location.pathname,
           search: searchString,
         },
         { replace: !!extraOptions?.replace }

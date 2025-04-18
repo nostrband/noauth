@@ -10,6 +10,7 @@ export interface DbKey {
   profile?: MetaEvent | null
   ncryptsec?: string
   localKey?: CryptoKey
+  email?: string
 }
 
 export interface DbApp {
@@ -56,6 +57,7 @@ export interface DbHistory {
   method: string
   params: string
   allowed: boolean
+  result?: string
 }
 
 export interface DbSyncHistory {
@@ -72,10 +74,12 @@ export interface DbConnectToken {
 
 export interface DbInterface {
   addKey: (key: DbKey) => Promise<void>
+  deleteKey: (npub: string) => Promise<void>
   getKey: (npub: string) => Promise<DbKey | undefined>
   listKeys: () => Promise<DbKey[]>
   editName: (npub: string, name: string) => Promise<void>
   editNcryptsec: (npub: string, ncryptsec: string) => Promise<void>
+  editEmail: (npub: string, email: string) => Promise<void>
 
   addApp: (app: DbApp) => Promise<void>
   // getApp: (appNpub: string) => Promise<DbApp | undefined>
@@ -95,6 +99,7 @@ export interface DbInterface {
   removePending: (id: string) => Promise<void>
   confirmPending: (id: string, allowed: boolean) => Promise<void>
   addConfirmed: (r: DbHistory) => Promise<boolean | undefined>
+  addResult: (id: string, result: string | undefined) => Promise<void>
 
   getSynced: (npub: string) => Promise<boolean>
   setSynced: (npub: string) => Promise<void>

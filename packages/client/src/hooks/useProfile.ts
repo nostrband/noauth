@@ -10,8 +10,10 @@ const getFirstLetter = (text: string | undefined): string | null => {
 }
 
 export const useProfile = (npub: string) => {
-  const [profile, setProfile] = useState<MetaEvent | null>(null)
   const currentKey = useAppSelector((state) => selectKeyByNpub(state, npub))
+
+  const [profile, setProfile] = useState<MetaEvent | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const userName = currentKey?.name || getProfileUsername(profile) || getShortenNpub(npub)
   const userAvatar = profile?.info?.picture || ''
@@ -20,10 +22,13 @@ export const useProfile = (npub: string) => {
   const loadProfile = useCallback(async () => {
     if (!npub) return undefined
     try {
+      setIsLoading(true)
       const response = await fetchProfile(npub)
       setProfile(response)
+      setIsLoading(false)
     } catch (error) {
       console.error('Failed to fetch profile:', error)
+      setIsLoading(false)
     }
   }, [npub])
 
@@ -36,5 +41,6 @@ export const useProfile = (npub: string) => {
     userName,
     userAvatar,
     avatarTitle,
+    isLoading,
   }
 }

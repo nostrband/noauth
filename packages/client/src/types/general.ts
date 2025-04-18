@@ -20,3 +20,10 @@ export type SubNpubProfile = {
 }
 
 export type SubNpubsMap = Record<string, SubNpubProfile>
+
+export type Metadata = {
+  name: string
+  url: string
+  icon: string
+  perms: string
+}
