@@ -1,5 +1,5 @@
 import { FC, Fragment, useCallback, useEffect, useState } from 'react'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography, useMediaQuery } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
 import { useParams } from 'react-router-dom'
 import { client } from '@/modules/client'
@@ -24,6 +24,8 @@ const getConfirmDescription = (env: EnclaveEnvironment) => {
 
 export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ onClose }) => {
   const notify = useEnqueueSnackbar()
+  const isMobile = useMediaQuery('(max-width:600px)')
+
   const { npub = '' } = useParams<{ npub: string }>()
 
   const [info, setInfo] = useState<any | undefined>()
@@ -119,9 +121,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   return (
     <>
       <Stack gap={'0.75rem'}>
-        <Typography textAlign={'center'}>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
+        <Typography textAlign={'center'} variant={isMobile ? 'body2' : 'body1'}>
+          EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!
+        </Typography>
 
-        <Typography>
+        <Typography variant={isMobile ? 'body2' : 'body1'}>
           To enable secure reliable always-online signing, you can upload your key to a signer running inside{' '}
           <a href="https://aws.amazon.com/ec2/nitro/nitro-enclaves/" target="_blank" rel="noreferrer">
             AWS Nitro Enclave
@@ -160,7 +164,7 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
                 No enlaves
               </Typography>
             )}
-            <Typography>
+            <Typography variant={isMobile ? 'body2' : 'body1'}>
               Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
               attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
               enclaves listed above was reviewed and considered safe.
