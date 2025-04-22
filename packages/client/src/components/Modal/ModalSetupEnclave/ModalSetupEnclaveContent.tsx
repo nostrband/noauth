@@ -154,12 +154,18 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
                 onChange={handleSelectEnclave}
               />
             )}
+
+            {enclaves.length === 0 && (
+              <Typography textAlign={'center'} fontWeight={500}>
+                No enlaves
+              </Typography>
+            )}
             <Typography>
               Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
               attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
               enclaves listed above was reviewed and considered safe.
             </Typography>
-            <Button onClick={handleUpload} disabled={status !== ''}>
+            <Button onClick={handleUpload} disabled={status !== '' || enclaves.length === 0}>
               Upload key
             </Button>
           </Fragment>

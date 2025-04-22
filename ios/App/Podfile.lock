@@ -3,6 +3,8 @@ PODS:
     - CapacitorCordova
   - CapacitorBrowser (6.0.4):
     - Capacitor
+  - CapacitorClipboard (6.0.2):
+    - Capacitor
   - CapacitorCordova (6.2.0)
   - CapacitorPluginSafeArea (3.0.4):
     - Capacitor
@@ -10,6 +12,7 @@ PODS:
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
+  - "CapacitorClipboard (from `../../node_modules/@capacitor/clipboard`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - CapacitorPluginSafeArea (from `../../node_modules/capacitor-plugin-safe-area`)
 
@@ -18,6 +21,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorBrowser:
     :path: "../../node_modules/@capacitor/browser"
+  CapacitorClipboard:
+    :path: "../../node_modules/@capacitor/clipboard"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorPluginSafeArea:
@@ -26,9 +31,10 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Capacitor: 1f3c7b9802d958cd8c4eb63895fff85dff2e1eea
   CapacitorBrowser: ef0529d16cd8839281050c350e7bbee4f5c6d65f
+  CapacitorClipboard: 55e0a514f1e97b1409d533266c119dcbff3e78c3
   CapacitorCordova: b33e7f4aa4ed105dd43283acdd940964374a87d9
   CapacitorPluginSafeArea: 237b6023aa7c3c1d4b245c12f73ae02e55093a50
 
-PODFILE CHECKSUM: 371b852f4d0c2656af5bc852d7ce9efecdcbdc28
+PODFILE CHECKSUM: 13df6c819ee5d6567ea18fb66ad520e4b4b22919
 
 COCOAPODS: 1.11.3

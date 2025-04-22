@@ -7,6 +7,7 @@
   "dependencies": {
     "@capacitor/browser": "^6.0.4",
     "@capacitor/cli": "^6.2.0",
+    "@capacitor/clipboard": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
     "@nostr-dev-kit/ndk": "^2.8.1",
