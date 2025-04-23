@@ -124,6 +124,8 @@ export interface BackendClient {
   uploadKeyToEnclave: (npub: string, enclavePubkey: string) => Promise<void>
 
   deleteKeyFromEnclave: (npub: string, enclavePubkey: string) => Promise<void>
+
+  setEnclaveBadgeHidden: (npub: string) => Promise<void>
 }
 
 const defineClient = (): BackendClient => {

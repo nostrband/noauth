@@ -63,6 +63,10 @@ model SyncHistory {
   npub String @id
 }
 
+model EnclaveHistory {
+  npub String @id
+}
+
 model ConnectTokens {
   token     String  @id
   npub      String

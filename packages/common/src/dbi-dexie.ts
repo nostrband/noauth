@@ -1,5 +1,15 @@
 import Dexie from 'dexie'
-import { DbApp, DbConnectToken, DbHistory, DbInterface, DbKey, DbPending, DbPerm, DbSyncHistory } from './db-types'
+import {
+  DbApp,
+  DbConnectToken,
+  DbEnclaveHistory,
+  DbHistory,
+  DbInterface,
+  DbKey,
+  DbPending,
+  DbPerm,
+  DbSyncHistory,
+} from './db-types'
 
 interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>
@@ -9,6 +19,7 @@ interface DbSchema extends Dexie {
   history: Dexie.Table<DbHistory, string>
   syncHistory: Dexie.Table<DbSyncHistory, string>
   connectTokens: Dexie.Table<DbConnectToken, string>
+  enclaveHistory: Dexie.Table<DbEnclaveHistory, string>
 }
 
 const db = new Dexie('noauthdb') as DbSchema
@@ -21,6 +32,7 @@ db.version(13).stores({
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
   syncHistory: 'npub',
   connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]',
+  enclaveHistory: 'npub',
 })
 
 const dbiDexie: DbInterface = {
@@ -304,6 +316,22 @@ const dbiDexie: DbInterface = {
     } catch (error) {
       console.log(`db listHistory error: ${error}`)
       return []
+    }
+  },
+  getEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      const result = await db.enclaveHistory.where('npub').equals(npub).count()
+      return result > 0
+    } catch (error) {
+      console.log(`db getEnclaveBadgeHidden error: ${error}`)
+      return false
+    }
+  },
+  setEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      await db.enclaveHistory.put({ npub })
+    } catch (error) {
+      console.log(`db setEnclaveBadgeHidden error: ${error}`)
     }
   },
 }

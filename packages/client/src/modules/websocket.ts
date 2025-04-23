@@ -335,21 +335,24 @@ export class ClientWebSocket implements BackendClient {
   }
 
   public async getKeyEnclaveInfo(npub: string) {
-    throw new Error("getKeyEnclaveInfo not implemented");
+    throw new Error('getKeyEnclaveInfo not implemented')
   }
 
   public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
-    throw new Error("uploadKeyToEnclave not implemented");
+    throw new Error('uploadKeyToEnclave not implemented')
   }
 
   public async deleteKeyFromEnclave(npub: string, enclavePubkey: string) {
-    throw new Error("deleteKeyFromEnclave not implemented");
+    throw new Error('deleteKeyFromEnclave not implemented')
   }
 
   public async listEnclaves(): Promise<NostrEvent[]> {
-    throw new Error("listEnclaves not implemented");
+    throw new Error('listEnclaves not implemented')
   }
 
+  public async setEnclaveBadgeHidden(npub: string): Promise<void> {
+    return this.call<void>('setEnclaveBadgeHidden', npub)
+  }
 }
 
 export const startClientWebSocket = () => new ClientWebSocket(`ws://${document.location.hostname}:8080`)
