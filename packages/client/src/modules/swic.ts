@@ -269,7 +269,6 @@ class ClientServiceWorker implements BackendClient {
     return this.call<Event[]>('listEnclaves', [])
   }
 
-
   public getListKeys() {
     return dbi.listKeys()
   }
@@ -295,6 +294,10 @@ class ClientServiceWorker implements BackendClient {
   }
   public async getSynced(npub: string) {
     return await dbi.getSynced(npub)
+  }
+
+  public async setEnclaveBadgeHidden(npub: string): Promise<void> {
+    return dbi.setEnclaveBadgeHidden(npub)
   }
 }
 

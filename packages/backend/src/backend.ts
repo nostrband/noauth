@@ -404,8 +404,7 @@ export class NoauthBackend extends EventEmitter {
     const localKey = await this.keysModule.generateLocalKey()
     const enckey = await this.keysModule.encryptKeyLocal(sk, localKey)
 
-    // @ts-ignore
-    const dbKey: DbKey = { npub, name, enckey, localKey }
+    const dbKey: DbKey = { npub, name, enckey, localKey: localKey as CryptoKey }
 
     // nip49
     if (passphrase) dbKey.ncryptsec = encryptNip49(hexToBytes(sk), passphrase, 16, nsec ? 0x01 : 0x00)
@@ -2015,9 +2014,12 @@ export class NoauthBackend extends EventEmitter {
     const key = this.keys.find((k) => k.npub === npub)
     if (!key) throw new Error('No key')
 
+    const badgeHidden = await this.dbi.getEnclaveBadgeHidden(key.npub)
+
     const info = {
       npub,
       enclaves: [] as any[],
+      badgeHidden,
     }
 
     const enclaveData = await this.fetchEnclaveInfo(key)
