@@ -278,6 +278,10 @@ class NativeClient implements BackendClient {
   public async uploadKeyToEnclave(npub: string, enclavePubkey: string) {
     return this.call<any>('uploadKeyToEnclave', [], npub, enclavePubkey)
   }
+
+  public async setEnclaveBadgeHidden(npub: string): Promise<void> {
+    return dbi.setEnclaveBadgeHidden(npub)
+  }
 }
 
 export const nativeClient = new NativeClient()
