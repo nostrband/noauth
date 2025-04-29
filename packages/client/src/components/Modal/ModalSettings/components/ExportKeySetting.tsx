@@ -6,6 +6,8 @@ import { useCopyToClipboard } from 'usehooks-ts'
 import { useParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { client } from '@/modules/client'
+import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
+import { Clipboard } from '@capacitor/clipboard'
 
 export const ExportKeySetting = () => {
   const { npub = '' } = useParams<{ npub: string }>()
@@ -15,9 +17,17 @@ export const ExportKeySetting = () => {
   const exportKey = async () => {
     try {
       const key = await client.exportKey(npub)
-      if (!key) notify('Specify Cloud Sync password first!', 'error')
-      else if (await copyToClipboard(key)) notify('Key copied to clipboard!')
-      else notify('Failed to copy to clipboard', 'error')
+      if (!key) return notify('Specify Cloud Sync password first!', 'error')
+      if (isNativeIOS()) {
+        await Clipboard.write({
+          string: key,
+        })
+        notify('Key copied to clipboard!')
+      } else {
+        const copied = await copyToClipboard(key)
+        if (copied) notify('Key copied to clipboard!')
+        else notify('Failed to copy to clipboard', 'error')
+      }
     } catch (error) {
       console.log('error', error)
       notify(`Failed to copy to clipboard: ${error}`, 'error')

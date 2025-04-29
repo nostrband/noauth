@@ -3,10 +3,7 @@ import { swr } from '@/modules/swic'
 import { client } from '@/modules/client'
 import { askNativeNotificationPermission, askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
-import { Capacitor } from '@capacitor/core'
-import { PushNotifications } from '@capacitor/push-notifications'
-
-const isIOSPlatform = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
+import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
 
 export const useBackgroundSigning = () => {
   const [showWarning, setShowWarning] = useState(false)
@@ -14,13 +11,12 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (!isIOSPlatform()) {
+    if (!isNativeIOS()) {
       if (!swr) return
       const isBackgroundEnable = await swr.pushManager?.getSubscription()
       setShowWarning(!isBackgroundEnable)
     } else {
-      const permissionsStatus = await PushNotifications.checkPermissions()
-      setShowWarning(permissionsStatus.receive !== 'granted')
+      //
     }
   }, [])
 
@@ -28,7 +24,7 @@ export const useBackgroundSigning = () => {
     setIsLoading(true)
 
     try {
-      const askPermission = isIOSPlatform() ? askNativeNotificationPermission : askNotificationPermission
+      const askPermission = isNativeIOS() ? askNativeNotificationPermission : askNotificationPermission
       console.log('asking...')
       await askPermission()
       console.log('asked')

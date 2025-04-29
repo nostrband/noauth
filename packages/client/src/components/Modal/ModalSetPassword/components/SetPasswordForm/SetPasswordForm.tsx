@@ -20,9 +20,10 @@ const FORM_DEFAULT_VALUES: FormInputType = {
 
 type SetPasswordFormProps = {
   onClose: () => void
+  onSync: () => Promise<void>
 }
 
-export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
+export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose, onSync }) => {
   const notify = useEnqueueSnackbar()
   const { npub = '' } = useParams<{ npub: string }>()
   const [isLoading, setIsLoading] = useState(false)
@@ -57,6 +58,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
     try {
       const { password } = values
       await client.setPassword(npub, password)
+      await onSync()
       setIsLoading(false)
       notify('Password has been successfully set', 'success')
       onClose()
@@ -105,7 +107,7 @@ export const SetPasswordForm: FC<SetPasswordFormProps> = ({ onClose }) => {
         </Typography>
       )}
       <Button type="submit" disabled={isLoading}>
-        Submmit {isLoading && <LoadingSpinner />}
+        Submit {isLoading && <LoadingSpinner />}
       </Button>
     </Stack>
   )

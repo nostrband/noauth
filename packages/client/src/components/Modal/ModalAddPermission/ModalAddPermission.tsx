@@ -22,6 +22,7 @@ export interface KindOptionType {
 }
 
 const filter = createFilterOptions<KindOptionType>()
+const permOptions = getUsablePermList()
 
 export const ModalAddPermission: FC = () => {
   const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
@@ -38,7 +39,6 @@ export const ModalAddPermission: FC = () => {
 
   const [isLoading, setIsLoading] = useState(false)
 
-  const permOptions = getUsablePermList()
   const isSignEvent = type === 'sign_event'
 
   const handleSelectType = (e: SelectChangeEvent<string>) => {

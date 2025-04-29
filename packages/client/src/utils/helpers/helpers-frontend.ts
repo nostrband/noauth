@@ -1,8 +1,9 @@
 import { DbHistory, DbPending } from '@noauth/common'
 import { client } from '@/modules/client'
 import { nip19 } from 'nostr-tools'
+import { Capacitor } from '@capacitor/core'
 
-function printPrettyJson(json: string) {
+export function printPrettyJson(json: string) {
   try {
     const val = JSON.parse(json)
     return JSON.stringify(val, null, 3)
@@ -39,4 +40,10 @@ export async function getReqDetails(req: DbPending | DbHistory) {
   } catch (e) {
     return 'Error: Failed to parse request parameters'
   }
+}
+
+export const isNativeIOS = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
+
+export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
+  return value !== null && value !== undefined
 }

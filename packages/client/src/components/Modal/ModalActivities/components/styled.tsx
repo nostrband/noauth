@@ -2,9 +2,8 @@ import { Box, BoxProps, styled } from '@mui/material'
 
 export const StyledActivityItem = styled((props: BoxProps) => <Box {...props} />)(() => ({
   display: 'flex',
+  flexDirection: 'column',
   gap: '0.5rem',
-  justifyContent: 'space-between',
-  alignItems: 'center',
   padding: '0.25rem',
 }))
 

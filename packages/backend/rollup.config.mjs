@@ -11,6 +11,7 @@ const commonPlugins = [
   json(),
   typescript({
     tsconfig: './tsconfig.json',
+    sourceMap: false,
   }),
   terser({
     compress: {

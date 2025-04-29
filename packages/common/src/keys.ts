@@ -57,8 +57,8 @@ export class Keys {
     this.subtle = cryptoSubtle
   }
 
-  public async generatePassKey(pubkey: string, passphrase: string): Promise<{ passkey: Buffer; pwh: string }> {
-    const salt = Buffer.from(pubkey, 'hex')
+  public async generatePassKey(saltHex: string, passphrase: string): Promise<{ passkey: Buffer; pwh: string }> {
+    const salt = Buffer.from(saltHex, 'hex')
 
     // https://nodejs.org/api/crypto.html#using-strings-as-inputs-to-cryptographic-apis
     // https://github.com/ricmoo/scrypt-js#encoding-notes

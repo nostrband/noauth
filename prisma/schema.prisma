@@ -54,11 +54,16 @@ model History {
   method    String
   allowed   Boolean?
   jsonData  String
+  result    String?
 
   @@index([npub, appNpub])
 }
 
 model SyncHistory {
+  npub String @id
+}
+
+model EnclaveHistory {
   npub String @id
 }
 

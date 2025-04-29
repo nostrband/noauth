@@ -5,6 +5,7 @@
   "browser": "dist/browser/index.js",
   "types": "dist/node/index.d.ts",
   "dependencies": {
+    "nostr-enclaves": "^1.0.4",
     "tseep": "^1.2.1"
   },
   "scripts": {

@@ -1,4 +1,4 @@
-import { sendPost, sendPostAuthd } from './utils'
+import { fetchJson, sendAuthd } from './utils'
 import { GlobalContext } from './global'
 import { MAX_POW, MIN_POW } from '@noauth/common'
 
@@ -9,17 +9,28 @@ export class Api {
     this.global = global
   }
 
-  public async sendKeyToServer(npub: string, enckey: string, pwh: string) {
+  /**
+   * Upload encrypted key to server (authed)
+   * @param npub - user npub
+   * @param enckey - encrypted key
+   * @param pwh - password hash to be checked by fetchKeyFromServer
+   * @param email - email if set
+   * @param epwh - email password hash to be checked by fetchEmailFromServer
+   * @returns data: { ok: true }
+   */
+  public async sendKeyToServer(npub: string, enckey: string, pwh: string, email?: string, epwh?: string) {
     const body = JSON.stringify({
       npub,
       data: enckey,
       pwh,
+      email,
+      epwh,
     })
 
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/put`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -28,6 +39,12 @@ export class Api {
     })
   }
 
+  /**
+   * Get encrypted key from server (public)
+   * @param npub - user npub
+   * @param pwh - password hash previously sent by sendKeyToServer
+   * @returns data: { data: string } - encrypted key
+   */
   public async fetchKeyFromServer(npub: string, pwh: string) {
     const body = JSON.stringify({
       npub,
@@ -37,7 +54,7 @@ export class Api {
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/get`
 
-    return await sendPost({
+    return await fetchJson({
       url,
       method,
       headers: {},
@@ -45,6 +62,13 @@ export class Api {
     })
   }
 
+  /**
+   * Set chosen user name to npub (authed),
+   * will generate POW and retry if server says 'too low'.
+   * @param npub - user npub
+   * @param name - nip05 name under @nsec.app
+   * @returns data: { ok: true }
+   */
   public async sendNameToServer(npub: string, name: string) {
     const body = JSON.stringify({
       npub,
@@ -61,7 +85,7 @@ export class Api {
     while (pow <= MAX_POW) {
       console.log('Try name', name, 'pow', pow)
       try {
-        return await sendPostAuthd({
+        return await sendAuthd({
           global: this.global,
           key,
           url,
@@ -78,6 +102,12 @@ export class Api {
     throw new Error('Too many requests, retry later')
   }
 
+  /**
+   * Delete assigned name from server (authed)
+   * @param npub - user npub
+   * @param name - name
+   * @returns data: { ok: true }
+   */
   public async sendDeleteNameToServer(npub: string, name: string) {
     const body = JSON.stringify({
       npub,
@@ -87,7 +117,7 @@ export class Api {
     const method = 'DELETE'
     const url = `${this.global.getNoauthdUrl()}/name`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -96,6 +126,13 @@ export class Api {
     })
   }
 
+  /**
+   * Transfer assigned name to newNpub (authed)
+   * @param npub - user npub
+   * @param name - name
+   * @param newNpub - target npub
+   * @returns data: { ok: true }
+   */
   public async sendTransferNameToServer(npub: string, name: string, newNpub: string) {
     const body = JSON.stringify({
       npub,
@@ -106,7 +143,7 @@ export class Api {
     const method = 'PUT'
     const url = `${this.global.getNoauthdUrl()}/name`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -115,6 +152,12 @@ export class Api {
     })
   }
 
+  /**
+   * Send create_account token after signed up (authed)
+   * @param npub - user npub
+   * @param token - create_account token
+   * @returns data: { ok: true }
+   */
   public async sendTokenToServer(npub: string, token: string) {
     const body = JSON.stringify({
       npub,
@@ -124,7 +167,7 @@ export class Api {
     const method = 'POST'
     const url = `${this.global.getNoauthdUrl()}/created`
 
-    return sendPostAuthd({
+    return sendAuthd({
       global: this.global,
       key: this.global.getKey(npub),
       url,
@@ -133,10 +176,118 @@ export class Api {
     })
   }
 
+  /**
+   * Fetch one nip05 assigned name for npub (public)
+   * @param npub - user npub
+   * @returns data: { name: ["name1", ...] }
+   */
   public async fetchNpubName(npub: string) {
     const url = `${this.global.getNoauthdUrl()}/name?npub=${npub}`
     const r = await fetch(url)
     const d = await r.json()
     return d?.names?.length ? (d.names[0] as string) : ''
+  }
+
+  /**
+   * Check if email is assigned to npub (public)
+   * @param email - email
+   * @returns data: { is_user: boolean }
+   */
+  public async checkEmail(email: string) {
+    const url = `${this.global.getNoauthdUrl()}/is_user?email=${email}`
+    const r = await fetch(url)
+    const d = await r.json()
+    return d.is_user === true
+  }
+
+  /**
+   * Request attaching of email (authed), sends
+   * confirmation email if not already confirmed.
+   * @param npub - user npub
+   * @param email - email
+   * @param appNpub? - app
+   * @returns data: { ok: true }
+   */
+  public async setEmail(npub: string, email: string, appNpub?: string, appUrl?: string) {
+    const body = JSON.stringify({
+      npub,
+      email,
+      appNpub,
+      appUrl
+    })
+
+    const method = 'POST'
+    const url = `${this.global.getNoauthdUrl()}/email`
+
+    return sendAuthd({
+      global: this.global,
+      key: this.global.getKey(npub),
+      url,
+      method,
+      body,
+    })
+  }
+
+  /**
+   * Check npub's attached email and it's state (authed)
+   * @param npub - user npub
+   * @returns data: { email: string, confirmed: boolean }
+   */
+  public async getEmail(npub: string) {
+    const url = `${this.global.getNoauthdUrl()}/email?npub=${npub}`
+    return sendAuthd({
+      global: this.global,
+      key: this.global.getKey(npub),
+      url,
+    })
+  }
+
+  /**
+   * Send when user clicks on confirmation link (authed)
+   * @param npub - user npub
+   * @param email - email mathing the code
+   * @param code - code from confirmation email
+   * @returns data: { ok: true }
+   */
+  public async confirmEmail(npub: string, email: string, code: string) {
+    const body = JSON.stringify({
+      npub,
+      email,
+      code,
+    })
+
+    const method = 'PUT'
+    const url = `${this.global.getNoauthdUrl()}/email`
+
+    return sendAuthd({
+      global: this.global,
+      key: this.global.getKey(npub),
+      url,
+      method,
+      body,
+    })
+  }
+
+  /**
+   * Fetch email's npub from server, password from /confirm-email (public)
+   * @param email - user email
+   * @param pwh - user password
+   * @returns data: { npub: string }
+   */
+  public async fetchEmailFromServer(email: string, pwh: string) {
+    const body = JSON.stringify({
+      email,
+      pwh,
+    })
+
+    const method = 'POST'
+    const url = `${this.global.getNoauthdUrl()}/email_npub`
+
+    return await fetchJson({
+      url,
+      method,
+      headers: {},
+      body,
+    })
   }
 }

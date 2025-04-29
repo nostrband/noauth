@@ -1,5 +1,15 @@
 import Dexie from 'dexie'
-import { DbApp, DbConnectToken, DbHistory, DbInterface, DbKey, DbPending, DbPerm, DbSyncHistory } from './db-types'
+import {
+  DbApp,
+  DbConnectToken,
+  DbEnclaveHistory,
+  DbHistory,
+  DbInterface,
+  DbKey,
+  DbPending,
+  DbPerm,
+  DbSyncHistory,
+} from './db-types'
 
 interface DbSchema extends Dexie {
   keys: Dexie.Table<DbKey, string>
@@ -9,24 +19,39 @@ interface DbSchema extends Dexie {
   history: Dexie.Table<DbHistory, string>
   syncHistory: Dexie.Table<DbSyncHistory, string>
   connectTokens: Dexie.Table<DbConnectToken, string>
+  enclaveHistory: Dexie.Table<DbEnclaveHistory, string>
 }
 
 const db = new Dexie('noauthdb') as DbSchema
 
-db.version(12).stores({
+db.version(13).stores({
   keys: 'npub',
-  apps: 'appNpub,npub,name,timestamp',
+  apps: 'appNpub,npub,name,timestamp,[appNpub+npub]',
   perms: 'id,npub,appNpub,perm,value,timestamp',
   pending: 'id,npub,appNpub,timestamp,method',
   history: 'id,npub,appNpub,timestamp,method,allowed,[npub+appNpub]',
   syncHistory: 'npub',
   connectTokens: 'token,npub,timestamp,expiry,subNpub,[npub+subNpub]',
+  enclaveHistory: 'npub',
 })
 
 const dbiDexie: DbInterface = {
   addKey: async (key: DbKey) => {
     try {
       await db.keys.add(key)
+    } catch (error) {
+      console.log(`db addKey error: ${error}`)
+    }
+  },
+  deleteKey: async (npub: string) => {
+    try {
+      await db.keys.delete(npub)
+      await db.apps.where({ npub }).delete()
+      await db.perms.where({ npub }).delete()
+      await db.pending.where({ npub }).delete()
+      await db.history.where({ npub }).delete()
+      await db.syncHistory.where({ npub }).delete()
+      await db.connectTokens.where({ npub }).delete()
     } catch (error) {
       console.log(`db addKey error: ${error}`)
     }
@@ -63,6 +88,16 @@ const dbiDexie: DbInterface = {
       })
     } catch (error) {
       console.log(`db editName error: ${error}`)
+      return
+    }
+  },
+  editEmail: async (npub: string, email: string): Promise<void> => {
+    try {
+      await db.keys.where({ npub }).modify({
+        email,
+      })
+    } catch (error) {
+      console.log(`db editEmail error: ${error}`)
       return
     }
   },
@@ -216,6 +251,14 @@ const dbiDexie: DbInterface = {
       return false
     }
   },
+  addResult: async (id: string, result: string | undefined) => {
+    try {
+      if (!result) return
+      await db.history.where({ id }).modify({ result })
+    } catch (error) {
+      console.log(`db addResult error: ${error}`)
+    }
+  },
   getSynced: async (npub: string) => {
     try {
       const result = await db.syncHistory.where('npub').equals(npub).count()
@@ -273,6 +316,22 @@ const dbiDexie: DbInterface = {
     } catch (error) {
       console.log(`db listHistory error: ${error}`)
       return []
+    }
+  },
+  getEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      const result = await db.enclaveHistory.where('npub').equals(npub).count()
+      return result > 0
+    } catch (error) {
+      console.log(`db getEnclaveBadgeHidden error: ${error}`)
+      return false
+    }
+  },
+  setEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      await db.enclaveHistory.put({ npub })
+    } catch (error) {
+      console.log(`db setEnclaveBadgeHidden error: ${error}`)
     }
   },
 }
