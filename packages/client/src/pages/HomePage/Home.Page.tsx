@@ -9,7 +9,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
 import { Browser } from '@capacitor/browser'
-import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
+import { isNativePlatform } from '@/utils/helpers/helpers-frontend'
 
 const HomePage = () => {
   const keys = useAppSelector(selectKeys)
@@ -19,7 +19,7 @@ const HomePage = () => {
   const handleClickAddAccount = () => handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 
   const handleLearnMore = async () => {
-    if (isNativeIOS()) {
+    if (isNativePlatform()) {
       await Browser.open({ url: `https://${DOMAIN}` })
       return
     }

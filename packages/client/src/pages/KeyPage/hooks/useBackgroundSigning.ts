@@ -3,7 +3,7 @@ import { swr } from '@/modules/swic'
 import { client } from '@/modules/client'
 import { askNativeNotificationPermission, askNotificationPermission } from '@/utils/helpers/helpers'
 import { useState, useEffect, useCallback } from 'react'
-import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
+import { isNativePlatform } from '@/utils/helpers/helpers-frontend'
 
 export const useBackgroundSigning = () => {
   const [showWarning, setShowWarning] = useState(false)
@@ -11,7 +11,7 @@ export const useBackgroundSigning = () => {
   const notify = useEnqueueSnackbar()
 
   const checkBackgroundSigning = useCallback(async () => {
-    if (!isNativeIOS()) {
+    if (!isNativePlatform()) {
       if (!swr) return
       const isBackgroundEnable = await swr.pushManager?.getSubscription()
       setShowWarning(!isBackgroundEnable)
@@ -24,7 +24,7 @@ export const useBackgroundSigning = () => {
     setIsLoading(true)
 
     try {
-      const askPermission = isNativeIOS() ? askNativeNotificationPermission : askNotificationPermission
+      const askPermission = isNativePlatform() ? askNativeNotificationPermission : askNotificationPermission
       console.log('asking...')
       await askPermission()
       console.log('asked')

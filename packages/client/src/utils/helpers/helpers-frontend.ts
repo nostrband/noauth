@@ -42,7 +42,7 @@ export async function getReqDetails(req: DbPending | DbHistory) {
   }
 }
 
-export const isNativeIOS = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
+export const isNativePlatform = () => Capacitor.isNativePlatform()
 
 export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
   return value !== null && value !== undefined

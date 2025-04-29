@@ -6,7 +6,7 @@ import { useCopyToClipboard } from 'usehooks-ts'
 import { useParams } from 'react-router-dom'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
 import { client } from '@/modules/client'
-import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
+import { isNativePlatform } from '@/utils/helpers/helpers-frontend'
 import { Clipboard } from '@capacitor/clipboard'
 
 export const ExportKeySetting = () => {
@@ -18,7 +18,7 @@ export const ExportKeySetting = () => {
     try {
       const key = await client.exportKey(npub)
       if (!key) return notify('Specify Cloud Sync password first!', 'error')
-      if (isNativeIOS()) {
+      if (isNativePlatform()) {
         await Clipboard.write({
           string: key,
         })
