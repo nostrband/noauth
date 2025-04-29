@@ -112,8 +112,8 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
           NostrConnect: is a string used to connect to Nostr apps.
           <br />
           <br />
-          Some apps will show you the QR code with this string, or let you copy 
-          it to paste into key storage to establish a connection.
+          Some apps will show you the QR code with this string, or let you copy it to paste into key storage to
+          establish a connection.
           <br />
           <br />
           Do not share your NostrConnect: strings publicly! Only copy and paste them to the key storage.
@@ -126,17 +126,22 @@ export const ModalExplanation: FC<ModalExplanationProps> = () => {
       title = 'What is access sharing?'
       explanationText = (
         <>
-          You might share access to your keys by giving other people
-          your bunker URL and confirming the connection they make.
+          You might share access to your keys by giving other people your bunker URL and confirming the connection they
+          make.
           <br />
           <br />
-          This way, another person might use the app on your behalf and
-          get limited access to your keys.
+          This way, another person might use the app on your behalf and get limited access to your keys.
           <br />
           <br />
           Make sure you only share bunker URLs with people you trust.
         </>
       )
+      break
+    }
+
+    case EXPLANATION_MODAL_KEYS.TRANSFER: {
+      title = 'What is transfer name?'
+      explanationText = <Typography textAlign={'center'}>No description</Typography>
       break
     }
   }

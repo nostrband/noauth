@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
 import { Modal } from '@/shared/Modal/Modal'
 import { selectKeys } from '@/store'
 import { useAppSelector } from '@/store/hooks/redux'
-import { MODAL_PARAMS_KEYS } from '@/types/modal'
+import { EXPLANATION_MODAL_KEYS, MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
 import { isValidUserName } from '@/utils/helpers/helpers'
 import { Stack, Typography, useTheme } from '@mui/material'
@@ -18,6 +18,7 @@ import { StyledSettingContainer } from './styled'
 import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { fetchNip05 } from '@noauth/common'
 import { client } from '@/modules/client'
+import { AppLink } from '@/shared/AppLink/AppLink'
 
 export const ModalEditName = () => {
   const keys = useAppSelector(selectKeys)
@@ -29,7 +30,7 @@ export const ModalEditName = () => {
 
   const { palette } = useTheme()
 
-  const { getModalOpened, createHandleCloseReplace } = useModalSearchParams()
+  const { getModalOpened, createHandleCloseReplace, handleOpen } = useModalSearchParams()
   const isModalOpened = getModalOpened(MODAL_PARAMS_KEYS.EDIT_NAME)
   const handleCloseModal = createHandleCloseReplace(MODAL_PARAMS_KEYS.EDIT_NAME)
 
@@ -134,6 +135,10 @@ export const ModalEditName = () => {
     }
   }
 
+  const handleOpenTransferNameExplanation = () => {
+    handleOpen(MODAL_PARAMS_KEYS.EXPLANATION, { search: { type: EXPLANATION_MODAL_KEYS.TRANSFER } })
+  }
+
   return (
     <Modal open={isModalOpened} title="Username Settings" onClose={handleCloseModal}>
       <Stack gap={'1rem'}>
@@ -160,7 +165,10 @@ export const ModalEditName = () => {
           </Button>
         </StyledSettingContainer>
         <StyledSettingContainer>
-          <SectionTitle>Transfer name</SectionTitle>
+          <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
+            <SectionTitle>Transfer name</SectionTitle>
+            <AppLink title="What is this?" onClick={handleOpenTransferNameExplanation} />
+          </Stack>
           <Input
             label="Receiver npub"
             fullWidth

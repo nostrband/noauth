@@ -34,6 +34,7 @@ export const Menu = () => {
         sx={{
           zIndex: 1302,
         }}
+        disableScrollLock
       >
         <MenuItem
           Icon={isNoKeys ? <LoginIcon /> : <PersonAddAltRoundedIcon />}

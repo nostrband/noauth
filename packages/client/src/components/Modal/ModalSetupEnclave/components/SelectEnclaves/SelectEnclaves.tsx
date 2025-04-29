@@ -1,7 +1,7 @@
 import { FC, MouseEvent, useRef, useState } from 'react'
 import { Divider, IconButton, Menu, MenuItem, Stack } from '@mui/material'
 import { EnclaveCard } from '../EnclaveCard/EnclaveCard'
-import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import { IEnclave } from '../../types'
 import { useResizeObserver } from 'usehooks-ts'
 
@@ -48,7 +48,7 @@ export const SelectEnclaves: FC<SelectEnclavesProps> = ({ onChange, enclaves, va
       >
         <EnclaveCard fullWidth {...value} />
         <IconButton>
-          <ExpandMoreOutlinedIcon fontSize="large" />
+          <ExpandMoreRoundedIcon fontSize="large" />
         </IconButton>
       </Stack>
 

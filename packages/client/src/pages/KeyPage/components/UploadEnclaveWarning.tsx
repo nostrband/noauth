@@ -5,7 +5,6 @@ import { IconButton, Stack, styled, Typography, TypographyProps } from '@mui/mat
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
-import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined'
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
 import { client } from '@/modules/client'
 
@@ -51,12 +50,7 @@ export const UploadEnclaveWarning: FC<UploadEnclaveWarningProps> = ({ npub, onBa
           </Stack>
 
           <Stack direction={'row'} alignItems={'center'} gap={'0.5rem'}>
-            <Button
-              // endIcon={<SettingsApplicationsOutlinedIcon />}
-              onClick={handleSetupClick}
-            >
-              Set up
-            </Button>
+            <Button onClick={handleSetupClick}>Set up</Button>
             <IconButton onClick={handleCloseWarning} disabled={isPending}>
               <CloseOutlinedIcon />
             </IconButton>

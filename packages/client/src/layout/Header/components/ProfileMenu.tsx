@@ -6,7 +6,7 @@ import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { useNavigate } from 'react-router-dom'
 import LoginIcon from '@mui/icons-material/Login'
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded'
 import { useAppSelector } from '@/store/hooks/redux'
@@ -42,7 +42,7 @@ export const ProfileMenu = () => {
   return (
     <>
       <MenuButton onClick={handleOpenMenu}>
-        <KeyboardArrowDownRoundedIcon color="inherit" fontSize="large" />
+        <MenuRoundedIcon color="inherit" />
       </MenuButton>
       <Menu
         open={open}
@@ -51,6 +51,7 @@ export const ProfileMenu = () => {
         sx={{
           zIndex: 1302,
         }}
+        disableScrollLock
       >
         <ListProfiles keys={keys} onClickItem={handleNavigateToKeyInnerPage} />
         <Divider />

@@ -6,7 +6,7 @@ import { formatTimestampDate } from '@/utils/helpers/date'
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded'
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded'
 import { getReqActionName } from '@/utils/helpers/helpers'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import { getReqDetails, printPrettyJson } from '@/utils/helpers/helpers-frontend'
 import { Button } from '@/shared/Button/Button'
 
@@ -63,36 +63,46 @@ export const ItemActivity: FC<ItemActivityProps> = (req) => {
           <Box>{allowed ? <DoneRoundedIcon htmlColor="green" /> : <ClearRoundedIcon htmlColor="red" />}</Box>
         </Stack>
         <Stack direction={'row'} gap={'1rem'}>
-          <Button varianttype="secondary" fullWidth onClick={handleToggleShowDetails} endIcon={<ExpandMoreIcon />}>
+          <Button
+            varianttype="secondary"
+            fullWidth
+            onClick={handleToggleShowDetails}
+            endIcon={<ExpandMoreRoundedIcon />}
+          >
             Parameters
           </Button>
-          <Button varianttype="secondary" fullWidth onClick={handleToggleShowResult} endIcon={<ExpandMoreIcon />}>
+          <Button
+            varianttype="secondary"
+            fullWidth
+            onClick={handleToggleShowResult}
+            endIcon={<ExpandMoreRoundedIcon />}
+          >
             Result
           </Button>
         </Stack>
       </StyledActivityItem>
 
       <Collapse in={showMoreDetails} hidden={showMoreResult}>
-        <StyledDetails>
-          {details ? (
+        {details ? (
+          <StyledDetails>
             <pre>{details}</pre>
-          ) : (
-            <Typography textAlign={'center'} variant="subtitle2">
-              No details
-            </Typography>
-          )}
-        </StyledDetails>
+          </StyledDetails>
+        ) : (
+          <Typography textAlign={'center'} fontSize={'1.25rem'} fontWeight={500} color={'GrayText'}>
+            No details
+          </Typography>
+        )}
       </Collapse>
       <Collapse in={showMoreResult} hidden={showMoreDetails}>
-        <StyledDetails>
-          {result ? (
+        {result ? (
+          <StyledDetails>
             <pre>{isJSON(result) ? printPrettyJson(result) : result}</pre>
-          ) : (
-            <Typography textAlign={'center'} variant="subtitle2">
-              No result
-            </Typography>
-          )}
-        </StyledDetails>
+          </StyledDetails>
+        ) : (
+          <Typography textAlign={'center'} fontSize={'1.25rem'} fontWeight={500} color={'GrayText'}>
+            No result
+          </Typography>
+        )}
       </Collapse>
     </Stack>
   )

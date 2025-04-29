@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react'
-import { IconButton, Stack, Typography, useMediaQuery } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { Box, IconButton, Stack, Typography, useMediaQuery } from '@mui/material'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from './styled'
 import { IAppGroup } from '@/types/general'
 import { getAppIconTitle, getDomainPort } from '@/utils/helpers/helpers'
@@ -50,31 +50,34 @@ export const AppGroup: FC<AppGroupProps> = ({
       <StyledAccordionSummary
         expandIcon={
           <IconButton>
-            <ExpandMoreIcon />
+            <ExpandMoreRoundedIcon />
           </IconButton>
         }
       >
-        <Stack direction={'row'} gap={'0.5rem'}>
-          <IconApp
-            picture={appIcon}
-            domain={appDomain}
-            alt={appAvatarTitle}
-            size={matches ? 'medium' : 'large'}
-            getAppTitle={() => appAvatarTitle}
-          />
-          <Stack>
-            <Typography noWrap display={'block'} variant="body1">
+        <Stack direction={'row'} gap={'0.5rem'} width={'100%'}>
+          <Box minWidth={'fit-content'}>
+            <IconApp
+              picture={appIcon}
+              domain={appDomain}
+              alt={appAvatarTitle}
+              size={matches ? 'medium' : 'large'}
+              getAppTitle={() => appAvatarTitle}
+            />
+          </Box>
+          <Stack width={'100%'} overflow={'hidden'}>
+            <Typography noWrap variant="body1">
               {appName}
             </Typography>
-            <Typography noWrap display={'block'} variant="body2" color={'GrayText'}>
+            <Typography noWrap variant="body2" color={'GrayText'}>
               {size} connections
             </Typography>
-            <Typography noWrap display={'block'} variant="caption" color={'GrayText'}>
+            <Typography noWrap variant="caption" color={'GrayText'}>
               Active: {lastActiveDate}
             </Typography>
           </Stack>
         </Stack>
       </StyledAccordionSummary>
+
       <StyledAccordionDetails>
         <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
           {apps.map((a) => (

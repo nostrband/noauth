@@ -3,7 +3,7 @@ import { useAppSelector } from '../../store/hooks/redux'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Box, IconButton, Stack } from '@mui/material'
 import { StyledIconButton } from './styled'
-import { SettingsIcon, ShareIcon } from '@/assets'
+import { SettingsIcon, ConnectionIcon } from '@/assets'
 import { Apps } from './components/Apps/Apps'
 import { ModalConnectApp } from '@/components/Modal/ModalConnectApp/ModalConnectApp'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
@@ -78,7 +78,7 @@ const KeyPage = () => {
 
   const handleSetEnclaveUploaded = useCallback(async () => {
     const info = await client.getKeyEnclaveInfo(npub)
-    console.log("getKeyEnclaveInfo", info);
+    console.log('getKeyEnclaveInfo', info)
     const notUploaded = !info.enclaves.length
     const shownBefore = info.badgeHidden
     if (shownBefore) setShowSetupEnclaveWarning(false)
@@ -143,7 +143,7 @@ const KeyPage = () => {
 
         <Stack direction={'row'} gap={'0.75rem'}>
           <StyledIconButton onClick={handleOpenConnectAppModal}>
-            <ShareIcon />
+            <ConnectionIcon />
             Connect app
           </StyledIconButton>
 

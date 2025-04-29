@@ -46,6 +46,7 @@ export const StyledAccordionSummary = styled((props: AccordionSummaryProps) => (
   padding: 0,
   '& .content': {
     margin: 0,
+    overflow: 'hidden',
   },
   '&.expanded .content': {
     margin: '0.5rem 0',

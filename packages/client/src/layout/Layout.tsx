@@ -5,12 +5,13 @@ import { Container, ContainerProps, styled } from '@mui/material'
 import { ReloadBadge } from '@/components/ReloadBadge/ReloadBadge'
 import { useSessionStorage } from 'usehooks-ts'
 import { RELOAD_STORAGE_KEY } from '@/utils/consts'
+import { ScrollTop } from '@/components/ScrollTop/ScrollTop'
 
 export const Layout: FC = () => {
   const [needReload] = useSessionStorage(RELOAD_STORAGE_KEY, false)
   const [searchParams] = useSearchParams()
   const isPopupMode = searchParams.get('popup') === 'true'
-  const isIframe = window.location.pathname === "/iframe";
+  const isIframe = window.location.pathname === '/iframe'
   const showReloadBadge = !isIframe && !isPopupMode && needReload
   const containerClassName = showReloadBadge ? 'reload' : ''
 
@@ -33,6 +34,7 @@ export const Layout: FC = () => {
       <main style={isIframe ? { paddingTop: '0' } : {}}>
         <Outlet />
       </main>
+      <ScrollTop />
     </StyledContainer>
   )
 }
