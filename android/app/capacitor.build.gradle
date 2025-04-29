@@ -10,8 +10,7 @@ android {
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
     implementation project(':capacitor-browser')
-    implementation project(':capacitor-push-notifications')
-    implementation project(':capacitor-native-settings')
+    implementation project(':capacitor-clipboard')
     implementation project(':capacitor-plugin-safe-area')
 
 }
