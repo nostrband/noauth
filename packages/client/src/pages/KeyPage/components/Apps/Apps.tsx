@@ -90,7 +90,7 @@ export const Apps: FC = () => {
         </StyledEmptyAppsBox>
       )}
 
-      <Stack gap={'0.5rem'} overflow={'auto'} flex={1} paddingBottom={'0.75rem'}>
+      <Stack gap={'0.5rem'} sx={{ overflowY: 'auto', overflowX: 'hidden' }} flex={1} paddingBottom={'0.75rem'}>
         {groupedApps.map((appGroup) => {
           if (appGroup.size === 1) {
             const [app] = appGroup.apps

@@ -1,7 +1,14 @@
-import { Avatar, Stack, Toolbar, Typography, Divider, DividerProps, styled } from '@mui/material'
-import { StyledAppBar, StyledAppLogo, StyledAppName, StyledProfileContainer, StyledThemeButton } from './styled'
+import { Avatar, Stack, Typography, Divider, DividerProps, styled } from '@mui/material'
+import {
+  StyledAppBar,
+  StyledAppLogo,
+  StyledAppName,
+  StyledProfileContainer,
+  StyledThemeButton,
+  StyledToolbar,
+} from './styled'
 import { Menu } from './components/Menu'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useMatch, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ProfileMenu } from './components/ProfileMenu'
 import { useProfile } from '@/hooks/useProfile'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
@@ -22,12 +29,10 @@ export const Header = () => {
   const showReloadBadge = !isPopupMode && needReload
 
   const { npub = '' } = useParams<{ npub: string }>()
+  const matches = useMatch('/key/:npub')
+
   const { userName, userAvatar, avatarTitle } = useProfile(npub)
   const isKeyPage = Boolean(npub)
-
-  const handleNavigate = () => {
-    navigate(`/key/${npub}`)
-  }
 
   const isDarkMode = themeMode === 'dark'
   const themeIcon = isDarkMode ? <LightModeIcon htmlColor="#fff" /> : <DarkModeIcon htmlColor="#000" />
@@ -41,16 +46,21 @@ export const Header = () => {
     return isKeyPage ? <ProfileMenu /> : <Menu />
   }, [isPopupMode, isKeyPage])
 
+  const handleProfileClick = () => {
+    if (matches) window.scrollTo({ top: 0, behavior: 'smooth' })
+    else navigate(`/key/${npub}`)
+  }
+
   return (
     <StyledAppBar position={showReloadBadge ? 'relative' : 'fixed'}>
-      <Toolbar sx={{ padding: '12px' }}>
+      <StyledToolbar disableGutters>
         <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} width={'100%'}>
           {isKeyPage && (
-            <StyledProfileContainer nonclickable={isPopupMode || undefined}>
-              <Avatar src={userAvatar} alt={userName} onClick={handleNavigate} className="avatar">
+            <StyledProfileContainer nonclickable={isPopupMode || undefined} onClick={handleProfileClick}>
+              <Avatar src={userAvatar} alt={userName} className="avatar">
                 {avatarTitle}
               </Avatar>
-              <Typography fontWeight={600} onClick={handleNavigate} className="username">
+              <Typography fontWeight={600} className="username">
                 {userName}
               </Typography>
             </StyledProfileContainer>
@@ -67,7 +77,7 @@ export const Header = () => {
 
           {renderMenus()}
         </Stack>
-      </Toolbar>
+      </StyledToolbar>
       <StyledDivider />
     </StyledAppBar>
   )

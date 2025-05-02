@@ -52,7 +52,7 @@ export const ItemApp: FC<ItemAppProps> = ({
           getAppTitle={() => appAvatarTitle}
         />
       )}
-      <Stack>
+      <Stack overflow={'hidden'}>
         <Typography noWrap display={'block'} variant="body1">
           {groupedApp ? appDevice || appName : appName}
         </Typography>

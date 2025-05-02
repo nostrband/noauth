@@ -1,20 +1,37 @@
 import { AppLogo } from '@/assets'
-import { AppBar, IconButton, Stack, StackProps, Typography, TypographyProps, styled } from '@mui/material'
+import { IconButton, Stack, StackProps, Toolbar, Typography, TypographyProps, styled } from '@mui/material'
+import { CSSProperties, HTMLAttributes } from 'react'
 import { Link } from 'react-router-dom'
 
-export const StyledAppBar = styled(AppBar)(({ theme }) => {
+type StyledAppBarProps = HTMLAttributes<HTMLDivElement> & {
+  position: CSSProperties['position']
+}
+
+export const StyledAppBar = styled((props: StyledAppBarProps) => <header {...props} />)(({
+  theme,
+  position = 'fixed',
+}) => {
   return {
     color: theme.palette.primary.main,
     boxShadow: 'none',
     marginBottom: '1rem',
     background: theme.palette.background.default,
     zIndex: 1301,
-    maxWidth: 'inherit',
+    maxWidth: '900px',
     left: '50%',
     transform: 'translateX(-50%)',
     borderRadius: '8px',
+    position: position,
+    width: '100%',
   }
 })
+
+export const StyledToolbar = styled(Toolbar)(() => ({
+  padding: '12px 24px',
+  '@media screen and (max-width: 485px)': {
+    padding: '8px 12px',
+  },
+}))
 
 export const StyledAppName = styled((props: TypographyProps) => (
   <Typography component={Link} to={'/'} flexGrow={1} {...props} />
@@ -40,10 +57,10 @@ export const StyledProfileContainer = styled((props: StackProps & { nonclickable
   alignItems: 'center',
   flex: 1,
   '& .avatar': {
-    cursor: 'pointer',
+    cursor: nonclickable ? 'default' : 'pointer',
   },
   '& .username': {
-    cursor: 'pointer',
+    cursor: nonclickable ? 'default' : 'pointer',
   },
   '& > *': {
     pointerEvents: nonclickable ? 'none' : 'initial',

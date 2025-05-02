@@ -24,6 +24,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { DeviceInfo } from '@/components/DeviceInfo/DeviceInfo'
 import { getShortenNpub } from '@noauth/common'
 import { client } from '@/modules/client'
+import { WorldIcon } from '@/assets'
 
 const AppPage = () => {
   const keys = useAppSelector(selectKeys)
@@ -74,7 +75,7 @@ const AppPage = () => {
 
   return (
     <>
-      <Stack maxHeight={'100%'} overflow={'auto'} alignItems={'flex-start'} height={'100%'}>
+      <Stack maxHeight={'100%'} alignItems={'flex-start'} height={'100%'}>
         <IOSBackButton onNavigate={() => navigate(`key/${npub}`)} />
 
         <HeadingContainer>
@@ -96,7 +97,14 @@ const AppPage = () => {
               {connectedOn}
             </Typography>
 
-            {appDevice && <DeviceInfo info={appDevice} />}
+            <Stack direction={'row'} alignItems={'center'} gap={'0.25rem'} padding={'0.5rem 0'}>
+              {appDevice && <DeviceInfo info={appDevice} />}
+              {url && (
+                <IconButton href={url} target="_blank" rel="noreferrer">
+                  <WorldIcon />
+                </IconButton>
+              )}
+            </Stack>
           </Box>
         </HeadingContainer>
 

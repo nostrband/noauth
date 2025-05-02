@@ -281,44 +281,46 @@ export const ModalConnectApp = () => {
   return (
     <>
       <Modal open={isModalOpened} title="Connect App" onClose={handleCloseModal}>
-        <Stack gap={'0.5rem'}>
-          <InputGroupContainer>
-            <StyledInput
-              label="Connection string"
-              value={nostrconnect}
-              onChange={handleNostrConnectChange}
-              placeholder="nostrconnect://"
-              endAdornment={
-                <Stack direction={'row'} gap={'0.75rem'} alignItems={'center'}>
-                  <StyledIconButton onClick={handlePasteNostrconnect}>
-                    <ContentPasteGoIcon />
-                  </StyledIconButton>
-                  <StyledIconButton onClick={handleToggleQrScanner}>
-                    <QrCodeScannerIcon />
-                  </StyledIconButton>
-                </Stack>
-              }
-            />
+        <>
+          <Stack gap={'1rem'}>
+            <InputGroupContainer>
+              <StyledInput
+                label="Connection string"
+                value={nostrconnect}
+                onChange={handleNostrConnectChange}
+                placeholder="nostrconnect://"
+                endAdornment={
+                  <Stack direction={'row'} gap={'0.75rem'} alignItems={'center'}>
+                    <StyledIconButton onClick={handlePasteNostrconnect}>
+                      <ContentPasteGoIcon />
+                    </StyledIconButton>
+                    <StyledIconButton onClick={handleToggleQrScanner}>
+                      <QrCodeScannerIcon />
+                    </StyledIconButton>
+                  </Stack>
+                }
+              />
 
-            <InputDescriptionContainer>
-              <StyledInputHelperText>Paste nostrconnect: string</StyledInputHelperText>
-              <AppLink title="What is this?" onClick={handleOpenNostrConnectExplanation} />
-            </InputDescriptionContainer>
-          </InputGroupContainer>
+              <InputDescriptionContainer>
+                <StyledInputHelperText>Paste nostrconnect: string</StyledInputHelperText>
+                <AppLink title="What is this?" onClick={handleOpenNostrConnectExplanation} />
+              </InputDescriptionContainer>
+            </InputGroupContainer>
 
-          <Button onClick={connect} disabled={isLoading}>
-            Connect {isLoading && <LoadingSpinner />}
-          </Button>
+            <Button onClick={connect} disabled={isLoading}>
+              Connect {isLoading && <LoadingSpinner />}
+            </Button>
+          </Stack>
 
-          <Box width={'100%'} marginTop={'1rem'} marginBottom={'0.5rem'}>
+          <Box width={'100%'} marginTop={'1rem'}>
             <StyledAdvancedButton fullWidth={true} onClick={handleToggleShowAdvancedOptions}>
               Advanced options
             </StyledAdvancedButton>
           </Box>
 
-          <Stack gap={'0.5rem'} alignItems={'center'} marginBottom={'0.5rem'}>
+          <Stack gap={'0.5rem'} alignItems={'center'}>
             <Fade in={showAdvancedOptions} unmountOnExit={true}>
-              <Stack width={'100%'} gap={'0.75rem'}>
+              <Stack width={'100%'} gap={'0.75rem'} marginTop={'1rem'}>
                 <InputGroupContainer>
                   <StyledInput
                     label="Bunker URL"
@@ -379,7 +381,7 @@ export const ModalConnectApp = () => {
               </Stack>
             </Fade>
           </Stack>
-        </Stack>
+        </>
       </Modal>
 
       <ModalQrScanner open={showQrScanner} onClose={handleToggleQrScanner} onScanSuccess={handleScanSuccess} />
