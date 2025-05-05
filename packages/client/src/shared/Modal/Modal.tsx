@@ -20,7 +20,13 @@ const Transition = forwardRef(function Transition(
 
 export const Modal: FC<ModalProps> = ({ children, title, onClose, withCloseButton = true, fixedHeight, ...props }) => {
   return (
-    <StyledDialog fixedheight={fixedHeight} {...props} onClose={onClose} TransitionComponent={Transition}>
+    <StyledDialog
+      disableScrollLock
+      fixedheight={fixedHeight}
+      {...props}
+      onClose={onClose}
+      TransitionComponent={Transition}
+    >
       {withCloseButton && (
         <StyledCloseButtonWrapper>
           <IconButton onClick={() => onClose && onClose({}, 'backdropClick')} className="close_btn">
