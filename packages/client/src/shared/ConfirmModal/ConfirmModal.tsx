@@ -40,6 +40,7 @@ export const ConfirmModal: FC<ConfirmModalProps> = ({
           borderRadius: '10px',
         },
       }}
+      disableScrollLock
     >
       <DialogTitle fontWeight={600} fontSize={'1.5rem'}>
         {headingText}
