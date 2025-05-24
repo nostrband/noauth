@@ -949,160 +949,6 @@ export class NoauthBackend extends EventEmitter {
         req,
         subNpub,
       })
-      // called when it's decided whether to allow this or not
-      // const onAllow = async (
-      //   manual: boolean,
-      //   decision: DECISION,
-      //   remember: boolean,
-      //   confirmOptions?: any,
-      //   resultCb?: (result: string | undefined) => void
-      // ) => {
-      //   // NOTE: `reqOptions` is passed to request,
-      //   // but here `options` is passed to `confirm` call by UI.
-
-      //   // confirm
-      //   console.log(Date.now(), decision, npub, method, confirmOptions, params)
-
-      //   // consume the token
-      //   if (method === 'connect') {
-      //     const token = params && params.length >= 2 ? params[1] : ''
-
-      //     // consume the token even if app not allowed, reload
-      //     console.log('consume connect token', token)
-      //     if (token) {
-      //       await this.dbi.removeConnectToken(token)
-      //       self.connectTokens = await this.dbi.listConnectTokens()
-      //     }
-      //   }
-
-      //   // decision enum handling for TS checks,
-      //   // only ALLOW/DISALLOW fall through
-      //   switch (decision) {
-      //     case DECISION.ASK:
-      //       throw new Error('Make a decision!')
-      //     case DECISION.IGNORE:
-      //       // don't store this any longer!
-      //       if (manual) await this.dbi.removePending(id)
-      //       return // noop
-      //     case DECISION.ALLOW:
-      //     case DECISION.DISALLOW:
-      //     // fall through
-      //   }
-
-      //   // runtime check that stuff
-      //   if (decision !== DECISION.ALLOW && decision !== DECISION.DISALLOW) throw new Error('Unknown decision')
-
-      //   const allow = decision === DECISION.ALLOW
-
-      //   let exportToIframe = false
-      //   if (manual) {
-      //     await this.dbi.confirmPending(id, allow)
-
-      //     // add app on 'allow connect'
-      //     if (method === 'connect' && allow) {
-      //       // save connect token that was used
-      //       const token = params && params.length >= 2 ? params[1] : ''
-
-      //       // add app if it's allowed
-      //       await this.dbi.addApp({
-      //         appNpub: req.appNpub,
-      //         npub: req.npub,
-      //         timestamp: Date.now(),
-      //         name: '',
-      //         icon: '',
-      //         url: confirmOptions?.appUrl || '',
-      //         updateTimestamp: Date.now(),
-      //         permUpdateTimestamp: Date.now(),
-      //         userAgent: globalThis?.navigator?.userAgent || '',
-      //         token: token || '',
-      //         subNpub,
-      //       })
-
-      //       // reload
-      //       self.apps = await this.dbi.listApps()
-
-      //       // notify iframe
-      //       exportToIframe = true
-      //     }
-      //   } else {
-      //     // just send to db w/o waiting for it
-      //     await this.dbi.addConfirmed({
-      //       ...req,
-      //       allowed: allow,
-      //     })
-      //   }
-
-      //   // for notifications
-      //   self.accessBuffer.push(req)
-
-      //   // clear from pending
-      //   const index = self.confirmBuffer.findIndex((r) => r.req.id === id)
-      //   if (index >= 0) self.confirmBuffer.splice(index, 1)
-
-      //   if (remember) {
-      //     let newPerms = [getReqPerm(req)]
-      //     if (allow && confirmOptions && confirmOptions.perms) newPerms = confirmOptions.perms
-
-      //     // write new perms confirmed by user
-      //     for (const p of newPerms) {
-      //       await this.dbi.addPerm({
-      //         id: `${req.id}-${p}`,
-      //         npub: req.npub,
-      //         appNpub: req.appNpub,
-      //         perm: p,
-      //         value: allow ? '1' : '0',
-      //         timestamp: Date.now(),
-      //       })
-      //     }
-
-      //     // reload
-      //     this.perms = await this.dbi.listPerms()
-
-      //     // publish updated apps if app is added
-      //     if (this.apps.find((a) => a.appNpub === req.appNpub && a.npub === req.npub)) {
-      //       await this.updateAppPermTimestamp(req.appNpub, req.npub)
-
-      //       // if remembering - publish
-      //       this.publishAppPerms({
-      //         npub: req.npub,
-      //         appNpub: req.appNpub,
-      //       }).finally(() => {
-      //         // after the app perms are published we can
-      //         // tell the iframe to import this nsec, it will
-      //         // be able to read the perms from the network now
-      //         if (exportToIframe && confirmOptions?.port)
-      //           this.exportNsecToIframe(req.npub, req.appNpub, confirmOptions.port, req.id, reqOptions.secret)
-      //       })
-      //     }
-      //   }
-
-      //   // release this promise to send reply
-      //   // to this req
-      //   const saveResult = async (result: string | undefined) => {
-      //     await this.dbi.addResult(id, result)
-      //     resultCb && resultCb(result)
-      //   }
-      //   ok([decision, saveResult])
-
-      //   // notify UI that it was confirmed
-      //   // if (!PERF_TEST)
-      //   this.updateUI()
-
-      //   // after replying to this req check pending
-      //   // reqs maybe they can be replied right away
-      //   if (remember) {
-      //     // confirm pending requests that might now have
-      //     // the proper perms
-      //     const otherReqs = self.confirmBuffer.filter((r) => r.req.appNpub === req.appNpub)
-      //     console.log('updated perms', this.perms, 'otherReqs', otherReqs, 'connected', connected)
-      //     for (const r of otherReqs) {
-      //       const dec = this.getDecision(backend, r.req)
-      //       if (dec !== DECISION.ASK) {
-      //         r.cb(dec, false)
-      //       }
-      //     }
-      //   }
-      // }
 
       // check perms
       const dec = this.getDecision(backend, req)
@@ -1134,32 +980,37 @@ export class NoauthBackend extends EventEmitter {
         // notify those who are waiting for this req
         this.emit(`pending-${req.id}`, req)
 
-        // OAuth flow
-        const isConnect = method === 'connect'
-        const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
-        const authUrl = `${self.global.getOrigin(reqOptions?.iframe)}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
-        console.log('sending authUrl', authUrl, 'for', req)
+        // nostr-connect flow emulates a client request,
+        // and we don't need it to send the auth challenge
+        // since client didn't create the request
+        if (!reqOptions.noAuth) {
+          // OAuth flow
+          const isConnect = method === 'connect'
+          const confirmMethod = isConnect ? 'confirm-connect' : 'confirm-event'
+          const authUrl = `${self.global.getOrigin(reqOptions?.iframe)}/key/${npub}?${confirmMethod}=true&reqId=${id}&popup=true`
+          console.log('sending authUrl', authUrl, 'for', req)
 
-        // NOTE: don't send auth_url immediately, wait some time
-        // to make sure other bunkers aren't replying
-        setTimeout(() => {
-          // request still there? (not dropped by the watcher)
-          if (self.confirmBuffer.find((r) => r.req.id === id)) {
-            // NOTE: if you set 'Update on reload' in the Chrome SW console
-            // then this message will cause a new tab opened by the peer,
-            // which will cause SW (this code) to reload, to fetch
-            // the pending requests and to re-send this event,
-            // looping for 10 seconds (our request age threshold)
-            const be = backend as Nip46Backend
-            if (reqOptions?.onAuthUrl) {
-              be.prepareAuthUrlResponse(id, remotePubkey, authUrl).then((e) => reqOptions.onAuthUrl(e.rawEvent()))
+          // NOTE: don't send auth_url immediately, wait some time
+          // to make sure other bunkers aren't replying
+          setTimeout(() => {
+            // request still there? (not dropped by the watcher)
+            if (self.confirmBuffer.find((r) => r.req.id === id)) {
+              // NOTE: if you set 'Update on reload' in the Chrome SW console
+              // then this message will cause a new tab opened by the peer,
+              // which will cause SW (this code) to reload, to fetch
+              // the pending requests and to re-send this event,
+              // looping for 10 seconds (our request age threshold)
+              const be = backend as Nip46Backend
+              if (reqOptions?.onAuthUrl) {
+                be.prepareAuthUrlResponse(id, remotePubkey, authUrl).then((e) => reqOptions.onAuthUrl(e.rawEvent()))
+              } else {
+                be.sendAuthUrlResponse(id, remotePubkey, authUrl)
+              }
             } else {
-              be.sendAuthUrlResponse(id, remotePubkey, authUrl)
+              console.log('skip sending auth_url')
             }
-          } else {
-            console.log('skip sending auth_url')
-          }
-        }, 300)
+          }, 300)
+        }
 
         // show notifs
         this.notifyConfirm()
@@ -1879,6 +1730,9 @@ export class NoauthBackend extends EventEmitter {
     // pass it using method params, instead we will reply
     // with this 'secret' instead of 'ack'
     options.secret = secret
+
+    // do not send auth challenge
+    options.noAuth = true
 
     // returns request id if pending, or empty string if done
     return new Promise<string>((ok) => {
