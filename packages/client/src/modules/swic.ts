@@ -269,7 +269,6 @@ class ClientServiceWorker implements BackendClient {
     return this.call<Event[]>('listEnclaves', [])
   }
 
-
   public getListKeys() {
     return dbi.listKeys()
   }
@@ -296,6 +295,10 @@ class ClientServiceWorker implements BackendClient {
   public async getSynced(npub: string) {
     return await dbi.getSynced(npub)
   }
+
+  public async setEnclaveBadgeHidden(npub: string): Promise<void> {
+    return dbi.setEnclaveBadgeHidden(npub)
+  }
 }
 
 export const clientServiceWorker = new ClientServiceWorker()
@@ -314,16 +317,16 @@ export async function swicRegister() {
       swr?.waiting?.postMessage({ type: 'SKIP_WAITING' })
     },
   })
-  navigator.serviceWorker.ready.then(async (r) => {
-    swr = r
-    if (navigator.serviceWorker.controller) {
-      console.log(`This page is currently controlled by: ${navigator.serviceWorker.controller}`)
-    } else {
-      console.log('This page is not currently controlled by a service worker.')
-    }
-    clientServiceWorker.onStarted()
-  })
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    clientServiceWorker.onMessage((event as MessageEvent).data)
-  })
 }
+navigator.serviceWorker.ready.then(async (r) => {
+  swr = r
+  if (navigator.serviceWorker.controller) {
+    console.log(`This page is currently controlled by: ${navigator.serviceWorker.controller}`)
+  } else {
+    console.log('This page is not currently controlled by a service worker.')
+  }
+  clientServiceWorker.onStarted()
+})
+navigator.serviceWorker.addEventListener('message', (event) => {
+  clientServiceWorker.onMessage((event as MessageEvent).data)
+})

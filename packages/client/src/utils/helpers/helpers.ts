@@ -31,6 +31,10 @@ export async function askNotificationPermission() {
   })
 }
 
+export async function askNativeNotificationPermission() {
+  return false
+}
+
 export function permListToPerms(perms: string): string[] {
   const r: string[] = []
   for (const p of perms.split(',')) {

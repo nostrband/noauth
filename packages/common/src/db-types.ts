@@ -64,6 +64,10 @@ export interface DbSyncHistory {
   npub: string
 }
 
+export interface DbEnclaveHistory {
+  npub: string
+}
+
 export interface DbConnectToken {
   npub: string
   token: string
@@ -110,4 +114,7 @@ export interface DbInterface {
   removeConnectToken: (token: string) => Promise<void>
 
   listHistory: (appNpub: string) => Promise<DbHistory[]>
+
+  getEnclaveBadgeHidden: (npub: string) => Promise<boolean>
+  setEnclaveBadgeHidden: (npub: string) => Promise<void>
 }

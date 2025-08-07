@@ -23,10 +23,6 @@ export const getNjumpLink = (id: any) => {
   return 'https://njump.me/' + event
 }
 
-export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-  return value !== null && value !== undefined
-}
-
 export type EnclaveEnvironment = 'dev' | 'prod' | 'debug'
 
 export const getEnvironmentStatus = (prod: boolean, debug: boolean) => {

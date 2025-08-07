@@ -8,6 +8,8 @@ import { SectionTitle } from '@/shared/SectionTitle/SectionTitle'
 import { useModalSearchParams } from '@/hooks/useModalSearchParams'
 import { MODAL_PARAMS_KEYS } from '@/types/modal'
 import { DOMAIN } from '@/utils/consts'
+import { Browser } from '@capacitor/browser'
+import { isNativeIOS } from '@/utils/helpers/helpers-frontend'
 
 const HomePage = () => {
   const keys = useAppSelector(selectKeys)
@@ -16,9 +18,13 @@ const HomePage = () => {
   const { handleOpen } = useModalSearchParams()
   const handleClickAddAccount = () => handleOpen(MODAL_PARAMS_KEYS.INITIAL)
 
-  const handleLearnMore = () => {
-    // @ts-ignore
-    window.open(`https://${DOMAIN}`, '_blank').focus()
+  const handleLearnMore = async () => {
+    if (isNativeIOS()) {
+      await Browser.open({ url: `https://${DOMAIN}` })
+      return
+    }
+    const newWindow = window.open(`https://${DOMAIN}`, '_blank')
+    if (newWindow) newWindow.focus()
   }
 
   return (

@@ -1,16 +1,18 @@
 import { FC, Fragment, useCallback, useEffect, useState } from 'react'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography, useMediaQuery } from '@mui/material'
 import { Button } from '@/shared/Button/Button'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { client } from '@/modules/client'
 import { useEnqueueSnackbar } from '@/hooks/useEnqueueSnackbar'
-import { EnclaveEnvironment, getEnvironmentStatus, notEmpty, parseEnclave } from './helpers'
+import { EnclaveEnvironment, getEnvironmentStatus, parseEnclave } from './helpers'
 import { IEnclave } from './types'
 import { SelectEnclaves } from './components/SelectEnclaves/SelectEnclaves'
 import { EnclaveCard } from './components/EnclaveCard/EnclaveCard'
 import { useToggleConfirm } from '@/hooks/useToggleConfirm'
 import { ConfirmModal } from '@/shared/ConfirmModal/ConfirmModal'
 import { LoadingSpinner } from '@/shared/LoadingSpinner/LoadingSpinner'
+import { notEmpty } from '@/utils/helpers/helpers-frontend'
+import { useUnmount } from 'usehooks-ts'
 
 type ModalSetupEnclaveContentProps = {
   onClose: () => void
@@ -24,7 +26,10 @@ const getConfirmDescription = (env: EnclaveEnvironment) => {
 
 export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ onClose }) => {
   const notify = useEnqueueSnackbar()
+  const isMobile = useMediaQuery('(max-width:600px)')
+
   const { npub = '' } = useParams<{ npub: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [info, setInfo] = useState<any | undefined>()
   const [enclaves, setEnclaves] = useState<IEnclave[]>([])
@@ -59,7 +64,10 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
       setStatus('Loading...')
       await client.uploadKeyToEnclave(npub, enclave.event.pubkey)
       notify('Successfully uploaded!', 'success')
+      await client.setEnclaveBadgeHidden(npub)
+      window.dispatchEvent(new Event('hide-badge'))
       await new Promise((ok) => setTimeout(ok, 1000))
+
       onClose()
     } catch (error) {
       setStatus('Upload Error: ' + error)
@@ -108,6 +116,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
     if (enclave) setSelectedEnclave(enclave)
   }
 
+  useUnmount(() => {
+    searchParams.delete('mode')
+    setSearchParams(searchParams)
+  })
+
   if (isLoading) {
     return (
       <Box minHeight={'10rem'} display={'grid'} sx={{ placeItems: 'center' }}>
@@ -119,9 +132,11 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
   return (
     <>
       <Stack gap={'0.75rem'}>
-        <Typography textAlign={'center'}>EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!</Typography>
+        <Typography textAlign={'center'} variant={isMobile ? 'body2' : 'body1'}>
+          EXPERIMENTAL FEATURE! DO NOT USE WITH REAL KEYS!
+        </Typography>
 
-        <Typography>
+        <Typography variant={isMobile ? 'body2' : 'body1'}>
           To enable secure reliable always-online signing, you can upload your key to a signer running inside{' '}
           <a href="https://aws.amazon.com/ec2/nitro/nitro-enclaves/" target="_blank" rel="noreferrer">
             AWS Nitro Enclave
@@ -154,12 +169,18 @@ export const ModalSetupEnclaveContent: FC<ModalSetupEnclaveContentProps> = ({ on
                 onChange={handleSelectEnclave}
               />
             )}
-            <Typography>
+
+            {enclaves.length === 0 && (
+              <Typography textAlign={'center'} fontWeight={500}>
+                No enlaves
+              </Typography>
+            )}
+            <Typography variant={isMobile ? 'body2' : 'body1'}>
               Enclaves run a specific version of reproducible code in an isolated environment, and provide cryptographic
               attestation signed by AWS. Nsec.app verified the attestation of the enclaves listed above. The code of
               enclaves listed above was reviewed and considered safe.
             </Typography>
-            <Button onClick={handleUpload} disabled={status !== ''}>
+            <Button onClick={handleUpload} disabled={status !== '' || enclaves.length === 0}>
               Upload key
             </Button>
           </Fragment>

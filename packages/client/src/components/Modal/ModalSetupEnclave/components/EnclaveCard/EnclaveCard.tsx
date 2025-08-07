@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from 'react'
 import { IEnclave } from '../../types'
-import { Chip, Divider, Link, Stack, Typography } from '@mui/material'
+import { Chip, Divider, Link, Stack, Typography, useMediaQuery } from '@mui/material'
 
 import { EnclaveProfile } from '../EnclaveProfile/EnclaveProfile'
 import { getEnvironmentStatus, tv } from '../../helpers'
@@ -26,7 +26,7 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
   noLinkToExplorer = false,
   noPing = false,
 }) => {
-  // console.log('enclave card', event)
+  const isMobile = useMediaQuery('(max-width:600px)')
   const [ping, setPing] = useState(0)
 
   const name = tv(event, 'name') || ''
@@ -88,13 +88,13 @@ export const EnclaveCard: FC<EnclaveCardProps> = ({
         </Stack>
       </Stack>
 
-      <Stack gap={'0.5rem 0.75rem'} direction={'row'}>
+      <Stack gap={'0.5rem 0.75rem'} direction={'row'} flexWrap={isMobile ? 'wrap' : undefined}>
         <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
           <Typography variant="body2">Build by:</Typography>
           <EnclaveProfile pubkey={builder} />
         </Stack>
 
-        <Divider orientation="vertical" sx={{ height: 'inherit', width: 2 }} />
+        {!isMobile && <Divider orientation="vertical" sx={{ height: 'inherit', width: 2 }} />}
 
         <Stack direction={'row'} gap={'0.5rem'} alignItems={'center'}>
           <Typography variant="body2">Launched by:</Typography>

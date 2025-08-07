@@ -18,7 +18,11 @@ root.render(
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider>
-            <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
+            <SnackbarProvider
+              maxSnack={3}
+              autoHideDuration={3000}
+              classes={{ containerRoot: 'snackbar-container-root' }}
+            >
               <App />
             </SnackbarProvider>
           </ThemeProvider>
@@ -31,7 +35,7 @@ root.render(
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://cra.link/PWA
-if (process.env.REACT_APP_HOSTED === 'false') swicRegister()
+if (process.env.REACT_APP_BUILD_TARGET === 'WEB') swicRegister()
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

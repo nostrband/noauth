@@ -552,6 +552,34 @@ const dbiPrisma: DbInterface = {
       return []
     }
   },
+
+  getEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      const result = await prisma.enclaveHistory.count({ where: { npub } })
+      return result > 0
+    } catch (error) {
+      console.log(`Error getting enclave badge hidden: ${error}`)
+      return false
+    }
+  },
+  setEnclaveBadgeHidden: async (npub: string) => {
+    try {
+      await prisma.enclaveHistory.upsert({
+        create: {
+          npub,
+        },
+        where: {
+          npub,
+        },
+        update: {
+          npub,
+        },
+      })
+    } catch (error) {
+      console.log(`Error setting enclave badge hidden: ${error}`)
+      throw error
+    }
+  },
 }
 
 export default dbiPrisma
